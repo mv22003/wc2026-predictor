@@ -37,7 +37,14 @@ router.post('/', (req, res) => {
 
   const existing = db.prepare('SELECT * FROM users WHERE name = ?').get(name.trim());
   if (existing?.submitted_at)
-    return res.status(409).json({ error: 'Predictions already submitted and locked for this name.' });
+    return res.status(409).json({ error: 'This name is already taken. Please choose a different name.' });
+
+  // Require a prediction for every group match
+  const totalGroupMatches = db.prepare("SELECT COUNT(*) as n FROM matches WHERE phase = 'group'").get().n;
+  if (predictions.length < totalGroupMatches)
+    return res.status(400).json({
+      error: `You must predict all ${totalGroupMatches} group matches before submitting (got ${predictions.length}).`,
+    });
 
   const submit = db.transaction(() => {
     let userId = existing?.id;

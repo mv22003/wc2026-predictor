@@ -101,37 +101,29 @@ export default function Predict() {
     }).catch(console.error);
   }, []);
 
-  // Check existing submission when name is confirmed
-  const checkUser = useCallback(async (n) => {
-    if (!n.trim()) return;
-    setChecking(true);
-    try {
-      const data = await api.getUser(n.trim());
-      if (data.locked) {
-        setLocked(true);
-        const map = {};
-        for (const p of data.predictions) {
-          map[p.match_id] = { home: p.pred_home, away: p.pred_away, points: p.points };
-        }
-        setPreds(map);
-        setStatus({ type: 'info', msg: `Welcome back, ${n}! Your predictions are locked. ✅` });
-      } else if (data.exists) {
-        setStatus({ type: 'info', msg: `Welcome back, ${n}! You can still edit your predictions.` });
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setChecking(false);
-    }
-  }, []);
-
   function handleNameSubmit(e) {
     e.preventDefault();
     const n = nameInput.trim();
     if (!n) return;
-    setName(n);
-    localStorage.setItem(LS_NAME_KEY, n);
-    checkUser(n);
+    setChecking(true);
+    setStatus(null);
+    api.getUser(n).then(data => {
+      if (data.locked) {
+        setStatus({ type: 'error', msg: `"${n}" is already taken. Please choose a different name.` });
+      } else {
+        // Name is free or belongs to this user (unlocked draft) — proceed
+        setName(n);
+        localStorage.setItem(LS_NAME_KEY, n);
+        if (data.exists) {
+          const map = {};
+          for (const p of data.predictions ?? []) {
+            map[p.match_id] = { home: p.pred_home, away: p.pred_away, points: p.points };
+          }
+          setPreds(map);
+          setStatus({ type: 'info', msg: `Welcome back, ${n}! You can still edit your predictions.` });
+        }
+      }
+    }).catch(console.error).finally(() => setChecking(false));
   }
 
   function updatePred(matchId, side, value) {
@@ -192,15 +184,18 @@ export default function Predict() {
                          text-lg font-semibold text-center focus:border-brand-gold focus:outline-none transition-colors"
               placeholder="Your name…"
               value={nameInput}
-              onChange={e => setNameInput(e.target.value)}
+              onChange={e => { setNameInput(e.target.value); setStatus(null); }}
               maxLength={50}
               autoFocus
             />
+            {status?.type === 'error' && (
+              <p className="text-red-400 text-sm">{status.msg}</p>
+            )}
             <button type="submit" className="btn-primary w-full text-base" disabled={!nameInput.trim() || checking}>
               {checking ? 'Checking…' : 'Continue →'}
             </button>
           </form>
-          <p className="text-xs text-gray-600">No account needed. Just your name.</p>
+          <p className="text-xs text-gray-600">Each name can only be used once.</p>
         </div>
       </div>
     );
@@ -284,16 +279,16 @@ export default function Predict() {
                 <p className="font-semibold">Ready to submit?</p>
                 <p className="text-sm text-gray-400">
                   {filledCount < matches.length
-                    ? `You have ${matches.length - filledCount} predictions missing. You can still submit partial predictions.`
+                    ? `${matches.length - filledCount} prediction${matches.length - filledCount !== 1 ? 's' : ''} missing — fill all ${matches.length} matches to submit.`
                     : 'All predictions filled! Submit to lock them in.'}
                 </p>
               </div>
               <button
-                className="btn-primary whitespace-nowrap"
+                className="btn-primary whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                 onClick={handleSubmit}
-                disabled={loading || filledCount === 0}
+                disabled={loading || filledCount < matches.length}
               >
-                {loading ? 'Submitting…' : `Submit ${filledCount} Predictions`}
+                {loading ? 'Submitting…' : `Submit All ${matches.length} Predictions`}
               </button>
             </div>
           )}
