@@ -64,6 +64,7 @@ const syncState = {
   lastSyncAt:      null,
   lastResult:      null,   // { updated, skipped, errors }
   inProgress:      false,
+  nextSyncAt:      null,
 };
 
 async function syncScores() {
@@ -126,31 +127,52 @@ async function syncScores() {
 
 // ─── Auto-sync ────────────────────────────────────────────────────────────────
 
-let _autoInterval = null;
+let _autoInterval = null;  // the repeating tick
+let _autoTimeout  = null;  // one-shot alignment to the next clock boundary
 
 function startAutoSync(intervalMinutes) {
-  if (_autoInterval) clearInterval(_autoInterval);
+  stopAutoSync();
   if (!intervalMinutes || intervalMinutes <= 0) return;
 
-  console.log(`⚽ Live scores auto-sync enabled every ${intervalMinutes} min`);
-  _autoInterval = setInterval(async () => {
+  const intervalMs = intervalMinutes * 60 * 1000;
+
+  async function runSync() {
+    // Schedule next boundary before running so the timestamp is always accurate
+    syncState.nextSyncAt = new Date(Math.ceil(Date.now() / intervalMs) * intervalMs).toISOString();
     try {
       const result = await syncScores();
-      if (result.updated > 0) {
-        console.log(`🔄 Auto-sync: ${result.updated} match(es) updated`);
-      }
+      if (result.updated > 0) console.log(`🔄 Auto-sync: ${result.updated} match(es) updated`);
     } catch (e) {
       console.error('Auto-sync error:', e.message);
     }
-  }, intervalMinutes * 60 * 1000);
+  }
+
+  // Calculate ms to the next intervalMinutes boundary on the wall clock
+  const msUntilNext = intervalMs - (Date.now() % intervalMs);
+  syncState.nextSyncAt = new Date(Date.now() + msUntilNext).toISOString();
+
+  console.log(`⚽ Auto-sync enabled every ${intervalMinutes} min, next at ${syncState.nextSyncAt}`);
+
+  // Align to boundary, then tick on every interval
+  _autoTimeout = setTimeout(() => {
+    _autoTimeout = null;
+    runSync();
+    _autoInterval = setInterval(runSync, intervalMs);
+  }, msUntilNext);
 }
 
 function stopAutoSync() {
+  if (_autoTimeout)  { clearTimeout(_autoTimeout);   _autoTimeout  = null; }
   if (_autoInterval) { clearInterval(_autoInterval); _autoInterval = null; }
+  syncState.nextSyncAt = null;
 }
 
 function isConfigured() {
   return !!(process.env.WORLDCUP_API_TOKEN || (process.env.WORLDCUP_API_EMAIL && process.env.WORLDCUP_API_PASSWORD));
 }
 
-module.exports = { syncScores, startAutoSync, stopAutoSync, syncState, isConfigured };
+function isAutoSyncRunning() {
+  return _autoInterval !== null || _autoTimeout !== null;
+}
+
+module.exports = { syncScores, startAutoSync, stopAutoSync, syncState, isConfigured, isAutoSyncRunning };

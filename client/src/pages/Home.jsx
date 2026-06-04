@@ -33,19 +33,19 @@ function MatchRow({ match }) {
   return (
     <div className="flex items-center gap-3 py-3 border-b border-brand-border last:border-0">
       <span className="tag bg-brand-border text-gray-300 w-8 text-center">{match.group_name}</span>
-      <div className="flex-1 flex items-center justify-between gap-2">
-        <span className="font-semibold text-sm flex items-center gap-1.5 truncate">
-          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6" />
-          {match.home_code}
+      <div className="flex-1 flex items-center gap-2 min-w-0">
+        <span className="flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0">
+          <span className="truncate text-right">{match.home_team}</span>
+          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
         </span>
         {match.status === 'finished' ? (
-          <span className="font-black text-brand-gold px-2">{match.home_score}–{match.away_score}</span>
+          <span className="font-black text-brand-gold shrink-0 tabular-nums">{match.home_score}–{match.away_score}</span>
         ) : (
-          <span className="text-gray-500 text-xs px-2">vs</span>
+          <span className="text-gray-500 text-xs shrink-0">vs</span>
         )}
-        <span className="font-semibold text-sm flex items-center gap-1.5 truncate text-right justify-end">
-          {match.away_code}
-          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6" />
+        <span className="flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0">
+          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
+          <span className="truncate">{match.away_team}</span>
         </span>
       </div>
       <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">{dateStr}</span>

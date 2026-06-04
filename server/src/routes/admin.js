@@ -14,11 +14,13 @@ function adminAuth(req, res, next) {
 // ── Live scores sync ──────────────────────────────────────────────────────────
 router.get('/sync/status', adminAuth, (req, res) => {
   res.json({
-    configured:   liveScores.isConfigured(),
-    inProgress:   liveScores.syncState.inProgress,
-    lastSyncAt:   liveScores.syncState.lastSyncAt,
-    lastResult:   liveScores.syncState.lastResult,
-    autoInterval: parseInt(process.env.WORLDCUP_SYNC_INTERVAL || '0', 10),
+    configured:      liveScores.isConfigured(),
+    inProgress:      liveScores.syncState.inProgress,
+    lastSyncAt:      liveScores.syncState.lastSyncAt,
+    lastResult:      liveScores.syncState.lastResult,
+    nextSyncAt:      liveScores.syncState.nextSyncAt,
+    autoInterval:    parseInt(process.env.WORLDCUP_SYNC_INTERVAL || '0', 10),
+    autoSyncRunning: liveScores.isAutoSyncRunning(),
   });
 });
 
@@ -34,6 +36,17 @@ router.post('/sync', adminAuth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.post('/sync/start', adminAuth, (req, res) => {
+  const interval = parseInt(req.body?.intervalMinutes, 10) || 5;
+  liveScores.startAutoSync(interval);
+  res.json({ success: true, intervalMinutes: interval });
+});
+
+router.post('/sync/stop', adminAuth, (req, res) => {
+  liveScores.stopAutoSync();
+  res.json({ success: true });
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────

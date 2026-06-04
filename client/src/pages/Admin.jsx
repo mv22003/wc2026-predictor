@@ -7,6 +7,7 @@ const LS_KEY = 'wc2026_admin_key';
 function LiveSyncCard({ adminKey, onDone }) {
   const [status, setStatus]   = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const [result, setResult]   = useState(null);
   const [error, setError]     = useState('');
   const timerRef              = useRef(null);
@@ -35,16 +36,37 @@ function LiveSyncCard({ adminKey, onDone }) {
     }
   }
 
-  const configured = status?.configured;
-  const lastSync   = status?.lastSyncAt ? new Date(status.lastSyncAt) : null;
-  const autoMin    = status?.autoInterval || 0;
+  async function toggleAuto() {
+    setToggling(true);
+    try {
+      if (autoSyncRunning) {
+        await api.stopSync(adminKey);
+      } else {
+        await api.startSync(adminKey, 5);
+      }
+      await loadStatus();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  const configured      = status?.configured;
+  const autoSyncRunning = status?.autoSyncRunning ?? false;
+  const lastSync        = status?.lastSyncAt ? new Date(status.lastSyncAt) : null;
+  const autoMin         = status?.autoInterval || 0;
 
   return (
     <div className={`card border ${configured ? 'border-brand-border' : 'border-yellow-700/40 bg-yellow-900/5'}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`w-2 h-2 rounded-full ${configured ? 'bg-emerald-400' : 'bg-yellow-500'}`} />
+            <span className={`w-2 h-2 ${
+              !configured     ? 'rounded-full bg-yellow-500' :
+              autoSyncRunning ? 'rounded-full bg-emerald-400' :
+                                'rounded-sm bg-red-500'
+            }`} />
             <h3 className="font-black text-base">Live Score Sync</h3>
             <span className="text-xs text-gray-500">worldcup26.ir</span>
           </div>
@@ -56,7 +78,6 @@ function LiveSyncCard({ adminKey, onDone }) {
                 <li>Register at <a href="https://worldcup26.ir/api-docs/" target="_blank" rel="noreferrer" className="text-brand-gold hover:underline">worldcup26.ir/api-docs</a></li>
                 <li>Authenticate and copy your JWT token</li>
                 <li>Add to <code className="bg-black/30 px-1 rounded">.env</code>: <code className="bg-black/30 px-1 rounded">WORLDCUP_API_TOKEN=your_token</code></li>
-                <li>Optionally add <code className="bg-black/30 px-1 rounded">WORLDCUP_SYNC_INTERVAL=5</code> for auto-sync every 5 min</li>
                 <li>Restart the server</li>
               </ol>
             </div>
@@ -73,7 +94,17 @@ function LiveSyncCard({ adminKey, onDone }) {
                   )}
                 </p>
               ) : <p className="text-gray-500">Never synced</p>}
-              {autoMin > 0 && <p className="text-xs text-sky-400">Auto-sync every {autoMin} min</p>}
+              {autoSyncRunning
+                ? <p className="text-xs text-sky-400">
+                    ⏱ Auto-sync every {autoMin || 5} min
+                    {status?.nextSyncAt && (
+                      <span className="ml-1 text-gray-500">
+                        · next at {new Date(status.nextSyncAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </p>
+                : <p className="text-xs text-red-400">⏹ Auto-sync stopped</p>
+              }
             </div>
           )}
 
@@ -87,13 +118,26 @@ function LiveSyncCard({ adminKey, onDone }) {
         </div>
 
         {configured && (
-          <button
-            onClick={sync}
-            disabled={syncing || status?.inProgress}
-            className="btn-primary text-sm whitespace-nowrap disabled:opacity-50"
-          >
-            {syncing || status?.inProgress ? '⏳ Syncing…' : '⚡ Sync Now'}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={toggleAuto}
+              disabled={toggling}
+              className={`text-sm whitespace-nowrap disabled:opacity-50 px-3 py-2 rounded-lg font-bold border transition-all ${
+                autoSyncRunning
+                  ? 'border-red-500/40 text-red-400 hover:bg-red-500/10'
+                  : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+              }`}
+            >
+              {toggling ? '…' : autoSyncRunning ? '⏹ Stop Auto-sync' : '▶ Start Auto-sync'}
+            </button>
+            <button
+              onClick={sync}
+              disabled={syncing || status?.inProgress}
+              className="btn-primary text-sm whitespace-nowrap disabled:opacity-50"
+            >
+              {syncing || status?.inProgress ? '⏳ Syncing…' : '⚡ Sync Now'}
+            </button>
+          </div>
         )}
       </div>
     </div>

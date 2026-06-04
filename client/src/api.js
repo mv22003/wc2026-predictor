@@ -48,6 +48,10 @@ export const api = {
     req('/admin/sync/status', { headers: { 'x-admin-key': key } }),
   syncNow: (key) =>
     req('/admin/sync', { method: 'POST', headers: { 'x-admin-key': key } }),
+  startSync: (key, intervalMinutes = 5) =>
+    req('/admin/sync/start', { method: 'POST', headers: { 'x-admin-key': key }, body: { intervalMinutes } }),
+  stopSync: (key) =>
+    req('/admin/sync/stop', { method: 'POST', headers: { 'x-admin-key': key } }),
   resetResult: (key, id) =>
     req(`/admin/matches/${id}/result`, {
       method: 'DELETE',

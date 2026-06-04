@@ -8,6 +8,20 @@ const PHASE_LABEL = {
   qf: 'Quarter-finals', sf: 'Semi-finals', '3rd': 'Third Place', final: 'Final',
 };
 
+// Returns a Set of team names that are currently in the best 8 third places
+function getBest3rds(allMatches, groups) {
+  const thirds = [];
+  for (const g of groups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    const standings = calcStandings(gm);
+    if (standings.length >= 3 && standings[2].played > 0) {
+      thirds.push(standings[2]);
+    }
+  }
+  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
+  return new Set(thirds.slice(0, 8).map(t => t.name));
+}
+
 function calcStandings(groupMatches) {
   const table = {};
 
@@ -112,7 +126,7 @@ function DateGroup({ dateStr, matches }) {
 }
 
 // ─── Groups view components ───────────────────────────────────────────────────
-function StandingsTable({ groupName, matches }) {
+function StandingsTable({ groupName, matches, qualifying3rd }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
   const standings    = calcStandings(groupMatches);
@@ -147,15 +161,24 @@ function StandingsTable({ groupName, matches }) {
             <tr
               key={row.name}
               className={`border-b border-brand-border/30 last:border-0 transition-colors
-                ${i < 2 ? 'bg-emerald-900/10 hover:bg-emerald-900/20' : 'hover:bg-white/5'}`}
+                ${i < 2
+                  ? 'bg-emerald-900/10 hover:bg-emerald-900/20'
+                  : i === 2 && qualifying3rd?.has(row.name)
+                  ? 'bg-amber-900/10 hover:bg-amber-900/20'
+                  : 'hover:bg-white/5'}`}
             >
               <td className="px-3 py-2.5">
-                <span className={`text-xs font-bold ${i < 2 ? 'text-emerald-400' : 'text-gray-600'}`}>
+                <span className={`text-xs font-bold
+                  ${i < 2
+                    ? 'text-emerald-400'
+                    : i === 2 && qualifying3rd?.has(row.name)
+                    ? 'text-amber-400'
+                    : 'text-gray-600'}`}>
                   {i + 1}
                 </span>
               </td>
-              <td className="px-3 py-2.5">
-                <div className="flex items-center gap-2">
+              <td className="px-3 py-2.5 max-w-0 w-full">
+                <div className="flex items-center gap-2 min-w-0">
                   <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
                   <span className="font-semibold truncate text-sm">{row.name}</span>
                 </div>
@@ -175,14 +198,8 @@ function StandingsTable({ groupName, matches }) {
         </tbody>
       </table>
 
-      {/* Footer: qualifying key + matches toggle */}
-      <div className="border-t border-brand-border/50 flex items-center justify-between px-3 py-2">
-        {played > 0 ? (
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500/60 shrink-0" />
-            <span className="text-xs text-gray-600">Qualifying positions</span>
-          </div>
-        ) : <span />}
+      {/* Footer: matches toggle */}
+      <div className="border-t border-brand-border/50 flex items-center justify-end px-3 py-2">
         <button
           onClick={() => setOpen(o => !o)}
           className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
@@ -326,6 +343,7 @@ export default function Matches() {
 
   // Groups view always shows all 12 groups
   const groupsToShow = groups;
+  const qualifying3rd = getBest3rds(matches, groups);
 
   if (loading) return (
     <div className="flex items-center justify-center h-48 text-gray-400">Loading…</div>
@@ -382,11 +400,24 @@ export default function Matches() {
 
       {/* ── Groups view ─────────────────────────────────────────────────────── */}
       {view === 'groups' && (
+        <>
+          {/* Shared colour legend */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70 shrink-0" />
+              <span className="text-xs text-gray-400">Qualified (top 2)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/70 shrink-0" />
+              <span className="text-xs text-gray-400">Best 3rd (8 advance)</span>
+            </div>
+          </div>
         <div className="grid sm:grid-cols-2 gap-6">
           {groupsToShow.map(g => (
-            <StandingsTable key={g} groupName={g} matches={matches} />
+            <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} />
           ))}
         </div>
+        </>
       )}
 
       {/* ── Calendar view ───────────────────────────────────────────────────── */}
