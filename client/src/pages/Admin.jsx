@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api';
+import Flag from '../components/Flag';
 
 const LS_KEY = 'wc2026_admin_key';
 
@@ -52,7 +53,7 @@ function ResultRow({ match, adminKey, onSaved }) {
       <td className="px-3 py-3 text-sm hidden md:table-cell text-gray-400">{dateStr}</td>
       <td className="px-3 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
-          <span>{match.home_flag}</span>
+          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6" />
           <span className="hidden sm:inline">{match.home_team}</span>
           <span className="sm:hidden">{match.home_code}</span>
         </div>
@@ -80,7 +81,7 @@ function ResultRow({ match, adminKey, onSaved }) {
         <div className="flex items-center gap-2 text-sm font-semibold">
           <span className="hidden sm:inline">{match.away_team}</span>
           <span className="sm:hidden">{match.away_code}</span>
-          <span>{match.away_flag}</span>
+          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6" />
         </div>
       </td>
       <td className="px-3 py-3 text-xs text-gray-400 hidden lg:table-cell">

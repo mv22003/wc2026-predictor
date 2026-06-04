@@ -13,14 +13,12 @@ function Navbar() {
 
         {/* Logo / Brand */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* ⬇ Replace with an <img> pointing to your WC2026 logo file */}
-          <div className="w-9 h-9 rounded-full bg-brand-gold flex items-center justify-center text-brand-navy font-black text-sm">
-            26
-          </div>
-          <div className="hidden sm:block leading-none">
-            <p className="text-[10px] uppercase tracking-widest text-brand-gold font-semibold">FIFA World Cup</p>
-            <p className="font-black text-base">PREDICTOR 2026</p>
-          </div>
+          <img
+            src="/wc-logos/wc2026-logo-white.svg"
+            alt="FIFA World Cup 2026"
+            className="h-10 w-auto"
+          />
+          <p className="hidden sm:block font-black text-base tracking-wide">PREDICTOR</p>
         </div>
 
         {/* Nav links */}

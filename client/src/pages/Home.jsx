@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import Flag from '../components/Flag';
 
 function StatBox({ label, value, color = 'text-brand-gold' }) {
   return (
@@ -33,16 +34,18 @@ function MatchRow({ match }) {
     <div className="flex items-center gap-3 py-3 border-b border-brand-border last:border-0">
       <span className="tag bg-brand-border text-gray-300 w-8 text-center">{match.group_name}</span>
       <div className="flex-1 flex items-center justify-between gap-2">
-        <span className="font-semibold text-sm truncate">
-          {match.home_flag} {match.home_code}
+        <span className="font-semibold text-sm flex items-center gap-1.5 truncate">
+          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6" />
+          {match.home_code}
         </span>
         {match.status === 'finished' ? (
           <span className="font-black text-brand-gold px-2">{match.home_score}–{match.away_score}</span>
         ) : (
           <span className="text-gray-500 text-xs px-2">vs</span>
         )}
-        <span className="font-semibold text-sm truncate text-right">
-          {match.away_code} {match.away_flag}
+        <span className="font-semibold text-sm flex items-center gap-1.5 truncate text-right justify-end">
+          {match.away_code}
+          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6" />
         </span>
       </div>
       <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">{dateStr}</span>
@@ -90,13 +93,11 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 via-transparent to-brand-blue/10 pointer-events-none" />
 
         <div className="relative flex flex-col sm:flex-row items-center gap-6">
-          {/* Logo placeholder */}
-          <div className="w-24 h-24 rounded-2xl bg-brand-gold/20 border-2 border-brand-gold/40 flex items-center justify-center text-4xl shrink-0">
-            ⚽
-          </div>
-          {/* ↑ Replace the div above with:
-              <img src="/wc2026-logo.png" alt="FIFA World Cup 2026" className="w-24 h-24 object-contain" />
-          */}
+          <img
+            src="/wc-logos/wc2026-logo-white.svg"
+            alt="FIFA World Cup 2026"
+            className="h-32 w-auto shrink-0"
+          />
 
           <div>
             <p className="text-brand-gold text-xs font-bold uppercase tracking-widest">Official Fan Predictor</p>

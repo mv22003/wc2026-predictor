@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api';
+import Flag from '../components/Flag';
 
 const LS_NAME_KEY = 'wc2026_name';
 
@@ -56,7 +57,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
         {/* Home team */}
         <div className="flex-1 flex items-center gap-2 justify-end">
           <span className="text-sm font-semibold truncate text-right">{match.home_team}</span>
-          <span className="text-2xl">{match.home_flag}</span>
+          <Flag code={match.home_code} name={match.home_team} className="w-9 h-9" />
         </div>
 
         {/* Score inputs */}
@@ -68,7 +69,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
 
         {/* Away team */}
         <div className="flex-1 flex items-center gap-2">
-          <span className="text-2xl">{match.away_flag}</span>
+          <Flag code={match.away_code} name={match.away_team} className="w-9 h-9" />
           <span className="text-sm font-semibold truncate">{match.away_team}</span>
         </div>
       </div>
