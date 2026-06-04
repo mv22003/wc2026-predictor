@@ -96,23 +96,22 @@ export default function Home() {
           <img
             src="/wc-logos/wc2026-logo-white.svg"
             alt="FIFA World Cup 2026"
-            className="h-32 w-auto shrink-0"
+            className="h-28 w-auto shrink-0 px-3"
           />
 
           <div>
-            <p className="text-brand-gold text-xs font-bold uppercase tracking-widest">Official Fan Predictor</p>
-            <h1 className="text-3xl sm:text-4xl font-black mt-1 leading-tight">
+            <h1 className="text-3xl sm:text-4xl font-black leading-tight">
               FIFA World Cup<br />
-              <span className="text-brand-gold">2026™</span>
+              <span className="text-brand-gold">2026</span>
             </h1>
             <p className="text-gray-400 mt-2 text-sm max-w-md">
               Predict every match, climb the leaderboard, and prove your football knowledge!
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
-              <Link to="/predict" className="btn-primary inline-block text-sm">
+              <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
                 Make Predictions →
               </Link>
-              <Link to="/leaderboard" className="btn-secondary inline-block text-sm">
+              <Link to="/leaderboard" className="btn-secondary inline-flex items-center justify-center text-sm">
                 View Leaderboard
               </Link>
             </div>
@@ -132,12 +131,16 @@ export default function Home() {
         <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">How Scoring Works</h2>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center gap-2">
-            <span className="tag pts-exact px-3 py-1 text-sm font-bold">3 pts</span>
+            <span className="tag pts-exact px-3 py-1 text-sm font-bold">5 pts</span>
             <span className="text-sm text-gray-300">Exact scoreline</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="tag pts-correct px-3 py-1 text-sm font-bold">1 pt</span>
-            <span className="text-sm text-gray-300">Correct result (W/D/L)</span>
+            <span className="tag pts-correct px-3 py-1 text-sm font-bold">3 pts</span>
+            <span className="text-sm text-gray-300">Correct result + goal difference</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 px-3 py-1 text-sm font-bold">1 pt</span>
+            <span className="text-sm text-gray-300">Correct result (W/D/L) only</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="tag pts-zero px-3 py-1 text-sm font-bold">0 pts</span>

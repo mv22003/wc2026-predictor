@@ -32,7 +32,8 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
     // Show points earned
     const ph = parseInt(predHome), pa = parseInt(predAway);
     const ah = match.home_score, aa = match.away_score;
-    if (ph === ah && pa === aa) pts = 3;
+    if (ph === ah && pa === aa) pts = 5;
+    else if (Math.sign(ph - pa) === Math.sign(ah - aa) && (ph - pa) === (ah - aa)) pts = 3;
     else if (Math.sign(ph - pa) === Math.sign(ah - aa)) pts = 1;
     else pts = 0;
   }
@@ -42,8 +43,8 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-gray-500">{dateStr}</span>
         {pts !== null && (
-          <span className={`tag font-bold px-2 py-0.5 ${pts === 3 ? 'pts-exact' : pts === 1 ? 'pts-correct' : 'pts-zero'}`}>
-            {pts === 3 ? '⭐ +3' : pts === 1 ? '+1' : '0 pts'}
+          <span className={`tag font-bold px-2 py-0.5 ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
+            {pts === 5 ? '⭐ +5' : pts === 3 ? '+3' : pts === 1 ? '+1' : '0 pts'}
           </span>
         )}
         {locked && match.status === 'finished' && (

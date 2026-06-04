@@ -17,7 +17,7 @@ function Navbar() {
           <img
             src="/wc-logos/wc2026-logo-white.svg"
             alt="FIFA World Cup 2026"
-            className="h-10 w-auto"
+            className="h-8 w-auto py-0.5"
           />
           <p className="hidden sm:block font-black text-base tracking-wide">PREDICTOR</p>
         </div>
@@ -59,7 +59,7 @@ export default function App() {
         </Routes>
       </main>
       <footer className="border-t border-brand-border text-center text-xs text-gray-600 py-4">
-        FIFA World Cup 2026™ — Unofficial fan predictor
+        FIFA World Cup 2026 Predictor
       </footer>
     </div>
   );
