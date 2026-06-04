@@ -239,9 +239,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   {m.away_team}
                 </span>
               </div>
-              {m.status === 'finished' && (
-                <span className="tag pts-exact text-xs shrink-0 hidden sm:inline">FT</span>
-              )}
+              <span className={`tag pts-exact text-xs shrink-0 hidden sm:inline ${m.status !== 'finished' ? 'invisible' : ''}`}>FT</span>
             </div>
           ))}
       </div>
