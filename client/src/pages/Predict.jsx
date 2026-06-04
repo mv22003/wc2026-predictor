@@ -246,12 +246,12 @@ export default function Predict() {
       ) : (
         <>
           {/* ── Group tabs ──────────────────────────────────────────────────── */}
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="grid grid-cols-6 gap-1.5">
             {groups.map(g => (
               <button
                 key={g}
                 onClick={() => setActiveGroup(g)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
                   activeGroup === g
                     ? 'bg-brand-gold text-brand-navy'
                     : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'

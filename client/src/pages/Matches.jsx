@@ -169,31 +169,49 @@ export default function Matches() {
         </button>
       </div>
 
-      {/* Group filter */}
-      <div className="flex gap-1.5 flex-wrap">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-            filter === 'all'
-              ? 'bg-brand-gold text-brand-navy'
-              : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
-          }`}
-        >
-          All
-        </button>
-        {groups.map(g => (
+      {/* Group filter — row 1: All + Groups A–F (7), row 2: Groups G–L (6) centered */}
+      <div className="space-y-1.5">
+        <div className="grid grid-cols-7 gap-1.5">
           <button
-            key={g}
-            onClick={() => setFilter(g)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-              filter === g
+            onClick={() => setFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
+              filter === 'all'
                 ? 'bg-brand-gold text-brand-navy'
                 : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
             }`}
           >
-            Group {g}
+            All
           </button>
-        ))}
+          {groups.slice(0, 6).map(g => (
+            <button
+              key={g}
+              onClick={() => setFilter(g)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
+                filter === g
+                  ? 'bg-brand-gold text-brand-navy'
+                  : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
+              }`}
+            >
+              Group {g}
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-center gap-1.5">
+          {groups.slice(6).map(g => (
+            <button
+              key={g}
+              onClick={() => setFilter(g)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                filter === g
+                  ? 'bg-brand-gold text-brand-navy'
+                  : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
+              }`}
+              style={{ minWidth: 'calc((100% - 5 * 0.375rem) / 7)' }}
+            >
+              Group {g}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Calendar */}

@@ -69,6 +69,10 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { @apply bg-brand-border rounded-full; }
 
+/* Hide scrollbar for filter pill rows */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* Score badge */
 .pts-exact   { @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30; }
 .pts-correct { @apply bg-amber-500/20   text-amber-400   border border-amber-500/30;   }
