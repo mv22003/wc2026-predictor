@@ -55,7 +55,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
 
       <div className="flex items-center gap-3 justify-between">
         {/* Home team */}
-        <div className="flex-1 flex items-center gap-2 justify-end">
+        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
           <span className="text-sm font-semibold truncate text-right">{match.home_team}</span>
           <Flag code={match.home_code} name={match.home_team} className="w-9 h-9" />
         </div>
@@ -68,7 +68,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
         </div>
 
         {/* Away team */}
-        <div className="flex-1 flex items-center gap-2">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
           <Flag code={match.away_code} name={match.away_team} className="w-9 h-9" />
           <span className="text-sm font-semibold truncate">{match.away_team}</span>
         </div>
