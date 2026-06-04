@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Layer_" data-name="&amp;lt;Layer&amp;gt;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #16369a;
+      }
+
+      .cls-2 {
+        fill: #e63223;
+      }
+
+      .cls-3 {
+        fill: #fff;
+      }
+    </style>
+  </defs>
+  <rect class="cls-2" x="-125.01" width="750.02" height="500"/>
+  <path class="cls-3" d="M85,500h29.99v-219.98H-125.01v29.98H85v190h0ZM175.01,500h30v-190h420v-29.98H175.01v219.98h0ZM625.01,220v-30H205V0h-30v220h450ZM115,0h-29.99v190H-125.01v30H115V0h0Z"/>
+  <polygon class="cls-1" points="-125.01 280.02 115 280.02 115 500 175.01 500 175.01 280.02 625.01 280.02 625.01 220 175.01 220 175.01 0 115 0 115 220 -125.01 220 -125.01 280.02 -125.01 280.02"/>
+</svg>

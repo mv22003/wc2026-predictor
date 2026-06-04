@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Layer_" data-name="&amp;lt;Layer&amp;gt;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+      }
+
+      .cls-2 {
+        fill: #102f99;
+      }
+    </style>
+  </defs>
+  <g id="effectFlag">
+    <polygon class="cls-2" points="-125 0 -125 166.67 -125 333.33 -125 500 625 500 625 333.33 625 166.67 625 0 -125 0"/>
+    <polygon class="cls-1" points="625 79.73 337.89 250.01 625 420.28 625 500 583.64 500 250 302.13 -83.64 500 -125 500 -125 420.28 162.11 250.01 -125 79.73 -125 0 -83.63 0 250 197.87 583.64 0 625 0 625 79.73"/>
+  </g>
+</svg>

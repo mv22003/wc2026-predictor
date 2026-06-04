@@ -1,0 +1,130 @@
+import { useEffect, useState } from 'react';
+import { api } from '../api';
+
+function RankBadge({ rank }) {
+  if (rank === 1) return <span className="text-xl">🥇</span>;
+  if (rank === 2) return <span className="text-xl">🥈</span>;
+  if (rank === 3) return <span className="text-xl">🥉</span>;
+  return <span className="text-gray-400 font-bold text-sm w-8 text-center">{rank}</span>;
+}
+
+export default function Leaderboard() {
+  const [board, setBoard] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    api.getLeaderboard()
+      .then(setBoard)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+
+    const t = setInterval(() => {
+      api.getLeaderboard().then(setBoard).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const filtered = board.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-48 text-gray-400">Loading…</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black">🏆 Leaderboard</h1>
+          <p className="text-gray-400 text-sm">{board.length} players · updates every 30 s</p>
+        </div>
+        <input
+          type="text"
+          placeholder="Search player…"
+          className="bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-sm
+                     focus:border-brand-gold focus:outline-none w-48 transition-colors"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Top 3 podium */}
+      {board.length >= 3 && !search && (
+        <div className="grid grid-cols-3 gap-3">
+          {[board[1], board[0], board[2]].map((row, i) => (
+            <div
+              key={row.id}
+              className={`card text-center transition-all ${
+                i === 1 ? 'ring-2 ring-brand-gold/50 bg-brand-gold/5 sm:-mt-4' : ''
+              }`}
+            >
+              <p className="text-3xl mb-1">{i === 1 ? '🥇' : i === 0 ? '🥈' : '🥉'}</p>
+              <p className="font-black truncate text-sm">{row.name}</p>
+              <p className="text-brand-gold font-black text-2xl">{row.total_points}</p>
+              <p className="text-gray-500 text-xs">pts</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Full table */}
+      <div className="card overflow-x-auto p-0">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 text-left w-12">#</th>
+              <th className="px-4 py-3 text-left">Player</th>
+              <th className="px-4 py-3 text-center">Played</th>
+              <th className="px-4 py-3 text-center hidden sm:table-cell">Exact ⭐</th>
+              <th className="px-4 py-3 text-center hidden sm:table-cell">Correct</th>
+              <th className="px-4 py-3 text-right font-bold text-brand-gold">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-10 text-gray-500">
+                  {search ? 'No player found.' : 'No predictions submitted yet. Be the first!'}
+                </td>
+              </tr>
+            ) : (
+              filtered.map((row, idx) => (
+                <tr
+                  key={row.id}
+                  className={`border-b border-brand-border/50 last:border-0 hover:bg-white/5 transition-colors ${
+                    idx < 3 && !search ? 'bg-brand-gold/3' : ''
+                  }`}
+                >
+                  <td className="px-4 py-3">
+                    <RankBadge rank={row.rank} />
+                  </td>
+                  <td className="px-4 py-3 font-semibold">{row.name}</td>
+                  <td className="px-4 py-3 text-center text-gray-400">{row.matches_played ?? 0}</td>
+                  <td className="px-4 py-3 text-center hidden sm:table-cell">
+                    <span className="tag pts-exact">{row.exact_scores ?? 0}</span>
+                  </td>
+                  <td className="px-4 py-3 text-center hidden sm:table-cell">
+                    <span className="tag pts-correct">{row.correct_results ?? 0}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right font-black text-brand-gold text-lg">
+                    {row.total_points}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {board.length === 0 && (
+        <div className="card text-center py-10 text-gray-500">
+          <p className="text-4xl mb-3">🏅</p>
+          <p className="font-semibold">Leaderboard is empty</p>
+          <p className="text-sm mt-1">Share the link with your group and start predicting!</p>
+        </div>
+      )}
+    </div>
+  );
+}

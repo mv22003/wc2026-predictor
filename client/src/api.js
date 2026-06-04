@@ -1,0 +1,47 @@
+const BASE = '/api';
+
+async function req(path, opts = {}) {
+  const { headers: extraHeaders = {}, body, ...rest } = opts;
+  const res = await fetch(`${BASE}${path}`, {
+    ...rest,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+export const api = {
+  // Matches
+  getMatches:  (params = {}) => req('/matches?' + new URLSearchParams(params)),
+  getGroups:   ()             => req('/matches/groups'),
+  getMatch:    (id)           => req(`/matches/${id}`),
+
+  // Predictions
+  getUser:        (name) => req(`/predictions/user/${encodeURIComponent(name)}`),
+  submitPredictions: (name, predictions) =>
+    req('/predictions', { method: 'POST', body: { name, predictions } }),
+
+  // Leaderboard
+  getLeaderboard: () => req('/leaderboard'),
+
+  // Admin
+  adminStats:    (key)           => req('/admin/stats',   { headers: { 'x-admin-key': key } }),
+  adminMatches:  (key)           => req('/admin/matches', { headers: { 'x-admin-key': key } }),
+  adminUsers:    (key)           => req('/admin/users',   { headers: { 'x-admin-key': key } }),
+  submitResult:  (key, id, hs, as_) =>
+    req(`/admin/matches/${id}/result`, {
+      method: 'POST',
+      headers: { 'x-admin-key': key },
+      body: { home_score: hs, away_score: as_ },
+    }),
+  updateResult:  (key, id, hs, as_) =>
+    req(`/admin/matches/${id}/result`, {
+      method: 'PUT',
+      headers: { 'x-admin-key': key },
+      body: { home_score: hs, away_score: as_ },
+    }),
+  bulkTeams:   (key, teams)   => req('/admin/teams/bulk',   { method: 'POST', headers: { 'x-admin-key': key }, body: { teams } }),
+  bulkMatches: (key, matches) => req('/admin/matches/bulk', { method: 'POST', headers: { 'x-admin-key': key }, body: { matches } }),
+};

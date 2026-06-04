@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-brand-navy text-white font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-brand-card border border-brand-border rounded-xl p-5;
+  }
+
+  .btn-primary {
+    @apply bg-brand-gold text-brand-navy font-bold py-3 px-6 rounded-lg
+           hover:brightness-110 active:scale-95 transition-all disabled:opacity-40
+           disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-brand-border text-white font-semibold py-2 px-4 rounded-lg
+           hover:bg-slate-600 active:scale-95 transition-all;
+  }
+
+  .btn-danger {
+    @apply bg-red-700 text-white font-semibold py-2 px-4 rounded-lg
+           hover:bg-red-600 active:scale-95 transition-all;
+  }
+
+  .score-input {
+    @apply w-14 h-14 text-center text-2xl font-bold rounded-lg
+           bg-brand-navy border-2 border-brand-border
+           focus:border-brand-gold focus:outline-none transition-colors;
+  }
+
+  .tag {
+    @apply text-xs font-semibold px-2 py-0.5 rounded-full;
+  }
+
+  .nav-link {
+    @apply px-4 py-2 rounded-lg font-semibold text-sm transition-all
+           hover:bg-white/10 text-gray-300 hover:text-white;
+  }
+
+  .nav-link.active {
+    @apply bg-brand-gold/20 text-brand-gold;
+  }
+}
+
+/* Rank medals */
+.rank-1 { @apply text-yellow-400 font-black; }
+.rank-2 { @apply text-gray-300  font-black; }
+.rank-3 { @apply text-amber-600 font-black; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-brand-border rounded-full; }
+
+/* Score badge */
+.pts-exact   { @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30; }
+.pts-correct { @apply bg-amber-500/20   text-amber-400   border border-amber-500/30;   }
+.pts-zero    { @apply bg-white/5        text-gray-500    border border-white/10;        }
