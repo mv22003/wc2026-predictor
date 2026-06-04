@@ -166,9 +166,14 @@ export default function Home() {
 
         {/* Matches */}
         <div className="card">
-          <h2 className="font-black text-lg mb-3">
-            {recent.length > 0 ? '✅ Recent Results' : '📅 Upcoming Matches'}
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-black text-lg">
+              {recent.length > 0 ? '✅ Recent Results' : '📅 Upcoming Matches'}
+            </h2>
+            <Link to="/matches" className="text-brand-gold text-xs font-semibold hover:underline">
+              Full Calendar →
+            </Link>
+          </div>
           {recent.length > 0 ? (
             recent.map(m => <MatchRow key={m.id} match={m} />)
           ) : upcoming.length > 0 ? (
