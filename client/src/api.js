@@ -44,6 +44,10 @@ export const api = {
     }),
   recalculateAll: (key) =>
     req('/admin/recalculate', { method: 'POST', headers: { 'x-admin-key': key } }),
+  syncStatus: (key) =>
+    req('/admin/sync/status', { headers: { 'x-admin-key': key } }),
+  syncNow: (key) =>
+    req('/admin/sync', { method: 'POST', headers: { 'x-admin-key': key } }),
   resetResult: (key, id) =>
     req(`/admin/matches/${id}/result`, {
       method: 'DELETE',

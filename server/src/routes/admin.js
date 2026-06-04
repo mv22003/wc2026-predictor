@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { calculatePoints } = require('../scoring');
+const liveScores = require('../services/liveScores');
 
 function adminAuth(req, res, next) {
   const key = req.headers['x-admin-key'] || req.body?.adminKey || req.query?.key;
@@ -9,6 +10,31 @@ function adminAuth(req, res, next) {
   if (key !== ADMIN_KEY) return res.status(401).json({ error: 'Invalid admin key' });
   next();
 }
+
+// ── Live scores sync ──────────────────────────────────────────────────────────
+router.get('/sync/status', adminAuth, (req, res) => {
+  res.json({
+    configured:   liveScores.isConfigured(),
+    inProgress:   liveScores.syncState.inProgress,
+    lastSyncAt:   liveScores.syncState.lastSyncAt,
+    lastResult:   liveScores.syncState.lastResult,
+    autoInterval: parseInt(process.env.WORLDCUP_SYNC_INTERVAL || '0', 10),
+  });
+});
+
+router.post('/sync', adminAuth, async (req, res) => {
+  if (!liveScores.isConfigured()) {
+    return res.status(400).json({
+      error: 'Live scores API not configured. Add WORLDCUP_API_TOKEN to your .env file.',
+    });
+  }
+  try {
+    const result = await liveScores.syncScores();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 router.get('/stats', adminAuth, (req, res) => {

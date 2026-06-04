@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const { initDb } = require('./src/db');
+const { startAutoSync, isConfigured } = require('./src/services/liveScores');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,5 +30,15 @@ app.listen(PORT, () => {
   console.log(`🌍 WC2026 Predictor running on http://localhost:${PORT}`);
   if (process.env.NODE_ENV !== 'production') {
     console.log(`   Admin key: ${process.env.ADMIN_KEY || 'wc2026admin'}`);
+  }
+
+  // Start live scores auto-sync if configured
+  const syncInterval = parseInt(process.env.WORLDCUP_SYNC_INTERVAL || '0', 10);
+  if (isConfigured() && syncInterval > 0) {
+    startAutoSync(syncInterval);
+  } else if (isConfigured()) {
+    console.log('⚽ Live scores API configured. Set WORLDCUP_SYNC_INTERVAL=5 for auto-sync.');
+  } else {
+    console.log('ℹ️  Live scores: add WORLDCUP_API_TOKEN to .env to enable auto-sync.');
   }
 });
