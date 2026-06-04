@@ -142,6 +142,20 @@ router.put('/matches/:id/result', adminAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// Reset a result — clears score, sets status back to upcoming, zeroes all points
+router.delete('/matches/:id/result', adminAuth, (req, res) => {
+  const db = getDb();
+  const matchId = parseInt(req.params.id, 10);
+
+  db.prepare(
+    "UPDATE matches SET home_score = NULL, away_score = NULL, status = 'upcoming' WHERE id = ?"
+  ).run(matchId);
+
+  db.prepare('UPDATE predictions SET points = 0 WHERE match_id = ?').run(matchId);
+
+  res.json({ success: true, match_id: matchId });
+});
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 router.get('/users', adminAuth, (req, res) => {
   const db = getDb();

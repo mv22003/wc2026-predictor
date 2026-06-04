@@ -17,7 +17,8 @@ function ResultRow({ match, adminKey, onSaved }) {
   const [hs, setHs] = useState(match.home_score ?? '');
   const [as_, setAs] = useState(match.away_score ?? '');
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved]   = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const isFinished = match.status === 'finished';
 
@@ -88,17 +89,45 @@ function ResultRow({ match, adminKey, onSaved }) {
         {match.prediction_count} preds
       </td>
       <td className="px-3 py-3">
-        <button
-          onClick={save}
-          disabled={saving || hs === '' || as_ === ''}
-          className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
-            saved    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
-            isFinished ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40 hover:bg-sky-500/30' :
-                         'bg-brand-gold text-brand-navy hover:brightness-110'
-          } disabled:opacity-40`}
-        >
-          {saved ? '✓ Saved' : saving ? '…' : isFinished ? 'Update' : 'Save'}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={save}
+            disabled={saving || resetting || hs === '' || as_ === ''}
+            className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
+              saved      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+              isFinished ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40 hover:bg-sky-500/30' :
+                           'bg-brand-gold text-brand-navy hover:brightness-110'
+            } disabled:opacity-40`}
+          >
+            {saved ? '✓' : saving ? '…' : isFinished ? 'Update' : 'Save'}
+          </button>
+
+          {isFinished && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Reset result for this match? This will clear the score and set all predictions back to 0 points.`)) return;
+                setResetting(true);
+                try {
+                  await api.resetResult(adminKey, match.id);
+                  setHs('');
+                  setAs('');
+                  onSaved?.();
+                } catch (e) {
+                  alert('Error: ' + e.message);
+                } finally {
+                  setResetting(false);
+                }
+              }}
+              disabled={resetting || saving}
+              title="Reset result"
+              className="px-2 py-1.5 rounded text-xs font-bold transition-all
+                         bg-red-500/10 text-red-400 border border-red-500/30
+                         hover:bg-red-500/20 disabled:opacity-40"
+            >
+              {resetting ? '…' : '✕'}
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );
