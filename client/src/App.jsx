@@ -1,6 +1,7 @@
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import Home        from './pages/Home';
 import Matches     from './pages/Matches';
+import Bracket     from './pages/Bracket';
 import Predict     from './pages/Predict';
 import Leaderboard from './pages/Leaderboard';
 import Admin       from './pages/Admin';
@@ -30,6 +31,9 @@ function Navbar() {
           <NavLink to="/matches"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Matches
           </NavLink>
+          <NavLink to="/bracket"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Bracket
+          </NavLink>
           <NavLink to="/predict"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Predict
           </NavLink>
@@ -53,6 +57,7 @@ export default function App() {
         <Routes>
           <Route path="/"            element={<Home />} />
           <Route path="/matches"     element={<Matches />} />
+          <Route path="/bracket"     element={<Bracket />} />
           <Route path="/predict"     element={<Predict />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/admin"       element={<Admin />} />

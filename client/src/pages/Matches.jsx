@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -305,7 +305,6 @@ export default function Matches() {
   const [loading, setLoading] = useState(true);
   const [view,    setView]    = useState('groups');   // 'calendar' | 'groups'
   const [filter,  setFilter]  = useState('all');
-  const todayRef              = useRef(null);
 
   function load() {
     Promise.all([api.getMatches(), api.getGroups()])
@@ -320,15 +319,8 @@ export default function Matches() {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    if (!loading && view === 'calendar' && todayRef.current) {
-      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [loading, view]);
-
   const played = matches.filter(m => m.status === 'finished').length;
   const total  = matches.length;
-  const today  = new Date().toDateString();
 
   // Calendar view data
   const calFiltered = filter === 'all' ? matches : matches.filter(m => m.group_name === filter);
@@ -380,14 +372,6 @@ export default function Matches() {
               Calendar
             </button>
           </div>
-          {view === 'calendar' && (
-            <button
-              onClick={() => todayRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-              className="btn-secondary text-sm"
-            >
-              Today ↓
-            </button>
-          )}
         </div>
       </div>
 
@@ -422,7 +406,7 @@ export default function Matches() {
       {view === 'calendar' && (
         <div className="space-y-4">
           {Object.entries(byDate).map(([dateStr, dayMatches]) => (
-            <div key={dateStr} ref={dateStr === today ? todayRef : null}>
+            <div key={dateStr}>
               <DateGroup dateStr={dateStr} matches={dayMatches} />
             </div>
           ))}
