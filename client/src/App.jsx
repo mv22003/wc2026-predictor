@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import Home        from './pages/Home';
+import Matches     from './pages/Matches';
 import Predict     from './pages/Predict';
 import Leaderboard from './pages/Leaderboard';
 import Admin       from './pages/Admin';
@@ -23,8 +24,11 @@ function Navbar() {
 
         {/* Nav links */}
         <nav className="flex items-center gap-1">
-          <NavLink to="/"          className={({ isActive }) => `nav-link${isActive && loc.pathname === '/' ? ' active' : ''}`}>
+          <NavLink to="/"           className={({ isActive }) => `nav-link${isActive && loc.pathname === '/' ? ' active' : ''}`}>
             Home
+          </NavLink>
+          <NavLink to="/matches"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Matches
           </NavLink>
           <NavLink to="/predict"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Predict
@@ -48,6 +52,7 @@ export default function App() {
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8">
         <Routes>
           <Route path="/"            element={<Home />} />
+          <Route path="/matches"     element={<Matches />} />
           <Route path="/predict"     element={<Predict />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/admin"       element={<Admin />} />
