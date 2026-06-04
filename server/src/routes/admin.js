@@ -156,6 +156,38 @@ router.delete('/matches/:id/result', adminAuth, (req, res) => {
   res.json({ success: true, match_id: matchId });
 });
 
+// Recalculate all prediction points using current scoring rules
+router.post('/recalculate', adminAuth, (req, res) => {
+  const db = getDb();
+
+  const finishedMatches = db.prepare(
+    "SELECT * FROM matches WHERE status = 'finished'"
+  ).all();
+
+  const getPreds  = db.prepare('SELECT * FROM predictions WHERE match_id = ?');
+  const updatePts = db.prepare('UPDATE predictions SET points = ? WHERE id = ?');
+
+  let predictionsUpdated = 0;
+  const tx = db.transaction(() => {
+    for (const match of finishedMatches) {
+      for (const p of getPreds.all(match.id)) {
+        updatePts.run(
+          calculatePoints(p.pred_home, p.pred_away, match.home_score, match.away_score),
+          p.id
+        );
+        predictionsUpdated++;
+      }
+    }
+  });
+  tx();
+
+  res.json({
+    success:              true,
+    matches_processed:    finishedMatches.length,
+    predictions_updated:  predictionsUpdated,
+  });
+});
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 router.get('/users', adminAuth, (req, res) => {
   const db = getDb();

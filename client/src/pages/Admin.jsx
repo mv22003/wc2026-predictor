@@ -4,6 +4,49 @@ import Flag from '../components/Flag';
 
 const LS_KEY = 'wc2026_admin_key';
 
+function RecalculateButton({ adminKey, onDone }) {
+  const [state, setState] = useState('idle'); // idle | running | done | error
+  const [result, setResult] = useState(null);
+
+  async function run() {
+    if (!confirm('Recalculate all prediction points using the current scoring rules?\n\nThis will overwrite all existing point values.')) return;
+    setState('running');
+    try {
+      const data = await api.recalculateAll(adminKey);
+      setResult(data);
+      setState('done');
+      onDone?.();
+      setTimeout(() => setState('idle'), 4000);
+    } catch (e) {
+      setState('error');
+      setResult({ error: e.message });
+      setTimeout(() => setState('idle'), 4000);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3 bg-brand-card border border-brand-border rounded-xl px-4 py-3">
+      <div className="flex-1">
+        <p className="font-semibold text-sm">Recalculate All Scores</p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {state === 'done' && result
+            ? `✅ Updated ${result.predictions_updated} predictions across ${result.matches_processed} matches`
+            : state === 'error'
+            ? `❌ ${result?.error}`
+            : 'Apply current scoring rules to every finished match'}
+        </p>
+      </div>
+      <button
+        onClick={run}
+        disabled={state === 'running'}
+        className="shrink-0 btn-secondary text-sm disabled:opacity-50"
+      >
+        {state === 'running' ? 'Recalculating…' : state === 'done' ? '✓ Done' : 'Recalculate'}
+      </button>
+    </div>
+  );
+}
+
 function StatCard({ label, value, color = 'text-brand-gold' }) {
   return (
     <div className="card text-center">
@@ -227,11 +270,16 @@ export default function Admin() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label="Players"        value={stats.total_users}   />
-          <StatCard label="Matches Total"  value={stats.total_matches} color="text-sky-400" />
-          <StatCard label="Results Entered" value={stats.finished}     color="text-emerald-400" />
-          <StatCard label="Predictions"    value={stats.total_preds}   color="text-purple-400" />
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard label="Players"         value={stats.total_users}   />
+            <StatCard label="Matches Total"   value={stats.total_matches} color="text-sky-400" />
+            <StatCard label="Results Entered" value={stats.finished}      color="text-emerald-400" />
+            <StatCard label="Predictions"     value={stats.total_preds}   color="text-purple-400" />
+          </div>
+          {stats.finished > 0 && (
+            <RecalculateButton adminKey={key} onDone={() => load(key)} />
+          )}
         </div>
       )}
 

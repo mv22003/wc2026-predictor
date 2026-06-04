@@ -42,6 +42,8 @@ export const api = {
       headers: { 'x-admin-key': key },
       body: { home_score: hs, away_score: as_ },
     }),
+  recalculateAll: (key) =>
+    req('/admin/recalculate', { method: 'POST', headers: { 'x-admin-key': key } }),
   resetResult: (key, id) =>
     req(`/admin/matches/${id}/result`, {
       method: 'DELETE',
