@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -17,6 +17,12 @@ function PtsBadge({ pts }) {
   return <span className={`${base} pts-zero`}>0</span>;
 }
 
+function SortIcon({ state }) {
+  if (state === 'desc') return <span className="text-white">↓</span>;
+  if (state === 'asc')  return <span className="text-white">↑</span>;
+  return <span className="text-gray-600">↕</span>;
+}
+
 function PredictionBreakdown({ name, cache, setCache }) {
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +38,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
   if (loading) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
+        <td colSpan={7} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
       </tr>
     );
   }
@@ -42,22 +48,22 @@ function PredictionBreakdown({ name, cache, setCache }) {
   if (predictions.length === 0) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">No finished matches yet.</td>
+        <td colSpan={7} className="px-6 py-3 text-xs text-gray-500">No finished matches yet.</td>
       </tr>
     );
   }
 
   const rowTint = (pts) => {
-    if (pts === 5) return 'bg-emerald-900/20 border-l-2 border-emerald-400';
-    if (pts === 3) return 'bg-emerald-900/10 border-l-2 border-emerald-600';
-    if (pts === 1) return 'bg-amber-900/15 border-l-2 border-amber-500';
-    return 'bg-red-900/10 border-l-2 border-red-600';
+    if (pts === 5) return 'bg-emerald-900/20 border-l-2 border-l-emerald-400 border-b border-b-brand-border/30 last:border-b-0';
+    if (pts === 3) return 'bg-emerald-900/10 border-l-2 border-l-emerald-600 border-b border-b-brand-border/30 last:border-b-0';
+    if (pts === 1) return 'bg-amber-900/15 border-l-2 border-l-amber-500 border-b border-b-brand-border/30 last:border-b-0';
+    return 'bg-red-900/10 border-l-2 border-l-red-600 border-b border-b-brand-border/30 last:border-b-0';
   };
 
   return (
     <tr className="bg-brand-surface/50">
-      <td colSpan={8} className="px-4 py-2">
-        <div className="flex flex-col divide-y divide-brand-border/30">
+      <td colSpan={7} className="px-4 py-2">
+        <div className="flex flex-col">
           {predictions.map(p => (
             <div key={p.id} className={`flex items-center gap-3 px-3 py-2 text-xs ${rowTint(p.points)}`}>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -85,6 +91,7 @@ export default function Leaderboard() {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(null);
   const [predCache, setPredCache] = useState({});
+  const [sort, setSort] = useState({ key: null, dir: null });
 
   useEffect(() => {
     api.getLeaderboard()
@@ -98,9 +105,27 @@ export default function Leaderboard() {
     return () => clearInterval(t);
   }, []);
 
+  const handleSort = (col) => {
+    setSort(prev => {
+      if (prev.key !== col) return { key: col, dir: 'desc' };
+      if (prev.dir === 'desc') return { key: col, dir: 'asc' };
+      return { key: null, dir: null };
+    });
+  };
+
   const filtered = board.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
 
+  const sorted = sort.key
+    ? [...filtered].sort((a, b) => {
+        const av = Number(a[sort.key] ?? 0);
+        const bv = Number(b[sort.key] ?? 0);
+        return sort.dir === 'desc' ? bv - av : av - bv;
+      })
+    : filtered;
+
   const toggle = (id) => setExpanded(prev => prev === id ? null : id);
+
+  const colSort = (col) => sort.key === col ? sort.dir : null;
 
   if (loading) {
     return <div className="flex items-center justify-center h-48 text-gray-400">Loading…</div>;
@@ -153,31 +178,62 @@ export default function Leaderboard() {
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
-              <th className="px-4 py-3 text-center">Played</th>
-              <th className="px-4 py-3 text-center hidden sm:table-cell">
-                <span className="tag pts-exact px-2">+5</span>
+              <th
+                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
+                onClick={() => handleSort('pts_5')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  <span className="tag pts-exact px-2">+5</span>
+                  <SortIcon state={colSort('pts_5')} />
+                </span>
               </th>
-              <th className="px-4 py-3 text-center hidden sm:table-cell">
-                <span className="tag pts-correct px-2">+3</span>
+              <th
+                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
+                onClick={() => handleSort('pts_3')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  <span className="tag pts-correct px-2">+3</span>
+                  <SortIcon state={colSort('pts_3')} />
+                </span>
               </th>
-              <th className="px-4 py-3 text-center hidden sm:table-cell">
-                <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 px-2">+1</span>
+              <th
+                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
+                onClick={() => handleSort('pts_1')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 px-2">+1</span>
+                  <SortIcon state={colSort('pts_1')} />
+                </span>
               </th>
-              <th className="px-4 py-3 text-center hidden sm:table-cell">
-                <span className="tag pts-zero px-2">0</span>
+              <th
+                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
+                onClick={() => handleSort('pts_0')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  <span className="tag pts-zero px-2">0</span>
+                  <SortIcon state={colSort('pts_0')} />
+                </span>
               </th>
-              <th className="px-4 py-3 text-right font-bold text-brand-gold">Points</th>
+              <th
+                className="px-4 py-3 text-right font-bold text-brand-gold cursor-pointer select-none hover:opacity-80 transition-opacity"
+                onClick={() => handleSort('total_points')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
+                  Points
+                  <SortIcon state={colSort('total_points')} />
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {sorted.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500">
+                <td colSpan={7} className="text-center py-10 text-gray-500">
                   {search ? 'No player found.' : 'No predictions submitted yet. Be the first!'}
                 </td>
               </tr>
             ) : (
-              filtered.map((row, idx) => (
+              sorted.map((row, idx) => (
                 <>
                   <tr
                     key={row.id}
@@ -195,7 +251,6 @@ export default function Leaderboard() {
                         <span className={`text-gray-600 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-400">{row.matches_played ?? 0}</td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
                       <span className="tag pts-exact">{row.pts_5 ?? 0}</span>
                     </td>
