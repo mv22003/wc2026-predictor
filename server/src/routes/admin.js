@@ -304,7 +304,7 @@ router.post('/matches/:id/result', adminAuth, async (req, res) => {
 router.put('/matches/:id/result', adminAuth, async (req, res) => {
   try {
     const db = getDb();
-    const { home_score, away_score, status } = req.body;
+    const { home_score, away_score, status, home_scorers, away_scorers } = req.body;
     const matchId = parseInt(req.params.id, 10);
 
     const hs = parseInt(home_score, 10);
@@ -319,8 +319,8 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
     try {
       await client.query('BEGIN');
       await client.query(
-        'UPDATE matches SET home_score = $1, away_score = $2, status = $3 WHERE id = $4',
-        [hs, as_, status || 'finished', matchId]
+        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = $4, away_scorers = $5 WHERE id = $6',
+        [hs, as_, status || 'finished', home_scorers ?? null, away_scorers ?? null, matchId]
       );
       for (const p of preds) {
         await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
@@ -337,6 +337,23 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
 
     if (savedPut?.phase === 'group') await recalcR32Teams(db);
 
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Set scorer strings only (no score/points recalc)
+router.patch('/matches/:id/scorers', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const matchId = parseInt(req.params.id, 10);
+    const { home_scorers, away_scorers } = req.body;
+    await db.query(
+      'UPDATE matches SET home_scorers = $1, away_scorers = $2 WHERE id = $3',
+      [home_scorers ?? null, away_scorers ?? null, matchId]
+    );
     res.json({ success: true });
   } catch (err) {
     console.error(err);
