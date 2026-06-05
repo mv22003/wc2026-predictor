@@ -355,9 +355,9 @@ function CalendarTab({ matches, groups }) {
 }
 
 // ─── Bracket tab ───────────────────────────────────────────────────────────────
-const CW  = 104;
+const CW  = 88;
 const CH  = 48;
-const GAP = 34;
+const GAP = 28;
 const COL = CW + GAP;
 const SH  = 68;
 const H   = 8 * SH;
