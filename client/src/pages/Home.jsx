@@ -26,46 +26,89 @@ function MiniLeaderRow({ row }) {
   );
 }
 
+function parseScorers(raw) {
+  if (!raw || raw === 'null') return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map(s => ({ name: s.name ?? String(s), minute: s.minute ?? null }));
+  } catch {}
+  return [{ name: raw, minute: null }];
+}
+
+function parseMinute(m) {
+  if (m == null) return 999;
+  const parts = String(m).split('+');
+  return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
+}
+
 function MatchRow({ match }) {
   const live = match.status === 'live';
   const finished = match.status === 'finished';
   const d = match.match_date ? new Date(match.match_date) : null;
   const dateStr = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBD';
 
+  const homeScorers = parseScorers(match.home_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
+  const awayScorers = parseScorers(match.away_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
+  const showScorers = (live || finished)
+    && homeScorers.length === (match.home_score ?? 0)
+    && awayScorers.length === (match.away_score ?? 0)
+    && (homeScorers.length > 0 || awayScorers.length > 0);
+
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-brand-border last:border-0">
-      <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
-      <div className="flex-1 flex items-center gap-2 min-w-0">
-        <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
-          <span className="truncate text-right">{match.home_team}</span>
-          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
-        </span>
-        <span className="w-12 shrink-0 flex items-center justify-center">
-          {finished ? (
-            <span className="font-black text-brand-gold tabular-nums">{match.home_score}–{match.away_score}</span>
-          ) : live ? (
-            <span className="font-black text-white tabular-nums">{match.home_score}–{match.away_score}</span>
-          ) : (
-            <span className="text-gray-500 text-xs">vs</span>
-          )}
-        </span>
-        <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
-          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
-          <span className="truncate">{match.away_team}</span>
-        </span>
-      </div>
-      {live ? (
-        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 whitespace-nowrap shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
-        </span>
-      ) : (
-        <span className="hidden sm:flex items-center justify-end gap-1.5 shrink-0 w-44">
-          <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
-          <span className="w-7 shrink-0 flex justify-center">
-            {finished && <span className="tag pts-exact text-xs">FT</span>}
+    <div className="py-3 border-b border-brand-border last:border-0">
+      <div className="flex items-center gap-3">
+        <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
+        <div className="flex-1 flex items-center gap-2 min-w-0">
+          <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
+            <span className="truncate text-right">{match.home_team}</span>
+            <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
           </span>
-        </span>
+          <span className="w-12 shrink-0 flex items-center justify-center">
+            {finished ? (
+              <span className="font-black text-brand-gold tabular-nums">{match.home_score}–{match.away_score}</span>
+            ) : live ? (
+              <span className="font-black text-white tabular-nums">{match.home_score}–{match.away_score}</span>
+            ) : (
+              <span className="text-gray-500 text-xs">vs</span>
+            )}
+          </span>
+          <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
+            <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
+            <span className="truncate">{match.away_team}</span>
+          </span>
+        </div>
+        {live ? (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 whitespace-nowrap shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+          </span>
+        ) : (
+          <span className="hidden sm:flex items-center justify-end gap-1.5 shrink-0 w-44">
+            <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
+            <span className="w-7 shrink-0 flex justify-center">
+              {finished && <span className="tag pts-exact text-xs">FT</span>}
+            </span>
+          </span>
+        )}
+      </div>
+
+      {showScorers && (
+        <div className="mt-2 space-y-0.5">
+          {Array.from({ length: Math.max(homeScorers.length, awayScorers.length) }, (_, i) => (
+            <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
+              <span className="w-16 shrink-0" />
+              <div className="flex-1 flex items-start gap-2">
+                <span className="flex-1 text-right leading-snug">
+                  {homeScorers[i] ? `${homeScorers[i].name}${homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''} ⚽️` : ''}
+                </span>
+                <span className="w-12 shrink-0" />
+                <span className="flex-1 leading-snug">
+                  {awayScorers[i] ? `⚽️ ${awayScorers[i].name}${awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}` : ''}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -94,6 +137,8 @@ const DEMO_LIVE = {
   away_team: 'USA',    away_code: 'USA',
   status: 'live', live_minute: 67,
   home_score: 2, away_score: 1,
+  home_scorers: '[{"name":"Jiménez","minute":"23"},{"name":"Vega","minute":"58"}]',
+  away_scorers: '[{"name":"Pulisic","minute":"45+2"}]',
   group_name: 'A',
 };
 
