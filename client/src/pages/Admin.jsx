@@ -410,29 +410,27 @@ function StatCard({ label, value, color = 'text-brand-gold' }) {
   );
 }
 
-// "Mbappé 34, Giroud 67" ↔ JSON scorer array
-function scorersToText(raw) {
-  if (!raw || raw === 'null') return '';
+// JSON scorer array ↔ ["Mbappé 34", "Giroud 67"]
+function scorersJsonToArray(raw) {
+  if (!raw || raw === 'null') return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed.map(s => s.minute != null ? `${s.name} ${s.minute}` : s.name).join(', ');
+      return parsed.map(s => s.minute != null ? `${s.name} ${s.minute}` : s.name);
     }
   } catch {}
-  return raw;
+  return raw ? [raw] : [];
 }
 
-function textToScorers(text) {
-  if (!text.trim()) return null;
-  const parts = text.split(',').map(s => s.trim()).filter(Boolean);
-  const entries = parts.map(part => {
-    const tokens = part.split(/\s+/);
+function arrayToScorersJson(arr) {
+  const entries = arr.filter(s => s.trim()).map(s => {
+    const tokens = s.trim().split(/\s+/);
     const last = tokens[tokens.length - 1];
     const minute = /^\d+$/.test(last) ? parseInt(last, 10) : null;
-    const name = minute !== null ? tokens.slice(0, -1).join(' ') : part;
+    const name = minute !== null ? tokens.slice(0, -1).join(' ') : s.trim();
     return minute !== null ? { name, minute } : { name };
   });
-  return JSON.stringify(entries);
+  return entries.length > 0 ? JSON.stringify(entries) : null;
 }
 
 function ResultRow({ match, adminKey, onSaved }) {
@@ -442,13 +440,15 @@ function ResultRow({ match, adminKey, onSaved }) {
   const [saved, setSaved]   = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [scorersOpen, setScorersOpen]       = useState(false);
-  const [homeScorersInput, setHomeScorers]  = useState(() => scorersToText(match.home_scorers));
-  const [awayScorersInput, setAwayScorers]  = useState(() => scorersToText(match.away_scorers));
-  const [scorerSaving, setScorerSaving]     = useState(false);
-  const [scorerSaved,  setScorerSaved]      = useState(false);
+  const [scorersOpen, setScorersOpen]   = useState(false);
+  const [homeScorers, setHomeScorers]   = useState(() => scorersJsonToArray(match.home_scorers));
+  const [awayScorers, setAwayScorers]   = useState(() => scorersJsonToArray(match.away_scorers));
+  const [scorerSaving, setScorerSaving] = useState(false);
+  const [scorerSaved,  setScorerSaved]  = useState(false);
   const isFinished = match.status === 'finished';
   const isLive     = match.status === 'live';
+  const homeCount  = (Number.isInteger(+hs) && +hs >= 0) ? +hs : 0;
+  const awayCount  = (Number.isInteger(+as_) && +as_ >= 0) ? +as_ : 0;
 
   async function save() {
     if (hs === '' || as_ === '') return;
@@ -474,8 +474,8 @@ function ResultRow({ match, adminKey, onSaved }) {
     try {
       await api.updateScorers(
         adminKey, match.id,
-        textToScorers(homeScorersInput),
-        textToScorers(awayScorersInput),
+        arrayToScorersJson(homeScorers.slice(0, homeCount)),
+        arrayToScorersJson(awayScorers.slice(0, awayCount)),
       );
       setScorerSaved(true);
       setTimeout(() => setScorerSaved(false), 2000);
@@ -580,33 +580,53 @@ function ResultRow({ match, adminKey, onSaved }) {
     {scorersOpen && (isFinished || isLive) && (
       <tr className="border-b border-brand-border/30 bg-brand-navy/20">
         <td colSpan={7} className="px-4 py-3">
-          <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">
-                {match.home_team} scorers
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Mbappé 34, Giroud 67"
-                className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
-                           focus:border-brand-gold focus:outline-none"
-                value={homeScorersInput}
-                onChange={e => setHomeScorers(e.target.value)}
-              />
+          <div className="flex gap-6">
+            <div className="flex-1 min-w-0 space-y-2">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{match.home_team}</p>
+              {homeCount === 0
+                ? <p className="text-xs text-gray-600 italic">No home goals</p>
+                : Array.from({ length: homeCount }, (_, i) => (
+                    <input
+                      key={i}
+                      type="text"
+                      placeholder={`Goal ${i + 1} — e.g. Mbappé 34`}
+                      className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                                 focus:border-brand-gold focus:outline-none"
+                      value={homeScorers[i] ?? ''}
+                      onChange={e => setHomeScorers(prev => {
+                        const next = [...prev];
+                        while (next.length <= i) next.push('');
+                        next[i] = e.target.value;
+                        return next;
+                      })}
+                    />
+                  ))
+              }
             </div>
-            <div className="flex-1">
-              <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">
-                {match.away_team} scorers
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Müller 45"
-                className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
-                           focus:border-brand-gold focus:outline-none"
-                value={awayScorersInput}
-                onChange={e => setAwayScorers(e.target.value)}
-              />
+            <div className="flex-1 min-w-0 space-y-2">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{match.away_team}</p>
+              {awayCount === 0
+                ? <p className="text-xs text-gray-600 italic">No away goals</p>
+                : Array.from({ length: awayCount }, (_, i) => (
+                    <input
+                      key={i}
+                      type="text"
+                      placeholder={`Goal ${i + 1} — e.g. Müller 45`}
+                      className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                                 focus:border-brand-gold focus:outline-none"
+                      value={awayScorers[i] ?? ''}
+                      onChange={e => setAwayScorers(prev => {
+                        const next = [...prev];
+                        while (next.length <= i) next.push('');
+                        next[i] = e.target.value;
+                        return next;
+                      })}
+                    />
+                  ))
+              }
             </div>
+          </div>
+          <div className="flex justify-end mt-3">
             <button
               onClick={saveScorers}
               disabled={scorerSaving}

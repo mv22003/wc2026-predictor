@@ -212,21 +212,22 @@ function parseScorers(raw) {
 }
 
 function ScorerLine({ homeScorers, awayScorers }) {
-  const home = parseScorers(homeScorers);
-  const away = parseScorers(awayScorers);
+  const home = parseScorers(homeScorers).sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
+  const away = parseScorers(awayScorers).sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
   if (home.length === 0 && away.length === 0) return null;
 
-  const fmt = (s) => s.minute != null ? `${s.name} ${s.minute}'` : s.name;
+  const fmt = s => `⚽️ ${s.name}${s.minute != null ? ` ${s.minute}'` : ''}`;
+  const rows = Math.max(home.length, away.length);
 
   return (
-    <div className="flex items-start justify-between gap-4 mt-1.5 px-1 text-xs text-gray-500">
-      <span className="flex-1 text-right leading-snug">
-        {home.map(fmt).join('  ·  ')}
-      </span>
-      <span className="w-20 shrink-0" />
-      <span className="flex-1 leading-snug">
-        {away.map(fmt).join('  ·  ')}
-      </span>
+    <div className="mt-1.5 px-1 space-y-0.5">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
+          <span className="flex-1 text-right leading-snug">{home[i] ? fmt(home[i]) : ''}</span>
+          <span className="w-20 shrink-0" />
+          <span className="flex-1 leading-snug">{away[i] ? fmt(away[i]) : ''}</span>
+        </div>
+      ))}
     </div>
   );
 }
