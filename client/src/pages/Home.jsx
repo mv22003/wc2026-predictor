@@ -51,7 +51,7 @@ function LiveMatchCard({ match, showMinute = false }) {
     && (homeScorers.length > 0 || awayScorers.length > 0);
 
   return (
-    <div className="border-b border-brand-border/40 last:border-0 py-2">
+    <div className="py-2">
       {showMinute && (
         <div className="flex items-center justify-end mb-1 px-1">
           <span className="flex items-center gap-1.5 text-lg font-black text-emerald-400">
@@ -169,7 +169,9 @@ function LiveNowSection({ matches }) {
           </span>
         )}
       </div>
-      {matches.map(m => <LiveMatchCard key={m.id} match={m} showMinute={!showMinuteInHeader} />)}
+      <div className={matches.length > 1 ? 'grid grid-cols-2 gap-3' : ''}>
+        {matches.map(m => <LiveMatchCard key={m.id} match={m} showMinute={!showMinuteInHeader} />)}
+      </div>
     </div>
   );
 }
