@@ -380,25 +380,17 @@ function RecalculateButton({ adminKey, onDone }) {
           onCancel={() => setShowConfirm(false)}
         />
       )}
-      <div className="flex items-center gap-3 bg-brand-card border border-brand-border rounded-xl px-4 py-3">
-        <div className="flex-1">
-          <p className="font-semibold text-sm">Recalculate All Scores</p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {state === 'done' && result
-              ? `Updated ${result.predictions_updated} predictions across ${result.matches_processed} matches`
-              : state === 'error'
-              ? `Error: ${result?.error}`
-              : 'Apply current scoring rules to every finished match'}
-          </p>
-        </div>
-        <button
-          onClick={() => setShowConfirm(true)}
-          disabled={state === 'running'}
-          className="shrink-0 btn-secondary text-sm disabled:opacity-50"
-        >
+      <button
+        onClick={() => setShowConfirm(true)}
+        disabled={state === 'running'}
+        className="card flex flex-col items-center justify-center gap-1 px-5 shrink-0 text-center
+                   hover:bg-white/5 transition-colors disabled:opacity-50 cursor-pointer"
+      >
+        <span className="text-xs font-bold text-gray-300 whitespace-nowrap">
           {state === 'running' ? 'Recalculating…' : state === 'done' ? '✓ Done' : 'Recalculate'}
-        </button>
-      </div>
+        </span>
+        <span className="text-[10px] text-gray-600 whitespace-nowrap">scores</span>
+      </button>
     </>
   );
 }
@@ -845,6 +837,7 @@ export default function Admin() {
   const [stats, setStats]   = useState(null);
   const [matches, setMatches] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [resultsOpen, setResultsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
 
@@ -929,29 +922,39 @@ export default function Admin() {
         </button>
       </div>
 
-      {/* Live sync */}
-      <LiveSyncCard adminKey={key} onDone={() => load(key)} />
+      {/* Live sync + recalculate */}
+      <div className="flex gap-4 items-stretch">
+        <div className="flex-1 min-w-0">
+          <LiveSyncCard adminKey={key} onDone={() => load(key)} />
+        </div>
+        {stats?.finished > 0 && (
+          <RecalculateButton adminKey={key} onDone={() => load(key)} />
+        )}
+      </div>
 
       {/* Stats */}
       {stats && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatCard label="Players"         value={stats.total_users}   />
-            <StatCard label="Matches Total"   value={stats.total_matches} color="text-sky-400" />
-            <StatCard label="Results Entered" value={stats.finished}      color="text-emerald-400" />
-            <StatCard label="Predictions"     value={stats.total_preds}   color="text-purple-400" />
-          </div>
-          {stats.finished > 0 && (
-            <RecalculateButton adminKey={key} onDone={() => load(key)} />
-          )}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard label="Players"         value={stats.total_users}   />
+          <StatCard label="Matches Total"   value={stats.total_matches} color="text-sky-400" />
+          <StatCard label="Results Entered" value={stats.finished}      color="text-emerald-400" />
+          <StatCard label="Predictions"     value={stats.total_preds}   color="text-purple-400" />
         </div>
       )}
 
       {/* Match results entry */}
       <div className="card p-0 overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-brand-border">
+        <button
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-brand-border hover:bg-white/3 transition-colors"
+          onClick={() => setResultsOpen(o => !o)}
+        >
           <h2 className="font-black text-lg">Match Results</h2>
-          <div className="flex gap-1.5">
+          <span className={`text-gray-500 text-xs transition-transform ${resultsOpen ? 'rotate-90' : ''}`}>▶</span>
+        </button>
+
+        {resultsOpen && (
+          <>
+          <div className="flex gap-1.5 px-4 py-3 border-b border-brand-border">
             {['all', 'pending', 'done'].map(f => (
               <button
                 key={f}
@@ -966,41 +969,41 @@ export default function Admin() {
               </button>
             ))}
           </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-brand-border text-gray-500 text-xs uppercase tracking-wider bg-brand-navy/50">
-                <th className="px-3 py-2 text-left">Grp</th>
-                <th className="px-3 py-2 text-left hidden md:table-cell">Date</th>
-                <th className="px-3 py-2 text-right">Home</th>
-                <th className="px-3 py-2 text-center">Score</th>
-                <th className="px-3 py-2 text-left">Away</th>
-                <th className="px-3 py-2 hidden lg:table-cell"></th>
-                <th className="px-3 py-2 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleMatches.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-500">
-                    No matches to show.
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-brand-border text-gray-500 text-xs uppercase tracking-wider bg-brand-navy/50">
+                  <th className="px-3 py-2 text-left">Grp</th>
+                  <th className="px-3 py-2 text-left hidden md:table-cell">Date</th>
+                  <th className="px-3 py-2 text-right">Home</th>
+                  <th className="px-3 py-2 text-center">Score</th>
+                  <th className="px-3 py-2 text-left">Away</th>
+                  <th className="px-3 py-2 hidden lg:table-cell"></th>
+                  <th className="px-3 py-2 text-left">Action</th>
                 </tr>
-              ) : (
-                visibleMatches.map(m => (
-                  <ResultRow
-                    key={m.id}
-                    match={m}
-                    adminKey={key}
-                    onSaved={() => load(key)}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {visibleMatches.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-gray-500">
+                      No matches to show.
+                    </td>
+                  </tr>
+                ) : (
+                  visibleMatches.map(m => (
+                    <ResultRow
+                      key={m.id}
+                      match={m}
+                      adminKey={key}
+                      onSaved={() => load(key)}
+                    />
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          </>
+        )}
       </div>
 
       {/* KO Management */}
@@ -1009,19 +1012,6 @@ export default function Admin() {
       {/* User Predictions */}
       <UserPredictionsPanel adminKey={key} />
 
-      {/* Danger zone */}
-      <details className="card border-red-900/40 cursor-pointer">
-        <summary className="font-bold text-red-400 select-none">Danger Zone</summary>
-        <div className="mt-4 space-y-2 text-sm text-gray-400">
-          <p>These actions are irreversible. Use with extreme caution.</p>
-          <p className="text-xs">
-            To reset all user data via API:<br />
-            <code className="text-red-300 bg-black/30 px-2 py-0.5 rounded">
-              POST /api/admin/reset  body: {'{"confirm":"RESET_ALL_DATA"}'} header: x-admin-key
-            </code>
-          </p>
-        </div>
-      </details>
     </div>
   );
 }
