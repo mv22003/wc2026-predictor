@@ -65,8 +65,8 @@ function LiveMatchCard({ match, showMinute = false }) {
               {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
             </span>
           )}
-          <span className="text-4xl font-black text-white tabular-nums tracking-tight">
-            {match.home_score}–{match.away_score}
+          <span className="text-4xl font-black text-white tabular-nums">
+            {match.home_score} – {match.away_score}
           </span>
         </div>
         <div className="flex-1 flex items-center gap-2 min-w-0">
