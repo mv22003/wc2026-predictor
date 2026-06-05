@@ -58,7 +58,10 @@ function MatchRow({ match }) {
           {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
         </span>
       ) : (
-        <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">{dateStr}</span>
+        <span className="hidden sm:flex items-center gap-1.5 shrink-0">
+          {finished && <span className="tag pts-exact text-xs">FT</span>}
+          <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
+        </span>
       )}
     </div>
   );
