@@ -1,8 +1,15 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 const { getDb } = require('../db');
 const { calculatePoints } = require('../scoring');
 const liveScores = require('../services/liveScores');
+
+const schedule = require(path.join(__dirname, '../../../world-cup-2026-schedule.json'));
+const scheduleDateByNum = {};
+for (const m of schedule.matches) {
+  scheduleDateByNum[m.match_number] = `${m.date}T${m.time_et}:00-04:00`;
+}
 
 function adminAuth(req, res, next) {
   const key = req.headers['x-admin-key'] || req.body?.adminKey || req.query?.key;
@@ -124,7 +131,8 @@ router.post('/matches/bulk', adminAuth, (req, res) => {
         results.push({ error: `Team not found: ${m.home_code} vs ${m.away_code}` });
         continue;
       }
-      const r = insertMatch.run(homeId, awayId, m.match_date, m.venue, m.phase || 'group', m.group_name?.toUpperCase(), m.match_number);
+      const matchDate = m.match_date ?? scheduleDateByNum[m.match_number] ?? null;
+      const r = insertMatch.run(homeId, awayId, matchDate, m.venue, m.phase || 'group', m.group_name?.toUpperCase(), m.match_number);
       results.push({ id: r.lastInsertRowid });
     }
   });

@@ -173,7 +173,7 @@ export default function Home() {
             <h2 className="font-black text-lg">
               {recent.length > 0 ? '✅ Recent Results' : '📅 Upcoming Matches'}
             </h2>
-            <Link to="/matches" className="text-brand-gold text-xs font-semibold hover:underline">
+            <Link to="/live" className="text-brand-gold text-xs font-semibold hover:underline">
               Full Calendar →
             </Link>
           </div>

@@ -1,7 +1,6 @@
-import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import Home        from './pages/Home';
-import Matches     from './pages/Matches';
-import Bracket     from './pages/Bracket';
+import LiveResults from './pages/LiveResults';
 import Predict     from './pages/Predict';
 import Leaderboard from './pages/Leaderboard';
 import Admin       from './pages/Admin';
@@ -28,11 +27,8 @@ function Navbar() {
           <NavLink to="/"           className={({ isActive }) => `nav-link${isActive && loc.pathname === '/' ? ' active' : ''}`}>
             Home
           </NavLink>
-          <NavLink to="/matches"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            Matches
-          </NavLink>
-          <NavLink to="/bracket"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            Bracket
+          <NavLink to="/live"      className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Live Results
           </NavLink>
           <NavLink to="/predict"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Predict
@@ -56,8 +52,9 @@ export default function App() {
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8">
         <Routes>
           <Route path="/"            element={<Home />} />
-          <Route path="/matches"     element={<Matches />} />
-          <Route path="/bracket"     element={<Bracket />} />
+          <Route path="/live"        element={<LiveResults />} />
+          <Route path="/matches"     element={<Navigate to="/live" replace />} />
+          <Route path="/bracket"     element={<Navigate to="/live" replace />} />
           <Route path="/predict"     element={<Predict />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/admin"       element={<Admin />} />
