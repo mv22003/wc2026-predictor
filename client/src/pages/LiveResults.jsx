@@ -511,7 +511,6 @@ function BracketTab({ allMatches }) {
   if (!allTeamsPlayed) {
     return (
       <div className="card text-center py-16">
-        <p className="text-5xl mb-4">⏳</p>
         <p className="font-semibold text-gray-300">Bracket unlocks after every team plays once</p>
         <p className="text-sm text-gray-500 mt-1">
           {teamsWithGame.size} / {allTeams.size} teams have played their first match

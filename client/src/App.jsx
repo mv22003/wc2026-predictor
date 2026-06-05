@@ -1,4 +1,4 @@
-import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, Link, useLocation } from 'react-router-dom';
 import Home        from './pages/Home';
 import LiveResults from './pages/LiveResults';
 import Predict     from './pages/Predict';
@@ -13,14 +13,13 @@ function Navbar() {
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
 
         {/* Logo / Brand */}
-        <div className="flex items-center gap-3 shrink-0">
+        <Link to="/" className="flex items-center gap-3 shrink-0">
           <img
             src="/wc-logos/wc2026-logo-white.svg"
             alt="FIFA World Cup 2026"
             className="h-8 w-auto py-0.5"
           />
-          <p className="hidden sm:block font-black text-base tracking-wide">PREDICTOR</p>
-        </div>
+        </Link>
 
         {/* Nav links */}
         <nav className="flex items-center gap-1">

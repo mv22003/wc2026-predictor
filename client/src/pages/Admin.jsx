@@ -92,7 +92,7 @@ function KOPanel({ matches, adminKey, onRefresh }) {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-black">🏆 Knockout Management</h2>
+      <h2 className="text-lg font-black">Knockout Management</h2>
       <p className="text-xs text-gray-500 -mt-1">
         Create match records for each KO round. Once created, enter scores in the Match Results table above.
       </p>
@@ -275,18 +275,18 @@ function LiveSyncCard({ adminKey, onDone }) {
                       </span>
                     )}
                   </p>
-                : <p className="text-xs text-red-400">⏹ Auto-sync stopped</p>
+                : <p className="text-xs text-red-400">Auto-sync stopped</p>
               }
             </div>
           )}
 
           {result && (
             <p className="text-xs mt-2 text-emerald-400">
-              ✅ {result.updated} match{result.updated !== 1 ? 'es' : ''} updated · {result.skipped} already up to date
+              {result.updated} match{result.updated !== 1 ? 'es' : ''} updated · {result.skipped} already up to date
               {result.errors?.length > 0 && <span className="text-yellow-500 ml-1">· {result.errors.length} warning{result.errors.length !== 1 ? 's' : ''}</span>}
             </p>
           )}
-          {error && <p className="text-xs mt-2 text-red-400">❌ {error}</p>}
+          {error && <p className="text-xs mt-2 text-red-400">{error}</p>}
         </div>
 
         {configured && (
@@ -300,14 +300,14 @@ function LiveSyncCard({ adminKey, onDone }) {
                   : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
               }`}
             >
-              {toggling ? '…' : autoSyncRunning ? '⏹ Stop Auto-sync' : '▶ Start Auto-sync'}
+              {toggling ? '…' : autoSyncRunning ? 'Stop Auto-sync' : 'Start Auto-sync'}
             </button>
             <button
               onClick={sync}
               disabled={syncing || status?.inProgress}
               className="btn-primary text-sm whitespace-nowrap disabled:opacity-50"
             >
-              {syncing || status?.inProgress ? '⏳ Syncing…' : '⚡ Sync Now'}
+              {syncing || status?.inProgress ? 'Syncing…' : 'Sync Now'}
             </button>
           </div>
         )}
@@ -342,9 +342,9 @@ function RecalculateButton({ adminKey, onDone }) {
         <p className="font-semibold text-sm">Recalculate All Scores</p>
         <p className="text-xs text-gray-500 mt-0.5">
           {state === 'done' && result
-            ? `✅ Updated ${result.predictions_updated} predictions across ${result.matches_processed} matches`
+            ? `Updated ${result.predictions_updated} predictions across ${result.matches_processed} matches`
             : state === 'error'
-            ? `❌ ${result?.error}`
+            ? `Error: ${result?.error}`
             : 'Apply current scoring rules to every finished match'}
         </p>
       </div>
@@ -539,7 +539,6 @@ export default function Admin() {
       <div className="max-w-sm mx-auto mt-16">
         <div className="card text-center space-y-5">
           <div>
-            <p className="text-4xl mb-3">🔐</p>
             <h1 className="text-2xl font-black">Admin Panel</h1>
             <p className="text-gray-400 text-sm mt-1">Enter your admin key to continue</p>
           </div>
@@ -571,7 +570,7 @@ export default function Admin() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-black">🔐 Admin Panel</h1>
+        <h1 className="text-2xl font-black">Admin Panel</h1>
         <button
           className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
           onClick={() => { setAuthed(false); setKey(''); localStorage.removeItem(LS_KEY); }}
@@ -659,7 +658,7 @@ export default function Admin() {
 
       {/* Danger zone */}
       <details className="card border-red-900/40 cursor-pointer">
-        <summary className="font-bold text-red-400 select-none">⚠️ Danger Zone</summary>
+        <summary className="font-bold text-red-400 select-none">Danger Zone</summary>
         <div className="mt-4 space-y-2 text-sm text-gray-400">
           <p>These actions are irreversible. Use with extreme caution.</p>
           <p className="text-xs">

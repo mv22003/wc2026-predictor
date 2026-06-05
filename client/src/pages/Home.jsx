@@ -13,7 +13,7 @@ function StatBox({ label, value, color = 'text-brand-gold' }) {
 }
 
 function MiniLeaderRow({ row }) {
-  const medal = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : null;
+  const medal = null;
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-brand-border last:border-0">
       <span className={`w-8 text-center font-bold text-sm rank-${row.rank}`}>
@@ -85,7 +85,7 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <div className="card relative overflow-hidden">
@@ -155,7 +155,7 @@ export default function Home() {
         {/* Leaderboard preview */}
         <div className="card sm:col-span-2">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-black text-lg">🏆 Leaderboard</h2>
+            <h2 className="font-black text-lg">Leaderboard</h2>
             <Link to="/leaderboard" className="text-brand-gold text-xs font-semibold hover:underline">
               Full table →
             </Link>
@@ -171,7 +171,7 @@ export default function Home() {
         <div className="card sm:col-span-3">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-lg">
-              {recent.length > 0 ? '✅ Recent Results' : '📅 Upcoming Matches'}
+              {recent.length > 0 ? 'Recent Results' : 'Upcoming Matches'}
             </h2>
             <Link to="/live" className="text-brand-gold text-xs font-semibold hover:underline">
               Full Calendar →

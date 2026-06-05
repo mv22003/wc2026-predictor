@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 
 function RankBadge({ rank }) {
-  if (rank === 1) return <span className="text-xl">🥇</span>;
-  if (rank === 2) return <span className="text-xl">🥈</span>;
-  if (rank === 3) return <span className="text-xl">🥉</span>;
+  const gold   = 'text-brand-gold font-black text-sm w-8 text-center';
+  const silver = 'text-gray-300 font-black text-sm w-8 text-center';
+  const bronze = 'text-amber-600 font-black text-sm w-8 text-center';
+  if (rank === 1) return <span className={gold}>1st</span>;
+  if (rank === 2) return <span className={silver}>2nd</span>;
+  if (rank === 3) return <span className={bronze}>3rd</span>;
   return <span className="text-gray-400 font-bold text-sm w-8 text-center">{rank}</span>;
 }
 
@@ -37,7 +40,7 @@ export default function Leaderboard() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black">🏆 Leaderboard</h1>
+          <h1 className="text-2xl font-black">Leaderboard</h1>
           <p className="text-gray-400 text-sm">{board.length} players · updates every 30 s</p>
         </div>
         <input
@@ -60,7 +63,9 @@ export default function Leaderboard() {
                 i === 1 ? 'ring-2 ring-brand-gold/50 bg-brand-gold/5 sm:-mt-4' : ''
               }`}
             >
-              <p className="text-3xl mb-1">{i === 1 ? '🥇' : i === 0 ? '🥈' : '🥉'}</p>
+              <p className={`text-lg font-black mb-1 ${i === 1 ? 'text-brand-gold' : i === 0 ? 'text-gray-300' : 'text-amber-600'}`}>
+                {i === 1 ? '1st' : i === 0 ? '2nd' : '3rd'}
+              </p>
               <p className="font-black truncate text-sm">{row.name}</p>
               <p className="text-brand-gold font-black text-2xl">{row.total_points}</p>
               <p className="text-gray-500 text-xs">pts</p>
@@ -77,7 +82,7 @@ export default function Leaderboard() {
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
               <th className="px-4 py-3 text-center">Played</th>
-              <th className="px-4 py-3 text-center hidden sm:table-cell">Exact ⭐</th>
+              <th className="px-4 py-3 text-center hidden sm:table-cell">Exact</th>
               <th className="px-4 py-3 text-center hidden sm:table-cell">Correct</th>
               <th className="px-4 py-3 text-right font-bold text-brand-gold">Points</th>
             </tr>
@@ -120,7 +125,6 @@ export default function Leaderboard() {
 
       {board.length === 0 && (
         <div className="card text-center py-10 text-gray-500">
-          <p className="text-4xl mb-3">🏅</p>
           <p className="font-semibold">Leaderboard is empty</p>
           <p className="text-sm mt-1">Share the link with your group and start predicting!</p>
         </div>

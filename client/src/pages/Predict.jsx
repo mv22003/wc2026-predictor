@@ -44,7 +44,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
         <span className="text-xs text-gray-500">{dateStr}</span>
         {pts !== null && (
           <span className={`tag font-bold px-2 py-0.5 ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
-            {pts === 5 ? '⭐ +5' : pts === 3 ? '+3' : pts === 1 ? '+1' : '0 pts'}
+            {pts === 5 ? '+5' : pts === 3 ? '+3' : pts === 1 ? '+1' : '0 pts'}
           </span>
         )}
         {locked && match.status === 'finished' && (
@@ -178,7 +178,7 @@ export default function Predict() {
     try {
       await api.submitPredictions(name, payload);
       setLocked(true);
-      setStatus({ type: 'success', msg: `🎉 Predictions submitted for ${name}! Good luck!` });
+      setStatus({ type: 'success', msg: `Predictions submitted for ${name}! Good luck!` });
     } catch (err) {
       setStatus({ type: 'error', msg: err.message });
     } finally {
@@ -192,7 +192,6 @@ export default function Predict() {
       <div className="max-w-md mx-auto mt-12">
         <div className="card text-center space-y-6">
           <div>
-            <p className="text-4xl mb-3">⚽</p>
             <h1 className="text-2xl font-black">Enter Your Name</h1>
             <p className="text-gray-400 text-sm mt-2">
               This identifies your predictions. You can only submit once — choose wisely!
@@ -229,7 +228,7 @@ export default function Predict() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black">
-            {locked ? '🔒 Your Predictions' : '📝 Make Your Predictions'}
+            {locked ? 'Your Predictions' : 'Make Your Predictions'}
           </h1>
           <p className="text-gray-400 text-sm mt-0.5">
             Playing as: <span className="text-brand-gold font-bold">{name}</span>
