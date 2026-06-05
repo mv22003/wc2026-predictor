@@ -51,22 +51,20 @@ function LiveMatchCard({ match, showMinute = false }) {
     && (homeScorers.length > 0 || awayScorers.length > 0);
 
   return (
-    <div className="py-2">
-      {showMinute && (
-        <div className="flex items-center justify-end mb-1 px-1">
-          <span className="flex items-center gap-1.5 text-lg font-black text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
-          </span>
-        </div>
-      )}
+    <div className="py-2 px-1">
       {/* teams + score */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           <span className="text-lg font-black text-white text-right leading-tight truncate">{match.home_team}</span>
           <Flag code={match.home_code} name={match.home_team} className="w-12 h-12 shrink-0" />
         </div>
-        <div className="shrink-0 px-2">
+        <div className="shrink-0 px-2 flex flex-col items-center gap-0.5">
+          {showMinute && (
+            <span className="flex items-center gap-1 text-sm font-black text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+            </span>
+          )}
           <span className="text-4xl font-black text-white tabular-nums tracking-tight">
             {match.home_score}–{match.away_score}
           </span>
@@ -77,16 +75,18 @@ function LiveMatchCard({ match, showMinute = false }) {
         </div>
       </div>
 
-      {/* scorers */}
+      {/* scorers — mirror gap-2 + shrink-0 px-2 centre to align with score column */}
       {showScorers && (
         <div className="mt-2 space-y-0.5">
           {Array.from({ length: Math.max(homeScorers.length, awayScorers.length) }, (_, i) => (
-            <div key={i} className="flex items-center text-sm text-gray-400">
-              <span className="flex-1 text-right pr-3">
+            <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
+              <span className="flex-1 text-right">
                 {homeScorers[i] ? `${homeScorers[i].name}${homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''} ⚽️` : ''}
               </span>
-              <span className="w-px bg-brand-border/60 self-stretch shrink-0" />
-              <span className="flex-1 pl-3">
+              <span className="shrink-0 px-2 flex justify-center">
+                <span className="w-px h-3 bg-brand-border/60" />
+              </span>
+              <span className="flex-1">
                 {awayScorers[i] ? `⚽️ ${awayScorers[i].name}${awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}` : ''}
               </span>
             </div>
@@ -169,7 +169,7 @@ function LiveNowSection({ matches }) {
           </span>
         )}
       </div>
-      <div className={matches.length > 1 ? 'grid grid-cols-2 gap-3' : ''}>
+      <div className={matches.length > 1 ? 'grid grid-cols-2 divide-x divide-brand-border/40' : ''}>
         {matches.map(m => <LiveMatchCard key={m.id} match={m} showMinute={!showMinuteInHeader} />)}
       </div>
     </div>
