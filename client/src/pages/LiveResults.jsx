@@ -313,9 +313,9 @@ function CalendarTab({ matches, groups }) {
 }
 
 // ─── Bracket tab ───────────────────────────────────────────────────────────────
-const CW  = 78;
+const CW  = 104;
 const CH  = 48;
-const GAP = 26;
+const GAP = 34;
 const COL = CW + GAP;
 const SH  = 68;
 const H   = 8 * SH;
@@ -324,7 +324,7 @@ const L_R32 = 0;
 const L_R16 = L_R32 + COL;
 const L_QF  = L_R16 + COL;
 const L_SF  = L_QF  + COL;
-const MG    = 36;
+const MG    = 46;
 const FINAL = L_SF  + CW + MG;
 const R_SF  = FINAL + CW + MG;
 const R_QF  = R_SF  + COL;
@@ -397,7 +397,7 @@ function BCard({ matchNum, dbByNum, projMap, flip = false }) {
   return (
     <div className={`overflow-hidden rounded border ${dbMatch
         ? 'border-brand-border bg-brand-navy'
-        : 'border-brand-border/40 bg-brand-navy/60'}`}
+        : 'border-brand-border bg-brand-card'}`}
          style={{ width: CW, height: CH }}>
       <Row team={home} score={dbMatch?.home_score} won={homeWon} />
       <div className="border-t border-brand-border/30" />
@@ -524,14 +524,14 @@ function BracketTab({ allMatches }) {
       <p className="text-gray-400 text-sm">
         {koMatches.length > 0
           ? `${koFinished} of ${koMatches.length} knockout matches played`
-          : 'Projected from live standings · updates every 30 s'}
+          : 'Projected from live standings'}
       </p>
       <div className="overflow-x-auto pb-4">
-        <div style={{ width: TW, minWidth: TW }}>
+        <div style={{ width: TW, minWidth: TW }} className="mx-auto">
           <div className="relative mb-2" style={{ height: 18 }}>
             {BRACKET_LABELS.map(({ label, x }, i) => (
               <span key={i}
-                className="absolute text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center"
+                className="absolute flex justify-center text-[10px] font-bold text-gray-500 uppercase tracking-wider"
                 style={{ left: x, width: CW }}>
                 {label}
               </span>

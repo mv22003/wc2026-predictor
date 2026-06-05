@@ -10,7 +10,7 @@ function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-brand-border bg-brand-navy/95 backdrop-blur">
-      <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
 
         {/* Logo / Brand */}
         <Link to="/" className="flex items-center gap-3 shrink-0">
@@ -48,7 +48,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
         <Routes>
           <Route path="/"            element={<Home />} />
           <Route path="/live"        element={<LiveResults />} />

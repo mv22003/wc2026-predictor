@@ -4,9 +4,9 @@ import Flag from '../components/Flag';
 import { R32_SLOTS, LATE_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
 
 // ── Layout constants ──────────────────────────────────────────────────────────
-const CW  = 78;   // card width
+const CW  = 104;  // card width
 const CH  = 48;   // card height (2 × 24px rows)
-const GAP = 26;   // horizontal gap between rounds
+const GAP = 34;   // horizontal gap between rounds
 const COL = CW + GAP;
 const SH  = 68;   // slot height for one R32 row
 const H   = 8 * SH;
@@ -15,7 +15,7 @@ const L_R32 = 0;
 const L_R16 = L_R32 + COL;
 const L_QF  = L_R16 + COL;
 const L_SF  = L_QF  + COL;
-const MG    = 36;
+const MG    = 46;
 const FINAL = L_SF  + CW + MG;
 const R_SF  = FINAL + CW + MG;
 const R_QF  = R_SF  + COL;
@@ -256,7 +256,7 @@ export default function Bracket() {
         </div>
       ) : (
         <div className="overflow-x-auto pb-4">
-          <div style={{ width: TW, minWidth: TW }}>
+          <div style={{ width: TW, minWidth: TW }} className="mx-auto">
             <div className="relative mb-2" style={{ height: 18 }}>
               {LABELS.map(({ label, x }, i) => (
                 <span key={i}
