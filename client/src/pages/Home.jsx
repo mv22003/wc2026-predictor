@@ -60,7 +60,9 @@ function MatchRow({ match }) {
       ) : (
         <span className="hidden sm:flex items-center gap-1.5 shrink-0">
           <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
-          {finished && <span className="tag pts-exact text-xs">FT</span>}
+          <span className="w-7 flex justify-center">
+            {finished && <span className="tag pts-exact text-xs">FT</span>}
+          </span>
         </span>
       )}
     </div>
