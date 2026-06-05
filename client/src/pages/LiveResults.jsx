@@ -218,9 +218,10 @@ function parseMinute(m) {
   return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
 }
 
-function ScorerLine({ homeScorers, awayScorers }) {
+function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
   const home = parseScorers(homeScorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   const away = parseScorers(awayScorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
+  if (home.length !== homeScore || away.length !== awayScore) return null;
   if (home.length === 0 && away.length === 0) return null;
 
   const fmtHome = s => `${s.name}${s.minute != null ? ` ${s.minute}'` : ''} ⚽️`;
@@ -296,7 +297,12 @@ function MatchRow({ match }) {
             </div>
           </div>
           {(finished || live) && (
-            <ScorerLine homeScorers={match.home_scorers} awayScorers={match.away_scorers} />
+            <ScorerLine
+              homeScorers={match.home_scorers}
+              awayScorers={match.away_scorers}
+              homeScore={match.home_score ?? 0}
+              awayScore={match.away_score ?? 0}
+            />
           )}
           {venue && (
             <div className="mt-3 flex justify-center">
