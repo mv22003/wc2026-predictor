@@ -10,10 +10,11 @@ function RankBadge({ rank }) {
 }
 
 function PtsBadge({ pts }) {
-  if (pts === 5) return <span className="tag pts-exact font-bold px-1.5">+5</span>;
-  if (pts === 3) return <span className="tag pts-correct font-bold px-1.5">+3</span>;
-  if (pts === 1) return <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 font-bold px-1.5">+1</span>;
-  return <span className="tag pts-zero font-bold px-1.5">0</span>;
+  const base = 'tag font-bold text-center w-8 shrink-0';
+  if (pts === 5) return <span className={`${base} pts-exact`}>+5</span>;
+  if (pts === 3) return <span className={`${base} pts-correct`}>+3</span>;
+  if (pts === 1) return <span className={`${base} bg-amber-800/30 text-amber-500 border border-amber-700/30`}>+1</span>;
+  return <span className={`${base} pts-zero`}>0</span>;
 }
 
 function PredictionBreakdown({ name, cache, setCache }) {
@@ -47,10 +48,10 @@ function PredictionBreakdown({ name, cache, setCache }) {
   }
 
   const rowTint = (pts) => {
-    if (pts === 5) return 'bg-emerald-900/20 border-l-2 border-emerald-500/50';
-    if (pts === 3) return 'bg-emerald-900/10 border-l-2 border-emerald-700/40';
-    if (pts === 1) return 'bg-amber-900/15 border-l-2 border-amber-600/40';
-    return 'bg-red-900/10 border-l-2 border-red-800/30';
+    if (pts === 5) return 'bg-emerald-900/20 border-l-2 border-emerald-400';
+    if (pts === 3) return 'bg-emerald-900/10 border-l-2 border-emerald-600';
+    if (pts === 1) return 'bg-amber-900/15 border-l-2 border-amber-500';
+    return 'bg-red-900/10 border-l-2 border-red-600';
   };
 
   return (
@@ -59,14 +60,14 @@ function PredictionBreakdown({ name, cache, setCache }) {
         <div className="flex flex-col divide-y divide-brand-border/30">
           {predictions.map(p => (
             <div key={p.id} className={`flex items-center gap-3 px-3 py-2 text-xs ${rowTint(p.points)}`}>
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
                 <span className="font-semibold text-gray-300">{p.home_code}</span>
                 <span className="text-gray-600">vs</span>
                 <span className="font-semibold text-gray-300">{p.away_code}</span>
                 <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
               </div>
-              <span className="font-mono text-gray-500 shrink-0">{p.pred_home}–{p.pred_away}</span>
+              <span className="font-mono text-gray-500 shrink-0 ml-auto">{p.pred_home}–{p.pred_away}</span>
               <span className="text-gray-600 shrink-0">→</span>
               <span className={`font-mono font-bold shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-600'}`}>{p.home_score}–{p.away_score}</span>
               <PtsBadge pts={p.points} />
