@@ -49,17 +49,22 @@ function PredictionBreakdown({ name, cache, setCache }) {
   return (
     <tr className="bg-brand-surface/50">
       <td colSpan={8} className="px-4 py-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {predictions.map(p => (
-            <div key={p.id} className="flex items-center gap-1.5 text-xs min-w-0">
-              <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
-              <span className="text-gray-300 font-medium w-6 text-right shrink-0">{p.home_code}</span>
-              <span className="font-mono text-white shrink-0">{p.pred_home}–{p.pred_away}</span>
-              <span className="text-gray-600 shrink-0">→</span>
-              <span className={`font-mono shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-500'}`}>{p.home_score}–{p.away_score}</span>
-              <span className="text-gray-300 font-medium w-6 shrink-0">{p.away_code}</span>
-              <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
-              <PtsBadge pts={p.points} />
+            <div key={p.id} className="bg-brand-card/60 rounded-lg px-2.5 py-2 flex flex-col gap-1">
+              <div className="flex items-center gap-1 text-xs text-gray-400">
+                <Flag code={p.home_code} name={p.home_team} className="w-3.5 h-3.5 shrink-0" />
+                <span className="font-medium">{p.home_code}</span>
+                <span className="text-gray-600 mx-0.5">vs</span>
+                <span className="font-medium">{p.away_code}</span>
+                <Flag code={p.away_code} name={p.away_team} className="w-3.5 h-3.5 shrink-0" />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="font-mono text-gray-500">{p.pred_home}–{p.pred_away}</span>
+                <span className="text-gray-700">→</span>
+                <span className={`font-mono font-bold ${p.points > 0 ? 'text-white' : 'text-gray-600'}`}>{p.home_score}–{p.away_score}</span>
+                <PtsBadge pts={p.points} />
+              </div>
             </div>
           ))}
         </div>
