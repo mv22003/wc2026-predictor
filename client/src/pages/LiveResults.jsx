@@ -460,8 +460,14 @@ function BracketTab({ allMatches }) {
   const dbByNum = {};
   for (const m of allMatches) dbByNum[m.match_number] = m;
 
-  const groupStarted = groupMatches.some(m => m.status === 'finished');
-  const koFinished   = koMatches.filter(m => m.status === 'finished').length;
+  const teamsWithGame = new Set();
+  for (const m of groupMatches.filter(m => m.status === 'finished')) {
+    teamsWithGame.add(m.home_team);
+    teamsWithGame.add(m.away_team);
+  }
+  const allTeams = new Set(groupMatches.flatMap(m => [m.home_team, m.away_team]));
+  const allTeamsPlayed = allTeams.size > 0 && teamsWithGame.size >= allTeams.size;
+  const koFinished     = koMatches.filter(m => m.status === 'finished').length;
 
   const best3rdMap = resolveBest3rdSlots(byGroup) || {};
   const projMap    = {};
@@ -502,12 +508,14 @@ function BracketTab({ allMatches }) {
   addRound(RIGHT.r16, R_R16, yc.r16);
   addRound(RIGHT.r32, R_R32, yc.r32);
 
-  if (!groupStarted) {
+  if (!allTeamsPlayed) {
     return (
       <div className="card text-center py-16">
         <p className="text-5xl mb-4">⏳</p>
-        <p className="font-semibold text-gray-300">Group stage hasn't started yet</p>
-        <p className="text-sm text-gray-500 mt-1">The projected bracket will appear once matches kick off</p>
+        <p className="font-semibold text-gray-300">Bracket unlocks after every team plays once</p>
+        <p className="text-sm text-gray-500 mt-1">
+          {teamsWithGame.size} / {allTeams.size} teams have played their first match
+        </p>
       </div>
     );
   }

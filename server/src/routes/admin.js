@@ -4,11 +4,51 @@ const router = express.Router();
 const { getDb } = require('../db');
 const { calculatePoints } = require('../scoring');
 const liveScores = require('../services/liveScores');
+const { R32_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } = require('../bracketUtils');
 
 const schedule = require(path.join(__dirname, '../../../world-cup-2026-schedule.json'));
 const scheduleDateByNum = {};
 for (const m of schedule.matches) {
   scheduleDateByNum[m.match_number] = `${m.date}T${m.time_et}:00-04:00`;
+}
+
+// After any group result changes, sync pending R32 team assignments from live standings
+function recalcR32Teams(db) {
+  const groupMatches = db.prepare(`
+    SELECT m.*, ht.name AS home_team, ht.code AS home_code,
+                at.name AS away_team,  at.code AS away_code
+    FROM matches m
+    JOIN teams ht ON m.home_team_id = ht.id
+    JOIN teams at ON m.away_team_id = at.id
+    WHERE m.phase = 'group'
+  `).all();
+
+  const groups = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
+  const byGroup = {};
+  for (const g of groups) {
+    byGroup[g] = calcStandings(groupMatches.filter(m => m.group_name === g));
+  }
+
+  const best3rdMap = resolveBest3rdSlots(byGroup) || {};
+  const getTeam    = db.prepare('SELECT id FROM teams WHERE UPPER(code) = UPPER(?) OR name = ? COLLATE NOCASE');
+  const updateTeams = db.prepare(
+    "UPDATE matches SET home_team_id = ?, away_team_id = ? WHERE match_number = ? AND (status IS NULL OR status != 'finished')"
+  );
+
+  db.transaction(() => {
+    for (const [numStr, slots] of Object.entries(R32_SLOTS)) {
+      const num = Number(numStr);
+      const homeTeam = resolveTeam(slots.home, byGroup, {});
+      const awayTeam = slots.away.type === 'best3rd'
+        ? (best3rdMap[num]?.away ?? resolveTeam(slots.away, byGroup, {}))
+        : resolveTeam(slots.away, byGroup, {});
+
+      if (!homeTeam || !awayTeam) continue;
+      const homeId = getTeam.get(homeTeam.code, homeTeam.code)?.id;
+      const awayId = getTeam.get(awayTeam.code, awayTeam.code)?.id;
+      if (homeId && awayId) updateTeams.run(homeId, awayId, num);
+    }
+  })();
 }
 
 function adminAuth(req, res, next) {
@@ -152,6 +192,7 @@ router.post('/matches/:id/result', adminAuth, (req, res) => {
   const hs = parseInt(home_score, 10);
   const as_ = parseInt(away_score, 10);
 
+  const saved = db.prepare("SELECT phase FROM matches WHERE id = ?").get(matchId);
   db.prepare(
     "UPDATE matches SET home_score = ?, away_score = ?, status = 'finished' WHERE id = ?"
   ).run(hs, as_, matchId);
@@ -162,6 +203,8 @@ router.post('/matches/:id/result', adminAuth, (req, res) => {
     for (const p of preds) updatePts.run(calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id);
   });
   tx();
+
+  if (saved?.phase === 'group') recalcR32Teams(db);
 
   res.json({ success: true, match_id: matchId, predictions_updated: preds.length });
 });
@@ -175,6 +218,7 @@ router.put('/matches/:id/result', adminAuth, (req, res) => {
   const hs = parseInt(home_score, 10);
   const as_ = parseInt(away_score, 10);
 
+  const savedPut = db.prepare("SELECT phase FROM matches WHERE id = ?").get(matchId);
   db.prepare(
     'UPDATE matches SET home_score = ?, away_score = ?, status = ? WHERE id = ?'
   ).run(hs, as_, status || 'finished', matchId);
@@ -185,6 +229,8 @@ router.put('/matches/:id/result', adminAuth, (req, res) => {
     for (const p of preds) updatePts.run(calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id);
   });
   tx();
+
+  if (savedPut?.phase === 'group') recalcR32Teams(db);
 
   res.json({ success: true });
 });
