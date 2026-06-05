@@ -159,13 +159,6 @@ export default function Home() {
       {/* ── Live Now ────────────────────────────────────────────────────────── */}
       <LiveNowSection matches={liveMatches} />
 
-      {/* ── Stats ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatBox label="Players" value={stats.participants} />
-        <StatBox label="Matches Played" value={stats.finished} color="text-emerald-400" />
-        <StatBox label="Total Matches" value={stats.total} color="text-sky-400" />
-      </div>
-
       {/* ── Scoring guide ───────────────────────────────────────────────────── */}
       <div className="card">
         <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">How Scoring Works</h2>
