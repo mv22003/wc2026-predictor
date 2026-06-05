@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useBlocker } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -119,6 +119,8 @@ export default function Predict() {
   const [status, setStatus]     = useState(null);  // { type: 'success'|'error', msg }
   const [checking, setChecking] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingNav, setPendingNav] = useState(null);
+  const navigate = useNavigate();
 
   const hasUnsaved = !locked && name && Object.values(preds).some(
     p => p && p.home !== '' && p.home != null && p.away !== '' && p.away != null
@@ -132,8 +134,21 @@ export default function Predict() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsaved]);
 
-  // Block in-app navigation and show modal
-  const blocker = useBlocker(hasUnsaved);
+  // Intercept in-app nav link clicks while there's unsaved data
+  useEffect(() => {
+    if (!hasUnsaved) return;
+    const handler = e => {
+      const anchor = e.target.closest('a[href]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (href && !href.startsWith('/predict')) {
+        e.preventDefault();
+        setPendingNav(href);
+      }
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, [hasUnsaved]);
 
   // Load matches on mount
   useEffect(() => {
@@ -392,13 +407,13 @@ export default function Predict() {
         />
       )}
 
-      {blocker.state === 'blocked' && (
+      {pendingNav && (
         <ConfirmModal
           title="Leave page?"
           message="You have unsaved predictions. If you leave now your progress will be lost."
           confirmLabel="Leave"
-          onConfirm={() => blocker.proceed()}
-          onCancel={() => blocker.reset()}
+          onConfirm={() => { setPendingNav(null); navigate(pendingNav); }}
+          onCancel={() => setPendingNav(null)}
         />
       )}
     </div>
