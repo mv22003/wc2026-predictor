@@ -57,6 +57,12 @@ export const api = {
       method: 'DELETE',
       headers: { 'x-admin-key': key },
     }),
+  updateScorers: (key, id, homeScorers, awayScorers) =>
+    req(`/admin/matches/${id}/scorers`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': key },
+      body: { home_scorers: homeScorers, away_scorers: awayScorers },
+    }),
   bulkTeams:   (key, teams)   => req('/admin/teams/bulk',   { method: 'POST', headers: { 'x-admin-key': key }, body: { teams } }),
   bulkMatches: (key, matches) => req('/admin/matches/bulk', { method: 'POST', headers: { 'x-admin-key': key }, body: { matches } }),
   getUserPredictions: (key, userId) =>

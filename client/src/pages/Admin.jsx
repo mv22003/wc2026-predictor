@@ -410,6 +410,31 @@ function StatCard({ label, value, color = 'text-brand-gold' }) {
   );
 }
 
+// "Mbappé 34, Giroud 67" ↔ JSON scorer array
+function scorersToText(raw) {
+  if (!raw || raw === 'null') return '';
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map(s => s.minute != null ? `${s.name} ${s.minute}` : s.name).join(', ');
+    }
+  } catch {}
+  return raw;
+}
+
+function textToScorers(text) {
+  if (!text.trim()) return null;
+  const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+  const entries = parts.map(part => {
+    const tokens = part.split(/\s+/);
+    const last = tokens[tokens.length - 1];
+    const minute = /^\d+$/.test(last) ? parseInt(last, 10) : null;
+    const name = minute !== null ? tokens.slice(0, -1).join(' ') : part;
+    return minute !== null ? { name, minute } : { name };
+  });
+  return JSON.stringify(entries);
+}
+
 function ResultRow({ match, adminKey, onSaved }) {
   const [hs, setHs] = useState(match.home_score ?? '');
   const [as_, setAs] = useState(match.away_score ?? '');
@@ -417,7 +442,13 @@ function ResultRow({ match, adminKey, onSaved }) {
   const [saved, setSaved]   = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [scorersOpen, setScorersOpen]       = useState(false);
+  const [homeScorersInput, setHomeScorers]  = useState(() => scorersToText(match.home_scorers));
+  const [awayScorersInput, setAwayScorers]  = useState(() => scorersToText(match.away_scorers));
+  const [scorerSaving, setScorerSaving]     = useState(false);
+  const [scorerSaved,  setScorerSaved]      = useState(false);
   const isFinished = match.status === 'finished';
+  const isLive     = match.status === 'live';
 
   async function save() {
     if (hs === '' || as_ === '') return;
@@ -435,6 +466,23 @@ function ResultRow({ match, adminKey, onSaved }) {
       alert('Error: ' + e.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveScorers() {
+    setScorerSaving(true);
+    try {
+      await api.updateScorers(
+        adminKey, match.id,
+        textToScorers(homeScorersInput),
+        textToScorers(awayScorersInput),
+      );
+      setScorerSaved(true);
+      setTimeout(() => setScorerSaved(false), 2000);
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setScorerSaving(false);
     }
   }
 
@@ -512,9 +560,68 @@ function ResultRow({ match, adminKey, onSaved }) {
               {resetting ? '…' : '✕'}
             </button>
           )}
+
+          {(isFinished || isLive) && (
+            <button
+              onClick={() => setScorersOpen(o => !o)}
+              title="Edit goalscorers"
+              className={`px-2 py-1.5 rounded text-xs font-bold transition-all border ${
+                scorersOpen
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                  : 'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20'
+              }`}
+            >
+              ⚽
+            </button>
+          )}
         </div>
       </td>
     </tr>
+    {scorersOpen && (isFinished || isLive) && (
+      <tr className="border-b border-brand-border/30 bg-brand-navy/20">
+        <td colSpan={7} className="px-4 py-3">
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1">
+              <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">
+                {match.home_team} scorers
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Mbappé 34, Giroud 67"
+                className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                           focus:border-brand-gold focus:outline-none"
+                value={homeScorersInput}
+                onChange={e => setHomeScorers(e.target.value)}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1">
+                {match.away_team} scorers
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Müller 45"
+                className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                           focus:border-brand-gold focus:outline-none"
+                value={awayScorersInput}
+                onChange={e => setAwayScorers(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={saveScorers}
+              disabled={scorerSaving}
+              className={`px-3 py-1.5 rounded text-xs font-bold transition-all shrink-0 disabled:opacity-40 ${
+                scorerSaved
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  : 'bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30'
+              }`}
+            >
+              {scorerSaved ? '✓ Saved' : scorerSaving ? '…' : 'Save scorers'}
+            </button>
+          </div>
+        </td>
+      </tr>
+    )}
     {showResetConfirm && (
       <ConfirmModal
         title="Reset Match Result"
