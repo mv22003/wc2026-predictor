@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '../api';
+import Flag from '../components/Flag';
 
 function RankBadge({ rank }) {
   if (rank === 1) return <span className="text-brand-gold font-black text-sm w-8 text-center">1st</span>;
@@ -8,26 +9,57 @@ function RankBadge({ rank }) {
   return <span className="text-gray-400 font-bold text-sm w-8 text-center">{rank}</span>;
 }
 
-function BreakdownRow({ row }) {
-  const categories = [
-    { label: 'Exact scoreline',           pts: 5, count: row.pts_5 ?? 0, cls: 'pts-exact' },
-    { label: 'Correct result + goal diff', pts: 3, count: row.pts_3 ?? 0, cls: 'pts-correct' },
-    { label: 'Correct result',             pts: 1, count: row.pts_1 ?? 0, cls: 'bg-amber-800/30 text-amber-500 border border-amber-700/30' },
-    { label: 'Wrong prediction',           pts: 0, count: row.pts_0 ?? 0, cls: 'pts-zero' },
-  ];
+function PtsBadge({ pts }) {
+  if (pts === 5) return <span className="tag pts-exact font-bold px-1.5">+5</span>;
+  if (pts === 3) return <span className="tag pts-correct font-bold px-1.5">+3</span>;
+  if (pts === 1) return <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 font-bold px-1.5">+1</span>;
+  return <span className="tag pts-zero font-bold px-1.5">0</span>;
+}
+
+function PredictionBreakdown({ name, cache, setCache }) {
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (cache[name]) return;
+    setLoading(true);
+    api.getUser(name)
+      .then(data => setCache(prev => ({ ...prev, [name]: data.predictions ?? [] })))
+      .catch(() => setCache(prev => ({ ...prev, [name]: [] })))
+      .finally(() => setLoading(false));
+  }, [name]);
+
+  if (loading) {
+    return (
+      <tr className="bg-brand-surface/50">
+        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
+      </tr>
+    );
+  }
+
+  const predictions = (cache[name] ?? []).filter(p => p.status === 'finished');
+
+  if (predictions.length === 0) {
+    return (
+      <tr className="bg-brand-surface/50">
+        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">No finished matches yet.</td>
+      </tr>
+    );
+  }
 
   return (
     <tr className="bg-brand-surface/50">
-      <td colSpan={8} className="px-6 py-4">
-        <div className="flex flex-wrap gap-4">
-          {categories.map(({ label, pts, count, cls }) => (
-            <div key={pts} className="flex items-center gap-2">
-              <span className={`tag font-bold px-2 py-0.5 ${cls}`}>{pts > 0 ? `+${pts}` : '0'}</span>
-              <span className="text-sm text-gray-300 font-semibold">{count}×</span>
-              <span className="text-xs text-gray-500">{label}</span>
-              {pts > 0 && (
-                <span className="text-xs text-gray-600">= {count * pts} pts</span>
-              )}
+      <td colSpan={8} className="px-4 py-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+          {predictions.map(p => (
+            <div key={p.id} className="flex items-center gap-1.5 text-xs min-w-0">
+              <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
+              <span className="text-gray-300 font-medium w-6 text-right shrink-0">{p.home_code}</span>
+              <span className="font-mono text-white shrink-0">{p.pred_home}–{p.pred_away}</span>
+              <span className="text-gray-600 shrink-0">→</span>
+              <span className={`font-mono shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-500'}`}>{p.home_score}–{p.away_score}</span>
+              <span className="text-gray-300 font-medium w-6 shrink-0">{p.away_code}</span>
+              <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
+              <PtsBadge pts={p.points} />
             </div>
           ))}
         </div>
@@ -41,6 +73,7 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(null);
+  const [predCache, setPredCache] = useState({});
 
   useEffect(() => {
     api.getLeaderboard()
@@ -139,7 +172,7 @@ export default function Leaderboard() {
                     key={row.id}
                     onClick={() => toggle(row.id)}
                     className={`border-b border-brand-border/50 cursor-pointer hover:bg-white/5 transition-colors ${
-                      expanded === row.id ? 'bg-white/5' : ''
+                      expanded === row.id ? 'bg-white/5 border-brand-border' : ''
                     } ${idx < 3 && !search ? 'bg-brand-gold/3' : ''}`}
                   >
                     <td className="px-4 py-3">
@@ -148,7 +181,7 @@ export default function Leaderboard() {
                     <td className="px-4 py-3 font-semibold">
                       <span className="flex items-center gap-1.5">
                         {row.name}
-                        <span className={`text-gray-600 text-xs transition-transform ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
+                        <span className={`text-gray-600 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center text-gray-400">{row.matches_played ?? 0}</td>
@@ -168,7 +201,14 @@ export default function Leaderboard() {
                       {row.total_points}
                     </td>
                   </tr>
-                  {expanded === row.id && <BreakdownRow key={`${row.id}-breakdown`} row={row} />}
+                  {expanded === row.id && (
+                    <PredictionBreakdown
+                      key={`${row.id}-breakdown`}
+                      name={row.name}
+                      cache={predCache}
+                      setCache={setPredCache}
+                    />
+                  )}
                 </>
               ))
             )}
