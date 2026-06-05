@@ -27,6 +27,8 @@ function MiniLeaderRow({ row }) {
 }
 
 function MatchRow({ match }) {
+  const live = match.status === 'live';
+  const finished = match.status === 'finished';
   const d = match.match_date ? new Date(match.match_date) : null;
   const dateStr = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBD';
 
@@ -34,21 +36,47 @@ function MatchRow({ match }) {
     <div className="flex items-center gap-3 py-3 border-b border-brand-border last:border-0">
       <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
       <div className="flex-1 flex items-center gap-2 min-w-0">
-        <span className="flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0">
+        <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
           <span className="truncate text-right">{match.home_team}</span>
           <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
         </span>
-        {match.status === 'finished' ? (
+        {finished ? (
           <span className="font-black text-brand-gold shrink-0 tabular-nums">{match.home_score}–{match.away_score}</span>
+        ) : live ? (
+          <span className="font-black text-white shrink-0 tabular-nums">{match.home_score}–{match.away_score}</span>
         ) : (
           <span className="text-gray-500 text-xs shrink-0">vs</span>
         )}
-        <span className="flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0">
+        <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
           <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
           <span className="truncate">{match.away_team}</span>
         </span>
       </div>
-      <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">{dateStr}</span>
+      {live ? (
+        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+        </span>
+      ) : (
+        <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">{dateStr}</span>
+      )}
+    </div>
+  );
+}
+
+function LiveNowSection({ matches }) {
+  if (matches.length === 0) return null;
+  return (
+    <div className="card border border-emerald-700/40 bg-emerald-900/10">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+        <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
+        <span className="text-xs text-emerald-600 font-semibold">{matches.length} match{matches.length !== 1 ? 'es' : ''} in progress</span>
+        <Link to="/results" className="ml-auto text-emerald-500 text-xs font-semibold hover:underline">
+          Full view →
+        </Link>
+      </div>
+      {matches.map(m => <MatchRow key={m.id} match={m} />)}
     </div>
   );
 }
@@ -59,7 +87,7 @@ export default function Home() {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function load() {
     Promise.all([api.getLeaderboard(), api.getMatches()])
       .then(([lb, mts]) => {
         setLeaderboard(lb);
@@ -70,11 +98,18 @@ export default function Home() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 30_000);
+    return () => clearInterval(t);
   }, []);
 
-  const upcoming = matches.filter(m => m.status === 'upcoming').slice(0, 6);
-  const recent   = matches.filter(m => m.status === 'finished').slice(-6).reverse();
-  const top5     = leaderboard.slice(0, 10);
+  const liveMatches = matches.filter(m => m.status === 'live');
+  const upcoming    = matches.filter(m => m.status === 'upcoming').slice(0, 6);
+  const recent      = matches.filter(m => m.status === 'finished').slice(-6).reverse();
+  const top5        = leaderboard.slice(0, 10);
 
   if (loading) {
     return (
@@ -118,6 +153,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* ── Live Now ────────────────────────────────────────────────────────── */}
+      <LiveNowSection matches={liveMatches} />
 
       {/* ── Stats ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
