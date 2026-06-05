@@ -139,7 +139,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                 </div>
                 <div className="w-16 shrink-0 flex items-center justify-center">
                   {m.status === 'finished' ? (
-                    <span className="font-black text-brand-gold text-sm tabular-nums">{m.home_score}–{m.away_score}</span>
+                    <span className="font-black text-brand-gold text-sm tabular-nums">{m.home_score} – {m.away_score}</span>
                   ) : (
                     <span className="text-xs text-gray-600">
                       {m.match_date ? new Date(m.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'TBD'}
