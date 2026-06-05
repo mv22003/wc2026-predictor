@@ -40,13 +40,15 @@ function MatchRow({ match }) {
           <span className="truncate text-right">{match.home_team}</span>
           <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
         </span>
-        {finished ? (
-          <span className="font-black text-brand-gold shrink-0 tabular-nums">{match.home_score}–{match.away_score}</span>
-        ) : live ? (
-          <span className="font-black text-white shrink-0 tabular-nums">{match.home_score}–{match.away_score}</span>
-        ) : (
-          <span className="text-gray-500 text-xs shrink-0">vs</span>
-        )}
+        <span className="w-12 shrink-0 flex items-center justify-center">
+          {finished ? (
+            <span className="font-black text-brand-gold tabular-nums">{match.home_score}–{match.away_score}</span>
+          ) : live ? (
+            <span className="font-black text-white tabular-nums">{match.home_score}–{match.away_score}</span>
+          ) : (
+            <span className="text-gray-500 text-xs">vs</span>
+          )}
+        </span>
         <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
           <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
           <span className="truncate">{match.away_team}</span>
@@ -58,9 +60,9 @@ function MatchRow({ match }) {
           {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
         </span>
       ) : (
-        <span className="hidden sm:flex items-center gap-1.5 shrink-0">
+        <span className="hidden sm:flex items-center justify-end gap-1.5 shrink-0 w-44">
           <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
-          <span className="w-7 flex justify-center">
+          <span className="w-7 shrink-0 flex justify-center">
             {finished && <span className="tag pts-exact text-xs">FT</span>}
           </span>
         </span>
