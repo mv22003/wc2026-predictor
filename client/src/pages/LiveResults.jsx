@@ -137,7 +137,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   </span>
                   <Flag code={m.home_code} name={m.home_team} className="w-5 h-5 shrink-0" />
                 </div>
-                <div className="w-16 text-center shrink-0">
+                <div className="w-16 shrink-0 flex items-center justify-center">
                   {m.status === 'finished' ? (
                     <span className="font-black text-brand-gold text-sm tabular-nums">{m.home_score}–{m.away_score}</span>
                   ) : (
@@ -227,7 +227,7 @@ function MatchRow({ match }) {
               </span>
               <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
             </div>
-            <div className="w-20 shrink-0 text-center">
+            <div className="w-20 shrink-0 flex items-center justify-center">
               {finished ? (
                 <span className="font-black text-brand-gold text-lg tabular-nums">
                   {match.home_score} – {match.away_score}
