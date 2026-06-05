@@ -410,26 +410,29 @@ function StatCard({ label, value, color = 'text-brand-gold' }) {
   );
 }
 
-// JSON scorer array ↔ ["Mbappé 34", "Giroud 67"]
+// JSON scorer array ↔ [{name, minute}] (minute stored as string to support "45+3")
 function scorersJsonToArray(raw) {
   if (!raw || raw === 'null') return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed.map(s => s.minute != null ? `${s.name} ${s.minute}` : s.name);
+      return parsed.map(s => ({
+        name:   String(s.name ?? s.player ?? s.scorer ?? s),
+        minute: s.minute != null ? String(s.minute) : '',
+      }));
     }
   } catch {}
-  return raw ? [raw] : [];
+  return raw ? [{ name: raw, minute: '' }] : [];
 }
 
 function arrayToScorersJson(arr) {
-  const entries = arr.filter(s => s.trim()).map(s => {
-    const tokens = s.trim().split(/\s+/);
-    const last = tokens[tokens.length - 1];
-    const minute = /^\d+$/.test(last) ? parseInt(last, 10) : null;
-    const name = minute !== null ? tokens.slice(0, -1).join(' ') : s.trim();
-    return minute !== null ? { name, minute } : { name };
-  });
+  const entries = arr
+    .filter(s => s.name.trim())
+    .map(s => {
+      const entry = { name: s.name.trim() };
+      if (s.minute.trim()) entry.minute = s.minute.trim();
+      return entry;
+    });
   return entries.length > 0 ? JSON.stringify(entries) : null;
 }
 
@@ -586,20 +589,34 @@ function ResultRow({ match, adminKey, onSaved }) {
               {homeCount === 0
                 ? <p className="text-xs text-gray-600 italic">No home goals</p>
                 : Array.from({ length: homeCount }, (_, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      placeholder={`Goal ${i + 1} — e.g. Mbappé 34`}
-                      className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
-                                 focus:border-brand-gold focus:outline-none"
-                      value={homeScorers[i] ?? ''}
-                      onChange={e => setHomeScorers(prev => {
-                        const next = [...prev];
-                        while (next.length <= i) next.push('');
-                        next[i] = e.target.value;
-                        return next;
-                      })}
-                    />
+                    <div key={i} className="flex gap-1.5">
+                      <input
+                        type="text"
+                        placeholder={`Player ${i + 1}`}
+                        className="flex-1 min-w-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                                   focus:border-brand-gold focus:outline-none"
+                        value={homeScorers[i]?.name ?? ''}
+                        onChange={e => setHomeScorers(prev => {
+                          const next = [...prev];
+                          while (next.length <= i) next.push({ name: '', minute: '' });
+                          next[i] = { ...next[i], name: e.target.value };
+                          return next;
+                        })}
+                      />
+                      <input
+                        type="text"
+                        placeholder="45+3"
+                        className="w-16 shrink-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                                   focus:border-brand-gold focus:outline-none text-center"
+                        value={homeScorers[i]?.minute ?? ''}
+                        onChange={e => setHomeScorers(prev => {
+                          const next = [...prev];
+                          while (next.length <= i) next.push({ name: '', minute: '' });
+                          next[i] = { ...next[i], minute: e.target.value };
+                          return next;
+                        })}
+                      />
+                    </div>
                   ))
               }
             </div>
@@ -608,20 +625,34 @@ function ResultRow({ match, adminKey, onSaved }) {
               {awayCount === 0
                 ? <p className="text-xs text-gray-600 italic">No away goals</p>
                 : Array.from({ length: awayCount }, (_, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      placeholder={`Goal ${i + 1} — e.g. Müller 45`}
-                      className="w-full bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
-                                 focus:border-brand-gold focus:outline-none"
-                      value={awayScorers[i] ?? ''}
-                      onChange={e => setAwayScorers(prev => {
-                        const next = [...prev];
-                        while (next.length <= i) next.push('');
-                        next[i] = e.target.value;
-                        return next;
-                      })}
-                    />
+                    <div key={i} className="flex gap-1.5">
+                      <input
+                        type="text"
+                        placeholder={`Player ${i + 1}`}
+                        className="flex-1 min-w-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                                   focus:border-brand-gold focus:outline-none"
+                        value={awayScorers[i]?.name ?? ''}
+                        onChange={e => setAwayScorers(prev => {
+                          const next = [...prev];
+                          while (next.length <= i) next.push({ name: '', minute: '' });
+                          next[i] = { ...next[i], name: e.target.value };
+                          return next;
+                        })}
+                      />
+                      <input
+                        type="text"
+                        placeholder="45+3"
+                        className="w-16 shrink-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                                   focus:border-brand-gold focus:outline-none text-center"
+                        value={awayScorers[i]?.minute ?? ''}
+                        onChange={e => setAwayScorers(prev => {
+                          const next = [...prev];
+                          while (next.length <= i) next.push({ name: '', minute: '' });
+                          next[i] = { ...next[i], minute: e.target.value };
+                          return next;
+                        })}
+                      />
+                    </div>
                   ))
               }
             </div>

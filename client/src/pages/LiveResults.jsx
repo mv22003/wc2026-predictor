@@ -211,21 +211,29 @@ function parseScorers(raw) {
   return [{ name: raw, minute: null }];
 }
 
+function parseMinute(m) {
+  if (m == null) return 999;
+  const str = String(m);
+  const parts = str.split('+');
+  return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
+}
+
 function ScorerLine({ homeScorers, awayScorers }) {
-  const home = parseScorers(homeScorers).sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
-  const away = parseScorers(awayScorers).sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
+  const home = parseScorers(homeScorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
+  const away = parseScorers(awayScorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   if (home.length === 0 && away.length === 0) return null;
 
-  const fmt = s => `⚽️ ${s.name}${s.minute != null ? ` ${s.minute}'` : ''}`;
+  const fmtHome = s => `${s.name}${s.minute != null ? ` ${s.minute}'` : ''} ⚽️`;
+  const fmtAway = s => `⚽️ ${s.name}${s.minute != null ? ` ${s.minute}'` : ''}`;
   const rows = Math.max(home.length, away.length);
 
   return (
     <div className="mt-1.5 px-1 space-y-0.5">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
-          <span className="flex-1 text-right leading-snug">{home[i] ? fmt(home[i]) : ''}</span>
+          <span className="flex-1 text-right leading-snug">{home[i] ? fmtHome(home[i]) : ''}</span>
           <span className="w-20 shrink-0" />
-          <span className="flex-1 leading-snug">{away[i] ? fmt(away[i]) : ''}</span>
+          <span className="flex-1 leading-snug">{away[i] ? fmtAway(away[i]) : ''}</span>
         </div>
       ))}
     </div>
