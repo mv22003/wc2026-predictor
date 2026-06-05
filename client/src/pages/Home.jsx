@@ -51,11 +51,10 @@ function LiveMatchCard({ match }) {
     && (homeScorers.length > 0 || awayScorers.length > 0);
 
   return (
-    <div className="border-b border-brand-border/40 last:border-0 py-4">
-      {/* group + minute */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <span className="tag bg-brand-border text-gray-300 text-sm px-3 py-1">{match.group_name}</span>
-        <span className="flex items-center gap-1.5 text-base font-black text-emerald-400">
+    <div className="border-b border-brand-border/40 last:border-0 py-2">
+      {/* minute */}
+      <div className="flex items-center justify-end mb-2 px-1">
+        <span className="flex items-center gap-1.5 text-xl font-black text-emerald-400">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
         </span>
@@ -80,7 +79,7 @@ function LiveMatchCard({ match }) {
 
       {/* scorers */}
       {showScorers && (
-        <div className="mt-4 space-y-1">
+        <div className="mt-2 space-y-0.5">
           {Array.from({ length: Math.max(homeScorers.length, awayScorers.length) }, (_, i) => (
             <div key={i} className="flex items-center text-sm text-gray-400">
               <span className="flex-1 text-right pr-3">
@@ -97,7 +96,7 @@ function LiveMatchCard({ match }) {
 
       {/* venue */}
       {venue && (
-        <div className="mt-4 flex justify-center">
+        <div className="mt-2 flex justify-center">
           <span className="inline-block px-3 py-1 rounded-full bg-white/5 border border-brand-border/60 text-xs text-gray-500 whitespace-nowrap">
             {venue}
           </span>
