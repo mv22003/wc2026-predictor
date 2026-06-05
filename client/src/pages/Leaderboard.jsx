@@ -46,25 +46,30 @@ function PredictionBreakdown({ name, cache, setCache }) {
     );
   }
 
+  const rowTint = (pts) => {
+    if (pts === 5) return 'bg-emerald-900/20 border-l-2 border-emerald-500/50';
+    if (pts === 3) return 'bg-emerald-900/10 border-l-2 border-emerald-700/40';
+    if (pts === 1) return 'bg-amber-900/15 border-l-2 border-amber-600/40';
+    return 'bg-red-900/10 border-l-2 border-red-800/30';
+  };
+
   return (
     <tr className="bg-brand-surface/50">
-      <td colSpan={8} className="px-4 py-3">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <td colSpan={8} className="px-4 py-2">
+        <div className="flex flex-col divide-y divide-brand-border/30">
           {predictions.map(p => (
-            <div key={p.id} className="bg-brand-card/60 rounded-lg px-2.5 py-2 flex flex-col gap-1">
-              <div className="flex items-center gap-1 text-xs text-gray-400">
-                <Flag code={p.home_code} name={p.home_team} className="w-3.5 h-3.5 shrink-0" />
-                <span className="font-medium">{p.home_code}</span>
-                <span className="text-gray-600 mx-0.5">vs</span>
-                <span className="font-medium">{p.away_code}</span>
-                <Flag code={p.away_code} name={p.away_team} className="w-3.5 h-3.5 shrink-0" />
+            <div key={p.id} className={`flex items-center gap-3 px-3 py-2 text-xs ${rowTint(p.points)}`}>
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
+                <span className="font-semibold text-gray-300">{p.home_code}</span>
+                <span className="text-gray-600">vs</span>
+                <span className="font-semibold text-gray-300">{p.away_code}</span>
+                <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
               </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="font-mono text-gray-500">{p.pred_home}–{p.pred_away}</span>
-                <span className="text-gray-700">→</span>
-                <span className={`font-mono font-bold ${p.points > 0 ? 'text-white' : 'text-gray-600'}`}>{p.home_score}–{p.away_score}</span>
-                <PtsBadge pts={p.points} />
-              </div>
+              <span className="font-mono text-gray-500 shrink-0">{p.pred_home}–{p.pred_away}</span>
+              <span className="text-gray-600 shrink-0">→</span>
+              <span className={`font-mono font-bold shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-600'}`}>{p.home_score}–{p.away_score}</span>
+              <PtsBadge pts={p.points} />
             </div>
           ))}
         </div>
