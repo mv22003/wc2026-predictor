@@ -101,6 +101,10 @@ async function syncScores() {
       const rawMin = game.minute ?? game.elapsed ?? game.time_elapsed ?? null;
       const liveMinute = rawMin != null ? (parseInt(String(rawMin), 10) || null) : null;
 
+      // Capture scorer strings — stored as-is; frontend parses defensively
+      const homeScorers = (game.home_scorers && game.home_scorers !== 'null') ? game.home_scorers : null;
+      const awayScorers = (game.away_scorers && game.away_scorers !== 'null') ? game.away_scorers : null;
+
       const { rows: matchRows } = await db.query('SELECT * FROM matches WHERE match_number = $1', [matchNum]);
       const our = matchRows[0];
       if (!our) { errors.push(`Match ${matchNum}: not in our DB`); continue; }
@@ -118,8 +122,8 @@ async function syncScores() {
         try {
           await client.query('BEGIN');
           await client.query(
-            "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished', live_minute = NULL WHERE id = $3",
-            [hs, as_, our.id]
+            "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished', live_minute = NULL, home_scorers = $4, away_scorers = $5 WHERE id = $3",
+            [hs, as_, our.id, homeScorers, awayScorers]
           );
           for (const p of preds) {
             await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
@@ -141,8 +145,8 @@ async function syncScores() {
           continue;
         }
         await db.query(
-          "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3 WHERE id = $4",
-          [hs, as_, liveMinute, our.id]
+          "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3, home_scorers = $5, away_scorers = $6 WHERE id = $4",
+          [hs, as_, liveMinute, our.id, homeScorers, awayScorers]
         );
         updated++;
       }

@@ -196,6 +196,41 @@ function LiveMinute({ minute }) {
   );
 }
 
+function parseScorers(raw) {
+  if (!raw || raw === 'null') return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map(s => ({
+        name:   s.name   ?? s.player  ?? s.scorer ?? String(s),
+        minute: s.minute ?? s.min     ?? s.time   ?? null,
+      }));
+    }
+  } catch {}
+  // Fallback: treat as plain string
+  return [{ name: raw, minute: null }];
+}
+
+function ScorerLine({ homeScorers, awayScorers }) {
+  const home = parseScorers(homeScorers);
+  const away = parseScorers(awayScorers);
+  if (home.length === 0 && away.length === 0) return null;
+
+  const fmt = (s) => s.minute != null ? `${s.name} ${s.minute}'` : s.name;
+
+  return (
+    <div className="flex items-start justify-between gap-4 mt-1.5 px-1 text-xs text-gray-500">
+      <span className="flex-1 text-right leading-snug">
+        {home.map(fmt).join('  ·  ')}
+      </span>
+      <span className="w-20 shrink-0" />
+      <span className="flex-1 leading-snug">
+        {away.map(fmt).join('  ·  ')}
+      </span>
+    </div>
+  );
+}
+
 function MatchRow({ match }) {
   const finished  = match.status === 'finished';
   const live      = match.status === 'live';
@@ -251,6 +286,9 @@ function MatchRow({ match }) {
               </span>
             </div>
           </div>
+          {(finished || live) && (
+            <ScorerLine homeScorers={match.home_scorers} awayScorers={match.away_scorers} />
+          )}
           {venue && (
             <div className="mt-2 flex justify-center">
               <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-500 whitespace-nowrap">
