@@ -62,19 +62,19 @@ function LiveMatchCard({ match }) {
       </div>
 
       {/* teams + score */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 flex flex-col items-end gap-2 min-w-0">
-          <Flag code={match.home_code} name={match.home_team} className="w-14 h-14 shrink-0" />
-          <span className="text-xl font-black text-white text-right leading-tight truncate w-full">{match.home_team}</span>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+          <span className="text-lg font-black text-white text-right leading-tight truncate">{match.home_team}</span>
+          <Flag code={match.home_code} name={match.home_team} className="w-12 h-12 shrink-0" />
         </div>
-        <div className="shrink-0 flex flex-col items-center gap-0">
+        <div className="shrink-0 px-2">
           <span className="text-4xl font-black text-white tabular-nums tracking-tight">
-            {match.home_score} – {match.away_score}
+            {match.home_score}–{match.away_score}
           </span>
         </div>
-        <div className="flex-1 flex flex-col items-start gap-2 min-w-0">
-          <Flag code={match.away_code} name={match.away_team} className="w-14 h-14 shrink-0" />
-          <span className="text-xl font-black text-white leading-tight truncate w-full">{match.away_team}</span>
+        <div className="flex-1 flex items-center gap-2 min-w-0">
+          <Flag code={match.away_code} name={match.away_team} className="w-12 h-12 shrink-0" />
+          <span className="text-lg font-black text-white leading-tight truncate">{match.away_team}</span>
         </div>
       </div>
 
