@@ -55,7 +55,9 @@ function PredictionBreakdown({ name, cache, setCache }) {
     );
   }
 
-  const predictions = (cache[name] ?? []).filter(p => p.status === 'finished');
+  const predictions = (cache[name] ?? [])
+    .filter(p => p.status === 'finished')
+    .sort((a, b) => b.points - a.points);
 
   if (predictions.length === 0) {
     return (
