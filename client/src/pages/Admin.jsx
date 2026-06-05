@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 import { R32_SLOTS, LATE_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
@@ -316,12 +317,44 @@ function LiveSyncCard({ adminKey, onDone }) {
   );
 }
 
+function ConfirmModal({ title, message, onConfirm, onCancel, confirmLabel = 'Confirm', danger = false }) {
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-brand-card border border-brand-border rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-4">
+        <h3 className="text-base font-bold text-white">{title}</h3>
+        <p className="text-sm text-gray-400 leading-relaxed">{message}</p>
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded text-sm font-semibold bg-brand-border/60 text-gray-300 hover:bg-brand-border transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`px-4 py-2 rounded text-sm font-bold transition-colors ${
+              danger
+                ? 'bg-red-600 hover:bg-red-500 text-white'
+                : 'bg-brand-gold text-brand-navy hover:brightness-110'
+            }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function RecalculateButton({ adminKey, onDone }) {
   const [state, setState] = useState('idle'); // idle | running | done | error
   const [result, setResult] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function run() {
-    if (!confirm('Recalculate all prediction points using the current scoring rules?\n\nThis will overwrite all existing point values.')) return;
+    setShowConfirm(false);
     setState('running');
     try {
       const data = await api.recalculateAll(adminKey);
@@ -337,25 +370,36 @@ function RecalculateButton({ adminKey, onDone }) {
   }
 
   return (
-    <div className="flex items-center gap-3 bg-brand-card border border-brand-border rounded-xl px-4 py-3">
-      <div className="flex-1">
-        <p className="font-semibold text-sm">Recalculate All Scores</p>
-        <p className="text-xs text-gray-500 mt-0.5">
-          {state === 'done' && result
-            ? `Updated ${result.predictions_updated} predictions across ${result.matches_processed} matches`
-            : state === 'error'
-            ? `Error: ${result?.error}`
-            : 'Apply current scoring rules to every finished match'}
-        </p>
+    <>
+      {showConfirm && (
+        <ConfirmModal
+          title="Recalculate All Scores"
+          message="Apply current scoring rules to every finished match? This will overwrite all existing point values."
+          confirmLabel="Recalculate"
+          onConfirm={run}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
+      <div className="flex items-center gap-3 bg-brand-card border border-brand-border rounded-xl px-4 py-3">
+        <div className="flex-1">
+          <p className="font-semibold text-sm">Recalculate All Scores</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {state === 'done' && result
+              ? `Updated ${result.predictions_updated} predictions across ${result.matches_processed} matches`
+              : state === 'error'
+              ? `Error: ${result?.error}`
+              : 'Apply current scoring rules to every finished match'}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowConfirm(true)}
+          disabled={state === 'running'}
+          className="shrink-0 btn-secondary text-sm disabled:opacity-50"
+        >
+          {state === 'running' ? 'Recalculating…' : state === 'done' ? '✓ Done' : 'Recalculate'}
+        </button>
       </div>
-      <button
-        onClick={run}
-        disabled={state === 'running'}
-        className="shrink-0 btn-secondary text-sm disabled:opacity-50"
-      >
-        {state === 'running' ? 'Recalculating…' : state === 'done' ? '✓ Done' : 'Recalculate'}
-      </button>
-    </div>
+    </>
   );
 }
 
@@ -374,6 +418,7 @@ function ResultRow({ match, adminKey, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const isFinished = match.status === 'finished';
 
@@ -402,6 +447,7 @@ function ResultRow({ match, adminKey, onSaved }) {
     : 'TBD';
 
   return (
+    <>
     <tr className="border-b border-brand-border/50 last:border-0 hover:bg-white/3 transition-colors">
       <td className="px-3 py-3">
         <span className="tag bg-brand-border text-gray-300 text-xs">{match.group_name}</span>
@@ -459,20 +505,7 @@ function ResultRow({ match, adminKey, onSaved }) {
 
           {isFinished && (
             <button
-              onClick={async () => {
-                if (!confirm(`Reset result for this match? This will clear the score and set all predictions back to 0 points.`)) return;
-                setResetting(true);
-                try {
-                  await api.resetResult(adminKey, match.id);
-                  setHs('');
-                  setAs('');
-                  onSaved?.();
-                } catch (e) {
-                  alert('Error: ' + e.message);
-                } finally {
-                  setResetting(false);
-                }
-              }}
+              onClick={() => setShowResetConfirm(true)}
               disabled={resetting || saving}
               title="Reset result"
               className="px-2 py-1.5 rounded text-xs font-bold transition-all
@@ -485,6 +518,30 @@ function ResultRow({ match, adminKey, onSaved }) {
         </div>
       </td>
     </tr>
+    {showResetConfirm && (
+      <ConfirmModal
+        title="Reset Match Result"
+        message="This will clear the score and set all predictions for this match back to 0 points."
+        confirmLabel="Reset"
+        danger
+        onConfirm={async () => {
+          setShowResetConfirm(false);
+          setResetting(true);
+          try {
+            await api.resetResult(adminKey, match.id);
+            setHs('');
+            setAs('');
+            onSaved?.();
+          } catch (e) {
+            alert('Error: ' + e.message);
+          } finally {
+            setResetting(false);
+          }
+        }}
+        onCancel={() => setShowResetConfirm(false)}
+      />
+    )}
+  </>
   );
 }
 
