@@ -123,9 +123,9 @@ function MatchRow({ match }) {
           </span>
           <span className="w-12 shrink-0 flex items-center justify-center">
             {finished ? (
-              <span className="font-black text-brand-gold tabular-nums">{match.home_score}–{match.away_score}</span>
+              <span className="font-black text-brand-gold tabular-nums">{match.home_score} – {match.away_score}</span>
             ) : live ? (
-              <span className="font-black text-white tabular-nums">{match.home_score}–{match.away_score}</span>
+              <span className="font-black text-white tabular-nums">{match.home_score} – {match.away_score}</span>
             ) : (
               <span className="text-gray-500 text-xs">vs</span>
             )}
