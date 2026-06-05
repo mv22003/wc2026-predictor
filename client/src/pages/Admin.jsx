@@ -436,22 +436,57 @@ function arrayToScorersJson(arr) {
   return entries.length > 0 ? JSON.stringify(entries) : null;
 }
 
-function ResultRow({ match, adminKey, onSaved }) {
+function ResultRow({ match, adminKey, onSaved, openScorerId, setOpenScorerId }) {
   const [hs, setHs] = useState(match.home_score ?? '');
   const [as_, setAs] = useState(match.away_score ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [scorersOpen, setScorersOpen]   = useState(false);
   const [homeScorers, setHomeScorers]   = useState(() => scorersJsonToArray(match.home_scorers));
   const [awayScorers, setAwayScorers]   = useState(() => scorersJsonToArray(match.away_scorers));
   const [scorerSaving, setScorerSaving] = useState(false);
   const [scorerSaved,  setScorerSaved]  = useState(false);
-  const isFinished = match.status === 'finished';
-  const isLive     = match.status === 'live';
-  const homeCount  = (Number.isInteger(+hs) && +hs >= 0) ? +hs : 0;
-  const awayCount  = (Number.isInteger(+as_) && +as_ >= 0) ? +as_ : 0;
+  const isFinished  = match.status === 'finished';
+  const isLive      = match.status === 'live';
+  const scorersOpen = openScorerId === match.id;
+  const homeCount   = (Number.isInteger(+hs) && +hs >= 0) ? +hs : 0;
+  const awayCount   = (Number.isInteger(+as_) && +as_ >= 0) ? +as_ : 0;
+
+  // Refs so the close-effect always sees the latest scorer values
+  const homeRef      = useRef(homeScorers);
+  const awayRef      = useRef(awayScorers);
+  const homeCountRef = useRef(homeCount);
+  const awayCountRef = useRef(awayCount);
+  const originalRef  = useRef({
+    home: scorersJsonToArray(match.home_scorers),
+    away: scorersJsonToArray(match.away_scorers),
+  });
+  const wasOpenRef = useRef(false);
+  useEffect(() => { homeRef.current = homeScorers; },     [homeScorers]);
+  useEffect(() => { awayRef.current = awayScorers; },     [awayScorers]);
+  useEffect(() => { homeCountRef.current = homeCount; },  [homeCount]);
+  useEffect(() => { awayCountRef.current = awayCount; },  [awayCount]);
+
+  // Auto-save when panel closes if data changed
+  useEffect(() => {
+    if (wasOpenRef.current && !scorersOpen) {
+      const home = homeRef.current.slice(0, homeCountRef.current);
+      const away = awayRef.current.slice(0, awayCountRef.current);
+      if (
+        JSON.stringify(home) !== JSON.stringify(originalRef.current.home) ||
+        JSON.stringify(away) !== JSON.stringify(originalRef.current.away)
+      ) {
+        originalRef.current = { home, away };
+        setScorerSaving(true);
+        api.updateScorers(adminKey, match.id, arrayToScorersJson(home), arrayToScorersJson(away))
+          .then(() => { setScorerSaved(true); setTimeout(() => setScorerSaved(false), 2000); })
+          .catch(e => alert('Auto-save error: ' + e.message))
+          .finally(() => setScorerSaving(false));
+      }
+    }
+    wasOpenRef.current = scorersOpen;
+  }, [scorersOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function save() {
     if (hs === '' || as_ === '') return;
@@ -566,7 +601,7 @@ function ResultRow({ match, adminKey, onSaved }) {
 
           {(isFinished || isLive) && (
             <button
-              onClick={() => setScorersOpen(o => !o)}
+              onClick={() => setOpenScorerId(o => o === match.id ? null : match.id)}
               title="Edit goalscorers"
               className={`px-2 py-1.5 rounded text-xs font-bold transition-all border ${
                 scorersOpen
@@ -1002,6 +1037,7 @@ export default function Admin() {
   const [matches, setMatches] = useState([]);
   const [filter, setFilter] = useState('all');
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [openScorerId, setOpenScorerId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
 
@@ -1160,6 +1196,8 @@ export default function Admin() {
                       match={m}
                       adminKey={key}
                       onSaved={() => load(key)}
+                      openScorerId={openScorerId}
+                      setOpenScorerId={setOpenScorerId}
                     />
                   ))
                 )}
