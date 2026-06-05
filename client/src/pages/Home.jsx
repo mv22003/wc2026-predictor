@@ -138,11 +138,10 @@ export default function Home() {
           />
 
           <div>
-            <h1 className="text-3xl sm:text-4xl font-black leading-tight">
-              FIFA World Cup<br />
-              <span className="text-brand-gold">2026</span>
+            <h1 className="text-3xl sm:text-4xl font-black leading-tight whitespace-nowrap">
+              FIFA World Cup <span className="text-brand-gold">2026</span>
             </h1>
-            <p className="text-gray-400 mt-2 text-sm max-w-md">
+            <p className="text-gray-400 mt-2 text-sm whitespace-nowrap">
               Predict every match, climb the leaderboard, and prove your football knowledge!
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
