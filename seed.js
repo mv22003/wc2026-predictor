@@ -169,6 +169,31 @@ const teams = Object.entries(teamGroupMap)
   });
 
   try {
+    // Ensure tables exist before querying them
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, code TEXT NOT NULL,
+        group_name TEXT, flag_emoji TEXT NOT NULL DEFAULT '🏳️'
+      );
+      CREATE TABLE IF NOT EXISTS matches (
+        id SERIAL PRIMARY KEY, home_team_id INTEGER NOT NULL REFERENCES teams(id),
+        away_team_id INTEGER NOT NULL REFERENCES teams(id), match_date TEXT,
+        venue TEXT, phase TEXT NOT NULL DEFAULT 'group', group_name TEXT,
+        home_score INTEGER, away_score INTEGER, status TEXT NOT NULL DEFAULT 'upcoming',
+        match_number INTEGER
+      );
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+        created_at TEXT DEFAULT NOW()::TEXT, submitted_at TEXT
+      );
+      CREATE TABLE IF NOT EXISTS predictions (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
+        match_id INTEGER NOT NULL REFERENCES matches(id),
+        pred_home INTEGER NOT NULL, pred_away INTEGER NOT NULL,
+        points INTEGER NOT NULL DEFAULT 0, UNIQUE(user_id, match_id)
+      );
+    `);
+
     const { rows: countRows } = await pool.query('SELECT COUNT(*) AS n FROM teams');
     const existingTeams = parseInt(countRows[0].n, 10);
 
