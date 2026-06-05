@@ -111,8 +111,8 @@ export default function Home() {
   }, []);
 
   const liveMatches = matches.filter(m => m.status === 'live');
-  const upcoming    = matches.filter(m => m.status === 'upcoming').slice(0, 6);
-  const recent      = matches.filter(m => m.status === 'finished').slice(-6).reverse();
+  const upcoming    = matches.filter(m => m.status === 'upcoming').slice(0, 3);
+  const recent      = matches.filter(m => m.status === 'finished').slice(-3).reverse();
   const top5        = leaderboard.slice(0, 10);
 
   if (loading) {
@@ -201,21 +201,33 @@ export default function Home() {
         {/* Matches */}
         <div className="card sm:col-span-3 cursor-pointer" onClick={() => navigate('/live')}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-black text-lg">
-              {recent.length > 0 ? 'Recent Results' : 'Upcoming Matches'}
-            </h2>
+            <h2 className="font-black text-lg">Matches</h2>
             <Link to="/live" className="text-brand-gold text-xs font-semibold hover:underline">
               Full Calendar →
             </Link>
           </div>
-          {recent.length > 0 ? (
-            recent.map(m => <MatchRow key={m.id} match={m} />)
-          ) : upcoming.length > 0 ? (
-            upcoming.map(m => <MatchRow key={m.id} match={m} />)
-          ) : (
+          {recent.length === 0 && upcoming.length === 0 ? (
             <p className="text-gray-500 text-sm py-4 text-center">
-              No matches loaded yet. Ask the admin to seed the database.
+              No matches loaded yet.
             </p>
+          ) : (
+            <>
+              {recent.length > 0 && (
+                <>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Recent Results</p>
+                  {recent.map(m => <MatchRow key={m.id} match={m} />)}
+                </>
+              )}
+              {recent.length > 0 && upcoming.length > 0 && (
+                <div className="border-t border-brand-border/40 my-2" />
+              )}
+              {upcoming.length > 0 && (
+                <>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Upcoming Matches</p>
+                  {upcoming.map(m => <MatchRow key={m.id} match={m} />)}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
