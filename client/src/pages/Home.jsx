@@ -42,7 +42,7 @@ function parseMinute(m) {
   return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
 }
 
-function LiveMatchCard({ match }) {
+function LiveMatchCard({ match, showMinute = false }) {
   const venue = VENUE_BY_MATCH[match.match_number] || match.venue;
   const homeScorers = parseScorers(match.home_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   const awayScorers = parseScorers(match.away_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
@@ -52,6 +52,14 @@ function LiveMatchCard({ match }) {
 
   return (
     <div className="border-b border-brand-border/40 last:border-0 py-2">
+      {showMinute && (
+        <div className="flex items-center justify-end mb-1 px-1">
+          <span className="flex items-center gap-1.5 text-lg font-black text-emerald-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+          </span>
+        </div>
+      )}
       {/* teams + score */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
@@ -147,7 +155,7 @@ function MatchRow({ match }) {
 
 function LiveNowSection({ matches }) {
   if (matches.length === 0) return null;
-  const minute = matches.length === 1 ? matches[0].live_minute : null;
+  const showMinuteInHeader = matches.length === 1;
   return (
     <div className="card border border-emerald-700/40 bg-emerald-900/10">
       <div className="flex items-center justify-between mb-1">
@@ -155,11 +163,13 @@ function LiveNowSection({ matches }) {
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
         </span>
-        <span className="text-xl font-black text-emerald-400">
-          {minute != null ? `${minute}'` : 'LIVE'}
-        </span>
+        {showMinuteInHeader && (
+          <span className="text-xl font-black text-emerald-400">
+            {matches[0].live_minute != null ? `${matches[0].live_minute}'` : 'LIVE'}
+          </span>
+        )}
       </div>
-      {matches.map(m => <LiveMatchCard key={m.id} match={m} />)}
+      {matches.map(m => <LiveMatchCard key={m.id} match={m} showMinute={!showMinuteInHeader} />)}
     </div>
   );
 }
@@ -177,14 +187,22 @@ export default function Home() {
       .then(([lb, mts]) => {
         let allMatches = mts;
         if (isDemo && mts.length > 0) {
-          const demo = {
+          const demo1 = {
             ...mts[0],
             status: 'live', live_minute: 67,
             home_score: 2, away_score: 1,
             home_scorers: '[{"name":"Hernández","minute":"23"},{"name":"Vega","minute":"58"}]',
             away_scorers: '[{"name":"Adeyemi","minute":"45+2"}]',
           };
-          allMatches = [demo, ...mts.slice(1)];
+          const demo2 = {
+            ...mts[1 < mts.length ? 1 : 0],
+            id: 'demo2',
+            status: 'live', live_minute: 12,
+            home_score: 0, away_score: 1,
+            home_scorers: null,
+            away_scorers: '[{"name":"Müller","minute":"8"}]',
+          };
+          allMatches = [demo1, demo2, ...mts.slice(2)];
         }
         setLeaderboard(lb);
         setMatches(allMatches);
