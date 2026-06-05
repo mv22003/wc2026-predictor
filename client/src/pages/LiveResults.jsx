@@ -563,11 +563,6 @@ function BracketTab({ allMatches }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-gray-400 text-sm">
-        {koMatches.length > 0
-          ? `${koFinished} of ${koMatches.length} knockout matches played`
-          : 'Projected from live standings'}
-      </p>
       <div className="overflow-x-auto pb-4">
         <div style={{ width: TW, minWidth: TW }} className="mx-auto">
           <div className="relative mb-2" style={{ height: 18 }}>
@@ -641,6 +636,13 @@ export default function LiveResults() {
           <p className="text-gray-400 text-sm mt-0.5">
             {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30 s
           </p>
+          {tab === 'bracket' && (
+            <p className="text-gray-500 text-xs mt-1">
+              {matches.filter(m => m.phase !== 'group' && m.status === 'finished').length > 0
+                ? `${matches.filter(m => m.phase !== 'group' && m.status === 'finished').length} of ${matches.filter(m => m.phase !== 'group').length} knockout matches played`
+                : 'Projected from live standings'}
+            </p>
+          )}
         </div>
         <div className="flex rounded-lg overflow-hidden border border-brand-border">
           {TABS.map(t => (
