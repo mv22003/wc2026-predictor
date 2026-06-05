@@ -237,11 +237,12 @@ function MatchRow({ match }) {
   );
 }
 
-function DateGroup({ matches }) {
-  const date    = new Date(matches[0].match_date);
-  const today   = new Date().toDateString();
-  const isToday = date.toDateString() === today;
-  const label   = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+function DateGroup({ matches, dateKey }) {
+  // Parse at noon UTC so the label stays on the correct calendar day in all timezones
+  const date    = dateKey ? new Date(dateKey + 'T12:00:00Z') : new Date(matches[0].match_date);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const isToday  = dateKey === todayKey;
+  const label    = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   return (
     <div className="card p-0 overflow-hidden">
       <div className={`px-4 py-2.5 flex items-center gap-2 border-b border-brand-border ${isToday ? 'bg-brand-gold/10' : 'bg-brand-navy/60'}`}>
@@ -282,7 +283,7 @@ function CalendarTab({ matches, groups }) {
 
   const byDate = {};
   for (const m of calFiltered) {
-    const key = m.match_date ? new Date(m.match_date).toDateString() : 'TBD';
+    const key = m.match_date ? m.match_date.slice(0, 10) : 'TBD';
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(m);
   }
@@ -304,7 +305,7 @@ function CalendarTab({ matches, groups }) {
 
       {Object.entries(byDate).map(([dateStr, dayMatches]) => (
         <div key={dateStr}>
-          <DateGroup matches={dayMatches} />
+          <DateGroup matches={dayMatches} dateKey={dateStr} />
         </div>
       ))}
     </div>
