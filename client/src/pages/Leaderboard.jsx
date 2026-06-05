@@ -69,7 +69,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
 
   const rowTint = (pts) => {
     if (pts === 5) return 'bg-emerald-900/20 border-l-2 border-l-emerald-400 border-b border-b-brand-border/30 last:border-b-0';
-    if (pts === 3) return 'bg-emerald-900/10 border-l-2 border-l-emerald-600 border-b border-b-brand-border/30 last:border-b-0';
+    if (pts === 3) return 'bg-blue-900/10 border-l-2 border-l-blue-500 border-b border-b-brand-border/30 last:border-b-0';
     if (pts === 1) return 'bg-amber-900/15 border-l-2 border-l-amber-500 border-b border-b-brand-border/30 last:border-b-0';
     return 'bg-red-900/10 border-l-2 border-l-red-600 border-b border-b-brand-border/30 last:border-b-0';
   };
