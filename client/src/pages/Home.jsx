@@ -32,7 +32,7 @@ function MatchRow({ match }) {
 
   return (
     <div className="flex items-center gap-3 py-3 border-b border-brand-border last:border-0">
-      <span className="tag bg-brand-border text-gray-300 w-8 text-center">{match.group_name}</span>
+      <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
       <div className="flex-1 flex items-center gap-2 min-w-0">
         <span className="flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0">
           <span className="truncate text-right">{match.home_team}</span>
@@ -150,10 +150,10 @@ export default function Home() {
       </div>
 
       {/* ── Two-column layout ───────────────────────────────────────────────── */}
-      <div className="grid sm:grid-cols-2 gap-6">
+      <div className="grid sm:grid-cols-5 gap-6">
 
         {/* Leaderboard preview */}
-        <div className="card">
+        <div className="card sm:col-span-2">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-lg">🏆 Leaderboard</h2>
             <Link to="/leaderboard" className="text-brand-gold text-xs font-semibold hover:underline">
@@ -168,7 +168,7 @@ export default function Home() {
         </div>
 
         {/* Matches */}
-        <div className="card">
+        <div className="card sm:col-span-3">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-lg">
               {recent.length > 0 ? '✅ Recent Results' : '📅 Upcoming Matches'}
