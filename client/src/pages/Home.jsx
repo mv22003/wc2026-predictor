@@ -42,93 +42,63 @@ function parseMinute(m) {
   return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
 }
 
-function MatchRow({ match, prominent = false }) {
-  const live     = match.status === 'live';
-  const finished = match.status === 'finished';
-  const d        = match.match_date ? new Date(match.match_date) : null;
-  const dateStr  = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBD';
-  const venue    = VENUE_BY_MATCH[match.match_number] || match.venue;
-
+function LiveMatchCard({ match }) {
+  const venue = VENUE_BY_MATCH[match.match_number] || match.venue;
   const homeScorers = parseScorers(match.home_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   const awayScorers = parseScorers(match.away_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
-  const showScorers = (live || finished)
-    && homeScorers.length === (match.home_score ?? 0)
+  const showScorers = homeScorers.length === (match.home_score ?? 0)
     && awayScorers.length === (match.away_score ?? 0)
     && (homeScorers.length > 0 || awayScorers.length > 0);
 
-  // Fixed-width right column so scorer rows can mirror it exactly
-  const RIGHT_W   = live ? 'w-14' : 'w-44';
-  const flagSize  = prominent ? 'w-9 h-9' : 'w-6 h-6';
-  const nameSize  = prominent ? 'text-base font-black' : 'text-sm font-semibold';
-  const scoreSize = prominent ? 'text-2xl' : 'text-base';
-  const rowPy     = prominent ? 'py-4' : 'py-3';
-
   return (
-    <div className={`${rowPy} border-b border-brand-border last:border-0`}>
-      {/* main row */}
-      <div className="flex items-center gap-3">
-        <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
-        <div className="flex-1 flex items-center gap-2 min-w-0">
-          <span className={`flex-1 ${nameSize} flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
-            <span className="truncate text-right">{match.home_team}</span>
-            <Flag code={match.home_code} name={match.home_team} className={`${flagSize} shrink-0`} />
-          </span>
-          <span className="w-12 shrink-0 flex items-center justify-center">
-            {finished ? (
-              <span className={`font-black text-brand-gold tabular-nums ${scoreSize}`}>{match.home_score}–{match.away_score}</span>
-            ) : live ? (
-              <span className={`font-black text-white tabular-nums ${scoreSize}`}>{match.home_score}–{match.away_score}</span>
-            ) : (
-              <span className="text-gray-500 text-xs">vs</span>
-            )}
-          </span>
-          <span className={`flex-1 ${nameSize} flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
-            <Flag code={match.away_code} name={match.away_team} className={`${flagSize} shrink-0`} />
-            <span className="truncate">{match.away_team}</span>
-          </span>
-        </div>
-        {live ? (
-          <div className={`${RIGHT_W} shrink-0 flex items-center justify-end`}>
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
-            </span>
-          </div>
-        ) : (
-          <span className={`hidden sm:flex items-center justify-end gap-1.5 shrink-0 ${RIGHT_W}`}>
-            <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
-            <span className="w-7 shrink-0 flex justify-center">
-              {finished && <span className="tag pts-exact text-xs">FT</span>}
-            </span>
-          </span>
-        )}
+    <div className="border-b border-brand-border/40 last:border-0 py-4">
+      {/* group + minute */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <span className="tag bg-brand-border text-gray-300 text-sm px-3 py-1">{match.group_name}</span>
+        <span className="flex items-center gap-1.5 text-base font-black text-emerald-400">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+        </span>
       </div>
 
-      {/* scorer rows — mirrors main row layout exactly */}
+      {/* teams + score */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 flex flex-col items-end gap-2 min-w-0">
+          <Flag code={match.home_code} name={match.home_team} className="w-14 h-14 shrink-0" />
+          <span className="text-xl font-black text-white text-right leading-tight truncate w-full">{match.home_team}</span>
+        </div>
+        <div className="shrink-0 flex flex-col items-center gap-0">
+          <span className="text-4xl font-black text-white tabular-nums tracking-tight">
+            {match.home_score} – {match.away_score}
+          </span>
+        </div>
+        <div className="flex-1 flex flex-col items-start gap-2 min-w-0">
+          <Flag code={match.away_code} name={match.away_team} className="w-14 h-14 shrink-0" />
+          <span className="text-xl font-black text-white leading-tight truncate w-full">{match.away_team}</span>
+        </div>
+      </div>
+
+      {/* scorers */}
       {showScorers && (
-        <div className="mt-2 space-y-0.5">
+        <div className="mt-4 space-y-1">
           {Array.from({ length: Math.max(homeScorers.length, awayScorers.length) }, (_, i) => (
-            <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
-              <span className="w-16 shrink-0" />
-              <div className="flex-1 flex items-start gap-2 min-w-0">
-                <span className="flex-1 text-right leading-snug">
-                  {homeScorers[i] ? `${homeScorers[i].name}${homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''} ⚽️` : ''}
-                </span>
-                <span className="w-12 shrink-0" />
-                <span className="flex-1 leading-snug">
-                  {awayScorers[i] ? `⚽️ ${awayScorers[i].name}${awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}` : ''}
-                </span>
-              </div>
-              <span className={`${RIGHT_W} shrink-0`} />
+            <div key={i} className="flex items-center text-sm text-gray-400">
+              <span className="flex-1 text-right pr-3">
+                {homeScorers[i] ? `${homeScorers[i].name}${homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''} ⚽️` : ''}
+              </span>
+              <span className="w-px bg-brand-border/60 self-stretch shrink-0" />
+              <span className="flex-1 pl-3">
+                {awayScorers[i] ? `⚽️ ${awayScorers[i].name}${awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}` : ''}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      {/* venue pill */}
-      {venue && (live || finished) && (
-        <div className="mt-2 flex justify-center">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-500 whitespace-nowrap">
+      {/* venue */}
+      {venue && (
+        <div className="mt-4 flex justify-center">
+          <span className="inline-block px-3 py-1 rounded-full bg-white/5 border border-brand-border/60 text-xs text-gray-500 whitespace-nowrap">
             {venue}
           </span>
         </div>
@@ -137,16 +107,63 @@ function MatchRow({ match, prominent = false }) {
   );
 }
 
+function MatchRow({ match }) {
+  const live     = match.status === 'live';
+  const finished = match.status === 'finished';
+  const d        = match.match_date ? new Date(match.match_date) : null;
+  const dateStr  = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBD';
+
+  return (
+    <div className="py-3 border-b border-brand-border last:border-0">
+      <div className="flex items-center gap-3">
+        <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
+        <div className="flex-1 flex items-center gap-2 min-w-0">
+          <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
+            <span className="truncate text-right">{match.home_team}</span>
+            <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
+          </span>
+          <span className="w-12 shrink-0 flex items-center justify-center">
+            {finished ? (
+              <span className="font-black text-brand-gold tabular-nums">{match.home_score}–{match.away_score}</span>
+            ) : live ? (
+              <span className="font-black text-white tabular-nums">{match.home_score}–{match.away_score}</span>
+            ) : (
+              <span className="text-gray-500 text-xs">vs</span>
+            )}
+          </span>
+          <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
+            <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
+            <span className="truncate">{match.away_team}</span>
+          </span>
+        </div>
+        {live ? (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 whitespace-nowrap shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+          </span>
+        ) : (
+          <span className="hidden sm:flex items-center justify-end gap-1.5 shrink-0 w-44">
+            <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
+            <span className="w-7 shrink-0 flex justify-center">
+              {finished && <span className="tag pts-exact text-xs">FT</span>}
+            </span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LiveNowSection({ matches }) {
   if (matches.length === 0) return null;
   return (
     <div className="card border border-emerald-700/40 bg-emerald-900/10">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
         <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
         <span className="text-xs text-emerald-600 font-semibold">{matches.length} match{matches.length !== 1 ? 'es' : ''} in progress</span>
       </div>
-      {matches.map(m => <MatchRow key={m.id} match={m} prominent />)}
+      {matches.map(m => <LiveMatchCard key={m.id} match={m} />)}
     </div>
   );
 }
