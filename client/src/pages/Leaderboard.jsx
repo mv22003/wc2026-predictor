@@ -17,10 +17,22 @@ function PtsBadge({ pts }) {
   return <span className={`${base} pts-zero`}>0</span>;
 }
 
-function SortIcon({ state }) {
-  if (state === 'desc') return <span className="text-white">↓</span>;
-  if (state === 'asc')  return <span className="text-white">↑</span>;
-  return <span className="text-gray-600">↕</span>;
+function SortableCell({ children, col, sort, onSort }) {
+  const state = sort.key === col ? sort.dir : null;
+  return (
+    <th
+      className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
+      onClick={() => onSort(col)}
+    >
+      <div className="flex items-center justify-center">
+        <span className="w-3 shrink-0" />
+        {children}
+        <span className="w-3 shrink-0 text-gray-600 text-xs leading-none text-left">
+          {state === 'desc' ? '▾' : state === 'asc' ? '▴' : ''}
+        </span>
+      </div>
+    </th>
+  );
 }
 
 function PredictionBreakdown({ name, cache, setCache }) {
@@ -178,50 +190,28 @@ export default function Leaderboard() {
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
-              <th
-                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
-                onClick={() => handleSort('pts_5')}
-              >
-                <span className="inline-flex items-center gap-1">
-                  <span className="tag pts-exact px-2">+5</span>
-                  <SortIcon state={colSort('pts_5')} />
-                </span>
-              </th>
-              <th
-                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
-                onClick={() => handleSort('pts_3')}
-              >
-                <span className="inline-flex items-center gap-1">
-                  <span className="tag pts-correct px-2">+3</span>
-                  <SortIcon state={colSort('pts_3')} />
-                </span>
-              </th>
-              <th
-                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
-                onClick={() => handleSort('pts_1')}
-              >
-                <span className="inline-flex items-center gap-1">
-                  <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 px-2">+1</span>
-                  <SortIcon state={colSort('pts_1')} />
-                </span>
-              </th>
-              <th
-                className="px-4 py-3 text-center hidden sm:table-cell cursor-pointer select-none hover:opacity-80 transition-opacity"
-                onClick={() => handleSort('pts_0')}
-              >
-                <span className="inline-flex items-center gap-1">
-                  <span className="tag pts-zero px-2">0</span>
-                  <SortIcon state={colSort('pts_0')} />
-                </span>
-              </th>
+              <SortableCell col="pts_5" sort={sort} onSort={handleSort}>
+                <span className="tag pts-exact px-2">+5</span>
+              </SortableCell>
+              <SortableCell col="pts_3" sort={sort} onSort={handleSort}>
+                <span className="tag pts-correct px-2">+3</span>
+              </SortableCell>
+              <SortableCell col="pts_1" sort={sort} onSort={handleSort}>
+                <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 px-2">+1</span>
+              </SortableCell>
+              <SortableCell col="pts_0" sort={sort} onSort={handleSort}>
+                <span className="tag pts-zero px-2">0</span>
+              </SortableCell>
               <th
                 className="px-4 py-3 text-right font-bold text-brand-gold cursor-pointer select-none hover:opacity-80 transition-opacity"
                 onClick={() => handleSort('total_points')}
               >
-                <span className="inline-flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-1">
                   Points
-                  <SortIcon state={colSort('total_points')} />
-                </span>
+                  <span className="w-3 text-gray-600 text-xs leading-none">
+                    {colSort('total_points') === 'desc' ? '▾' : colSort('total_points') === 'asc' ? '▴' : ''}
+                  </span>
+                </div>
               </th>
             </tr>
           </thead>
