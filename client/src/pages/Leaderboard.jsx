@@ -27,8 +27,8 @@ function SortableCell({ children, col, sort, onSort }) {
       <div className="flex items-center justify-center">
         <span className="w-3 shrink-0" />
         {children}
-        <span className="w-3 shrink-0 text-gray-600 text-xs leading-none text-left">
-          {state === 'desc' ? '▾' : state === 'asc' ? '▴' : ''}
+        <span className="w-3 shrink-0 text-gray-600 text-xs leading-none text-left ml-1">
+          {state === 'desc' ? '▾' : state === 'asc' ? '▴' : '·'}
         </span>
       </div>
     </th>
@@ -208,8 +208,8 @@ export default function Leaderboard() {
               >
                 <div className="flex items-center justify-end gap-1">
                   Points
-                  <span className="w-3 text-gray-600 text-xs leading-none">
-                    {colSort('total_points') === 'desc' ? '▾' : colSort('total_points') === 'asc' ? '▴' : ''}
+                  <span className="w-3 text-gray-600 text-xs leading-none ml-1">
+                    {colSort('total_points') === 'desc' ? '▾' : colSort('total_points') === 'asc' ? '▴' : '·'}
                   </span>
                 </div>
               </th>
