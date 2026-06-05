@@ -52,14 +52,6 @@ function LiveMatchCard({ match }) {
 
   return (
     <div className="border-b border-brand-border/40 last:border-0 py-2">
-      {/* minute */}
-      <div className="flex items-center justify-end mb-2 px-1">
-        <span className="flex items-center gap-1.5 text-xl font-black text-emerald-400">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
-        </span>
-      </div>
-
       {/* teams + score */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
@@ -155,12 +147,17 @@ function MatchRow({ match }) {
 
 function LiveNowSection({ matches }) {
   if (matches.length === 0) return null;
+  const minute = matches.length === 1 ? matches[0].live_minute : null;
   return (
     <div className="card border border-emerald-700/40 bg-emerald-900/10">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-        <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
-        <span className="text-xs text-emerald-600 font-semibold">{matches.length} match{matches.length !== 1 ? 'es' : ''} in progress</span>
+      <div className="flex items-center justify-between mb-1">
+        <span className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
+        </span>
+        <span className="text-xl font-black text-emerald-400">
+          {minute != null ? `${minute}'` : 'LIVE'}
+        </span>
       </div>
       {matches.map(m => <LiveMatchCard key={m.id} match={m} />)}
     </div>
