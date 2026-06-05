@@ -72,7 +72,7 @@ function LiveNowSection({ matches }) {
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
         <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
         <span className="text-xs text-emerald-600 font-semibold">{matches.length} match{matches.length !== 1 ? 'es' : ''} in progress</span>
-        <Link to="/results" className="ml-auto text-emerald-500 text-xs font-semibold hover:underline">
+        <Link to="/live" className="ml-auto text-emerald-500 text-xs font-semibold hover:underline">
           Full view →
         </Link>
       </div>
