@@ -43,7 +43,12 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
   return (
     <div className={`card transition-all ${filled ? 'border-brand-border' : 'border-yellow-600/30 bg-yellow-900/5'}`}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-gray-500">{dateStr}</span>
+        <div>
+          <span className="text-xs text-gray-500">{dateStr}</span>
+          {match.venue && (
+            <p className="text-xs text-gray-600 mt-0.5">@ {match.venue}</p>
+          )}
+        </div>
         {pts !== null && (
           <span className={`tag font-bold px-2 py-0.5 ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
             {pts === 5 ? '+5' : pts === 3 ? '+3' : pts === 1 ? '+1' : '0 pts'}
