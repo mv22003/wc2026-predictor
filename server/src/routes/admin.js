@@ -344,6 +344,27 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
   }
 });
 
+// Update match details (venue, match_date)
+router.patch('/matches/:id', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { venue, match_date } = req.body;
+    const matchId = parseInt(req.params.id, 10);
+    const updates = [];
+    const params = [];
+    let idx = 1;
+    if (venue !== undefined)      { updates.push(`venue = $${idx++}`);      params.push(venue || null); }
+    if (match_date !== undefined) { updates.push(`match_date = $${idx++}`); params.push(match_date || null); }
+    if (updates.length === 0) return res.json({ success: true });
+    params.push(matchId);
+    await db.query(`UPDATE matches SET ${updates.join(', ')} WHERE id = $${idx}`, params);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Reset a result — clears score, sets status back to upcoming, zeroes all points
 router.delete('/matches/:id/result', adminAuth, async (req, res) => {
   try {
@@ -419,6 +440,98 @@ router.get('/users', adminAuth, async (req, res) => {
       ORDER BY total_points DESC, u.name
     `);
     res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/users/:userId/predictions', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = parseInt(req.params.userId, 10);
+    const { rows } = await db.query(`
+      SELECT p.id, p.pred_home, p.pred_away, p.points,
+        m.id AS match_id, m.phase, m.group_name, m.match_date, m.status,
+        m.home_score, m.away_score,
+        ht.name AS home_team, ht.code AS home_code, ht.flag_emoji AS home_flag,
+        at.name AS away_team, at.code AS away_code, at.flag_emoji AS away_flag
+      FROM predictions p
+      JOIN matches m ON p.match_id = m.id
+      JOIN teams ht ON m.home_team_id = ht.id
+      JOIN teams at ON m.away_team_id = at.id
+      WHERE p.user_id = $1
+      ORDER BY m.match_date, m.id
+    `, [userId]);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/predictions/:predId', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const predId = parseInt(req.params.predId, 10);
+    const { pred_home, pred_away } = req.body;
+    if (pred_home == null || pred_away == null)
+      return res.status(400).json({ error: 'pred_home and pred_away required' });
+
+    const ph = parseInt(pred_home, 10);
+    const pa = parseInt(pred_away, 10);
+
+    const { rows: predRows } = await db.query('SELECT * FROM predictions WHERE id = $1', [predId]);
+    if (!predRows[0]) return res.status(404).json({ error: 'Prediction not found' });
+
+    const { rows: matchRows } = await db.query('SELECT * FROM matches WHERE id = $1', [predRows[0].match_id]);
+    const match = matchRows[0];
+
+    const pts = match?.status === 'finished'
+      ? calculatePoints(ph, pa, match.home_score, match.away_score)
+      : predRows[0].points;
+
+    await db.query('UPDATE predictions SET pred_home = $1, pred_away = $2, points = $3 WHERE id = $4',
+      [ph, pa, pts, predId]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/predictions/:predId', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const predId = parseInt(req.params.predId, 10);
+    const { rowCount } = await db.query('DELETE FROM predictions WHERE id = $1', [predId]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Prediction not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/users/:userId', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = parseInt(req.params.userId, 10);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM predictions WHERE user_id = $1', [userId]);
+      const { rowCount } = await client.query('DELETE FROM users WHERE id = $1', [userId]);
+      if (rowCount === 0) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'User not found' }); }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

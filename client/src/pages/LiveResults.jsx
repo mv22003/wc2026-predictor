@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import Flag from '../components/Flag';
 import { R32_SLOTS, LATE_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
+import { VENUE_BY_MATCH } from '../venueData';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 const PHASE_LABEL = {
@@ -194,45 +195,52 @@ function MatchRow({ match }) {
     : '–';
 
   return (
-    <div className={`flex items-center gap-3 py-3 px-4 border-b border-brand-border/50 last:border-0
+    <div className={`py-3 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors ${isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
-      <span className="tag bg-brand-border text-gray-400 text-xs text-center shrink-0 whitespace-nowrap w-20">
-        {match.group_name} · M{match.match_number}
-      </span>
-      <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
-        <span className={`text-sm font-semibold truncate text-right ${finished ? 'text-white' : 'text-gray-300'}`}>
-          {match.home_team}
+      <div className="flex items-center gap-3">
+        <span className="tag bg-brand-border text-gray-400 text-xs text-center shrink-0 whitespace-nowrap w-20">
+          {match.group_name} · M{match.match_number}
         </span>
-        <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
-      </div>
-      <div className="w-20 shrink-0 text-center">
-        {finished ? (
-          <span className="font-black text-brand-gold text-lg tabular-nums">
-            {match.home_score} – {match.away_score}
+        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
+          <span className={`text-sm font-semibold truncate text-right ${finished ? 'text-white' : 'text-gray-300'}`}>
+            {match.home_team}
           </span>
-        ) : (
-          <span className={`text-sm font-bold tabular-nums ${isToday ? 'text-brand-gold' : 'text-gray-500'}`}>
-            {timeStr}
+          <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
+        </div>
+        <div className="w-20 shrink-0 text-center">
+          {finished ? (
+            <span className="font-black text-brand-gold text-lg tabular-nums">
+              {match.home_score} – {match.away_score}
+            </span>
+          ) : (
+            <span className={`text-sm font-bold tabular-nums ${isToday ? 'text-brand-gold' : 'text-gray-500'}`}>
+              {timeStr}
+            </span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <Flag code={match.away_code} name={match.away_team} className="w-7 h-7 shrink-0" />
+          <span className={`text-sm font-semibold truncate ${finished ? 'text-white' : 'text-gray-300'}`}>
+            {match.away_team}
           </span>
-        )}
+        </div>
+        <div className="w-16 shrink-0 text-right hidden sm:block">
+          {finished ? (
+            <span className="tag pts-exact text-xs">FT</span>
+          ) : isToday ? (
+            <span className="tag bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-xs">Today</span>
+          ) : (
+            <span className="text-xs text-gray-600">
+              {matchDate?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+        </div>
       </div>
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        <Flag code={match.away_code} name={match.away_team} className="w-7 h-7 shrink-0" />
-        <span className={`text-sm font-semibold truncate ${finished ? 'text-white' : 'text-gray-300'}`}>
-          {match.away_team}
-        </span>
-      </div>
-      <div className="w-16 shrink-0 text-right hidden sm:block">
-        {finished ? (
-          <span className="tag pts-exact text-xs">FT</span>
-        ) : isToday ? (
-          <span className="tag bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-xs">Today</span>
-        ) : (
-          <span className="text-xs text-gray-600">
-            {matchDate?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-          </span>
-        )}
-      </div>
+      {VENUE_BY_MATCH[match.match_number] && (
+        <div className="mt-1 flex justify-center">
+          <span className="text-xs text-gray-500">{VENUE_BY_MATCH[match.match_number]}</span>
+        </div>
+      )}
     </div>
   );
 }

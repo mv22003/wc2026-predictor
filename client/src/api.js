@@ -57,6 +57,24 @@ export const api = {
       method: 'DELETE',
       headers: { 'x-admin-key': key },
     }),
+  updateMatch: (key, id, updates) =>
+    req(`/admin/matches/${id}`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': key },
+      body: updates,
+    }),
   bulkTeams:   (key, teams)   => req('/admin/teams/bulk',   { method: 'POST', headers: { 'x-admin-key': key }, body: { teams } }),
   bulkMatches: (key, matches) => req('/admin/matches/bulk', { method: 'POST', headers: { 'x-admin-key': key }, body: { matches } }),
+  getUserPredictions: (key, userId) =>
+    req(`/admin/users/${userId}/predictions`, { headers: { 'x-admin-key': key } }),
+  updatePrediction: (key, predId, predHome, predAway) =>
+    req(`/admin/predictions/${predId}`, {
+      method: 'PUT',
+      headers: { 'x-admin-key': key },
+      body: { pred_home: predHome, pred_away: predAway },
+    }),
+  deletePrediction: (key, predId) =>
+    req(`/admin/predictions/${predId}`, { method: 'DELETE', headers: { 'x-admin-key': key } }),
+  deleteUser: (key, userId) =>
+    req(`/admin/users/${userId}`, { method: 'DELETE', headers: { 'x-admin-key': key } }),
 };
