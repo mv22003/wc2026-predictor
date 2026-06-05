@@ -434,7 +434,8 @@ function resolveBest3rdSlots(byGroup) {
 
 // ── Compact bracket card ──────────────────────────────────────────────────────
 // projMap: { matchNum: { home: team|null, away: team|null } } — pre-resolved with dedup
-function BCard({ matchNum, dbByNum, projMap }) {
+// flip=true: left-half cards — flag on right so it faces the center
+function BCard({ matchNum, dbByNum, projMap, flip = false }) {
   const dbMatch  = dbByNum[matchNum];
   const finished = dbMatch?.status === 'finished';
   const homeWon  = finished && dbMatch.home_score > dbMatch.away_score;
@@ -450,25 +451,26 @@ function BCard({ matchNum, dbByNum, projMap }) {
   const rh   = CH / 2;
 
   function Row({ team, score, won }) {
+    const codeText = team ? (team.code || team.name?.slice(0, 3).toUpperCase()) : null;
     return (
-      <div className={`flex items-center gap-1 px-1.5 ${won ? 'bg-brand-gold/10' : ''}`}
+      <div className={`flex items-center gap-1 px-1.5 ${won ? 'bg-brand-gold/10' : ''} ${flip ? 'flex-row-reverse' : ''}`}
            style={{ height: rh }}>
         {team ? (
           <>
             <Flag code={team.code} name={team.name} className="w-3.5 h-3.5 shrink-0" />
             <span className={`text-[11px] font-bold w-[26px] shrink-0 truncate leading-none uppercase
-              ${won ? 'text-white' : 'text-gray-300'}`}>
-              {team.code || team.name?.slice(0, 3).toUpperCase()}
+              ${flip ? 'text-right' : ''} ${won ? 'text-white' : 'text-gray-300'}`}>
+              {codeText}
             </span>
           </>
         ) : (
           <>
             <span className="w-3.5 h-3.5 rounded-sm bg-brand-border/20 shrink-0" />
-            <span className="text-[10px] text-gray-600 w-[26px] leading-none">TBD</span>
+            <span className={`text-[10px] text-gray-600 w-[26px] leading-none ${flip ? 'text-right' : ''}`}>TBD</span>
           </>
         )}
         {finished && (
-          <span className={`text-[11px] font-black tabular-nums ml-auto
+          <span className={`text-[11px] font-black tabular-nums ${flip ? 'mr-auto' : 'ml-auto'}
             ${won ? 'text-brand-gold' : 'text-gray-600'}`}>
             {score ?? '–'}
           </span>
@@ -633,15 +635,15 @@ export default function Bracket() {
   // Build absolute card positions
   const cards = [];
 
-  function addRound(matchNums, xCol, ycFn) {
-    matchNums.forEach((num, i) => cards.push({ num, x: xCol, y: ycFn(i) - CH / 2 }));
+  function addRound(matchNums, xCol, ycFn, flip = false) {
+    matchNums.forEach((num, i) => cards.push({ num, x: xCol, y: ycFn(i) - CH / 2, flip }));
   }
 
-  addRound(LEFT.r32,  L_R32, yc.r32);
-  addRound(LEFT.r16,  L_R16, yc.r16);
-  addRound(LEFT.qf,   L_QF,  yc.qf);
-  addRound(LEFT.sf,   L_SF,  yc.sf);
-  cards.push({ num: 104, x: FINAL, y: yc.sf() - CH / 2 });
+  addRound(LEFT.r32,  L_R32, yc.r32, true);
+  addRound(LEFT.r16,  L_R16, yc.r16, true);
+  addRound(LEFT.qf,   L_QF,  yc.qf,  true);
+  addRound(LEFT.sf,   L_SF,  yc.sf,  true);
+  cards.push({ num: 104, x: FINAL, y: yc.sf() - CH / 2, flip: false });
   addRound(RIGHT.sf,  R_SF,  yc.sf);
   addRound(RIGHT.qf,  R_QF,  yc.qf);
   addRound(RIGHT.r16, R_R16, yc.r16);
@@ -685,9 +687,9 @@ export default function Bracket() {
             {/* Bracket canvas */}
             <div className="relative" style={{ width: TW, height: H }}>
               <BracketLines />
-              {cards.map(({ num, x, y }) => (
+              {cards.map(({ num, x, y, flip }) => (
                 <div key={num} style={{ position: 'absolute', left: x, top: y }}>
-                  <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} />
+                  <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} flip={flip} />
                 </div>
               ))}
             </div>
