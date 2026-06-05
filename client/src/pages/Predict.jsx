@@ -101,6 +101,27 @@ export default function Predict() {
     }).catch(console.error);
   }, []);
 
+  // On mount, if we have a saved name, restore the user's state from the server
+  useEffect(() => {
+    const saved = localStorage.getItem(LS_NAME_KEY);
+    if (!saved) return;
+    api.getUser(saved).then(data => {
+      if (!data.exists) {
+        // Name no longer in DB — clear stale localStorage
+        localStorage.removeItem(LS_NAME_KEY);
+        setName('');
+        setNameInput('');
+        return;
+      }
+      const map = {};
+      for (const p of data.predictions ?? []) {
+        map[p.match_id] = { home: p.pred_home, away: p.pred_away, points: p.points };
+      }
+      setPreds(map);
+      if (data.locked) setLocked(true);
+    }).catch(console.error);
+  }, []);
+
   function handleNameSubmit(e) {
     e.preventDefault();
     const n = nameInput.trim();
