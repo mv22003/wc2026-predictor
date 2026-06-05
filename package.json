@@ -7,7 +7,7 @@
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
     "build": "cd client && npm run build",
-    "start": "cd server && node index.js",
+    "start": "node seed.js && NODE_ENV=production node server/index.js",
     "seed": "node seed.js"
   }
 }

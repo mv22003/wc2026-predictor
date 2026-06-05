@@ -53,7 +53,52 @@ wc2026-predictor/
 
 ---
 
-## Getting Started
+## Deploying to Production (Railway)
+
+[Railway](https://railway.app) is the recommended host — it supports Node 22 and persistent volumes for the SQLite database.
+
+### 1. Push your repo to GitHub (if not already done)
+
+### 2. Create a new Railway project
+
+- Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**
+- Select this repository
+
+### 3. Add a persistent volume
+
+The SQLite database must survive deploys:
+
+- In your Railway service → **Volumes** tab → **Add Volume**
+- Mount path: `/data`
+
+### 4. Set environment variables
+
+In Railway → **Variables** tab:
+
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `ADMIN_KEY` | your secret admin password |
+| `DB_PATH` | `/data/wc2026.db` |
+
+### 5. Deploy
+
+Railway will automatically:
+1. Install all dependencies (`npm run install:all`)
+2. Build the React frontend (`npm run build`)
+3. Start the server (`npm start`)
+
+On first boot, `seed.js` runs automatically and loads all 48 teams and 72 group-stage matches. On subsequent deploys it detects existing data and skips seeding.
+
+### 6. Done
+
+Your app will be live at the Railway-provided URL (e.g. `https://yourapp.railway.app`). Share that link with players.
+
+> **Note:** Knockout matches (R32 → Final) are created manually via the Admin panel as teams advance.
+
+---
+
+## Getting Started (Local Dev)
 
 ### Prerequisites
 
