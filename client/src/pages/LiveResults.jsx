@@ -185,8 +185,18 @@ function GroupsTab({ matches, groups }) {
 }
 
 // ─── Calendar tab ──────────────────────────────────────────────────────────────
+function LiveMinute({ minute }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+      {minute != null ? `${minute}'` : 'LIVE'}
+    </span>
+  );
+}
+
 function MatchRow({ match }) {
   const finished  = match.status === 'finished';
+  const live      = match.status === 'live';
   const today     = new Date().toDateString();
   const matchDate = match.match_date ? new Date(match.match_date) : null;
   const isToday   = matchDate?.toDateString() === today;
@@ -198,7 +208,8 @@ function MatchRow({ match }) {
 
   return (
     <div className={`pt-4 pb-3 px-4 border-b border-brand-border/50 last:border-0
-      hover:bg-white/5 transition-colors ${isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
+      hover:bg-white/5 transition-colors
+      ${live ? 'bg-emerald-900/10' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
       <div className="flex items-stretch gap-3">
         {/* group · match# pill — spans full height including venue row */}
         <div className="shrink-0 w-20 flex items-center justify-center">
@@ -211,7 +222,7 @@ function MatchRow({ match }) {
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
-              <span className={`text-sm font-semibold truncate text-right ${finished ? 'text-white' : 'text-gray-300'}`}>
+              <span className={`text-sm font-semibold truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
                 {match.home_team}
               </span>
               <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
@@ -219,6 +230,10 @@ function MatchRow({ match }) {
             <div className="w-20 shrink-0 text-center">
               {finished ? (
                 <span className="font-black text-brand-gold text-lg tabular-nums">
+                  {match.home_score} – {match.away_score}
+                </span>
+              ) : live ? (
+                <span className="font-black text-white text-lg tabular-nums">
                   {match.home_score} – {match.away_score}
                 </span>
               ) : (
@@ -229,7 +244,7 @@ function MatchRow({ match }) {
             </div>
             <div className="flex-1 min-w-0 flex items-center gap-2">
               <Flag code={match.away_code} name={match.away_team} className="w-7 h-7 shrink-0" />
-              <span className={`text-sm font-semibold truncate ${finished ? 'text-white' : 'text-gray-300'}`}>
+              <span className={`text-sm font-semibold truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
                 {match.away_team}
               </span>
             </div>
@@ -243,10 +258,12 @@ function MatchRow({ match }) {
           )}
         </div>
 
-        {/* FT / Today / date — spans full height */}
+        {/* FT / LIVE / Today / date — spans full height */}
         <div className="w-16 shrink-0 hidden sm:flex items-center justify-end">
           {finished ? (
             <span className="tag pts-exact text-xs">FT</span>
+          ) : live ? (
+            <LiveMinute minute={match.live_minute} />
           ) : isToday ? (
             <span className="tag bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-xs">Today</span>
           ) : (
@@ -607,6 +624,7 @@ export default function LiveResults() {
   }, []);
 
   const played = matches.filter(m => m.status === 'finished').length;
+  const liveNow = matches.filter(m => m.status === 'live').length;
   const total  = matches.length;
 
   if (loading) return (
@@ -619,7 +637,7 @@ export default function LiveResults() {
         <div>
           <h1 className="text-2xl font-black">Live Results</h1>
           <p className="text-gray-400 text-sm mt-0.5">
-            {played} results · {total - played} upcoming · updates every 30 s
+            {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30 s
           </p>
         </div>
         <div className="flex rounded-lg overflow-hidden border border-brand-border">

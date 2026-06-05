@@ -82,46 +82,70 @@ async function syncScores() {
 
     for (const game of games) {
       const isFinished = game.finished === 'TRUE' || game.finished === true || game.finished === 1;
-      if (!isFinished) continue;
+      const isLive = !isFinished && (
+        game.live === true || game.live === 1 || game.live === 'TRUE' ||
+        game.status === 'live' || game.status === 'in_progress' ||
+        game.status === '1H'   || game.status === '2H' || game.status === 'HT' ||
+        game.status === 'ET'   || game.status === 'PEN' ||
+        game.started === true  || game.started === 'TRUE' || game.started === 1
+      );
+
+      if (!isFinished && !isLive) continue;
 
       const matchNum = parseInt(game.id, 10);
       const hs       = parseInt(game.home_score, 10);
       const as_      = parseInt(game.away_score, 10);
       if (isNaN(hs) || isNaN(as_)) { errors.push(`Match ${matchNum}: invalid scores`); continue; }
 
+      // Parse elapsed minute — handle "45+2" style strings too
+      const rawMin = game.minute ?? game.elapsed ?? game.time_elapsed ?? null;
+      const liveMinute = rawMin != null ? (parseInt(String(rawMin), 10) || null) : null;
+
       const { rows: matchRows } = await db.query('SELECT * FROM matches WHERE match_number = $1', [matchNum]);
       const our = matchRows[0];
       if (!our) { errors.push(`Match ${matchNum}: not in our DB`); continue; }
 
-      // Already up to date?
-      if (our.status === 'finished' && our.home_score === hs && our.away_score === as_) {
-        skipped++;
-        continue;
-      }
-
-      // Update result + recalculate points in one transaction
-      const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [our.id]);
-      const client = await db.connect();
-      try {
-        await client.query('BEGIN');
-        await client.query(
-          "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished' WHERE id = $3",
-          [hs, as_, our.id]
-        );
-        for (const p of preds) {
-          await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
-            calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
-          ]);
+      if (isFinished) {
+        // Already up to date?
+        if (our.status === 'finished' && our.home_score === hs && our.away_score === as_) {
+          skipped++;
+          continue;
         }
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      } finally {
-        client.release();
-      }
 
-      updated++;
+        // Update result + recalculate points in one transaction
+        const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [our.id]);
+        const client = await db.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(
+            "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished', live_minute = NULL WHERE id = $3",
+            [hs, as_, our.id]
+          );
+          for (const p of preds) {
+            await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+              calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+            ]);
+          }
+          await client.query('COMMIT');
+        } catch (err) {
+          await client.query('ROLLBACK');
+          throw err;
+        } finally {
+          client.release();
+        }
+        updated++;
+      } else {
+        // Live game — update score + minute, no point recalc yet
+        if (our.status === 'live' && our.home_score === hs && our.away_score === as_ && our.live_minute === liveMinute) {
+          skipped++;
+          continue;
+        }
+        await db.query(
+          "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3 WHERE id = $4",
+          [hs, as_, liveMinute, our.id]
+        );
+        updated++;
+      }
     }
 
     const result = { updated, skipped, errors, total_finished: games.filter(g => g.finished === 'TRUE' || g.finished === true).length };

@@ -57,6 +57,9 @@ async function initDb() {
     );
   `);
 
+  // Migrations for columns added after initial deploy
+  await db.query(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS live_minute INTEGER`);
+
   const { rows } = await db.query('SELECT COUNT(*) AS n FROM teams');
   if (parseInt(rows[0].n, 10) === 0) {
     console.log('ℹ️  Database is empty. Run: node seed.js  to load WC 2026 data.');
