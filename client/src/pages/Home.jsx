@@ -137,15 +137,26 @@ export default function Home() {
   const [matches, setMatches] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const isDemo = new URLSearchParams(window.location.search).has('demo');
 
   function load() {
     Promise.all([api.getLeaderboard(), api.getMatches()])
       .then(([lb, mts]) => {
+        let allMatches = mts;
+        if (isDemo && mts.length > 0) {
+          const demo = {
+            ...mts[0],
+            status: 'live', live_minute: 67,
+            home_score: 2, away_score: 1,
+            home_scorers: '[{"name":"Hernández","minute":"23"},{"name":"Vega","minute":"58"}]',
+            away_scorers: '[{"name":"Adeyemi","minute":"45+2"}]',
+          };
+          allMatches = [demo, ...mts.slice(1)];
+        }
         setLeaderboard(lb);
-        setMatches(mts);
-        const finished = mts.filter(m => m.status === 'finished').length;
-        const participants = lb.length;
-        setStats({ participants, finished, total: mts.length });
+        setMatches(allMatches);
+        const finished = allMatches.filter(m => m.status === 'finished').length;
+        setStats({ participants: lb.length, finished, total: allMatches.length });
       })
       .catch(console.error)
       .finally(() => setLoading(false));
