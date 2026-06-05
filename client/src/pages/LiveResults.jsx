@@ -194,37 +194,57 @@ function MatchRow({ match }) {
     ? matchDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     : '–';
 
+  const venue = VENUE_BY_MATCH[match.match_number];
+
   return (
-    <div className={`py-3 px-4 border-b border-brand-border/50 last:border-0
+    <div className={`pt-4 pb-3 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors ${isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
-      <div className="flex items-center gap-3">
-        <span className="tag bg-brand-border text-gray-400 text-xs text-center shrink-0 whitespace-nowrap w-20">
-          {match.group_name} · M{match.match_number}
-        </span>
-        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
-          <span className={`text-sm font-semibold truncate text-right ${finished ? 'text-white' : 'text-gray-300'}`}>
-            {match.home_team}
+      <div className="flex items-stretch gap-3">
+        {/* group · match# pill — spans full height including venue row */}
+        <div className="shrink-0 w-20 flex items-center justify-center">
+          <span className="tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
+            {match.group_name} · M{match.match_number}
           </span>
-          <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
         </div>
-        <div className="w-20 shrink-0 text-center">
-          {finished ? (
-            <span className="font-black text-brand-gold text-lg tabular-nums">
-              {match.home_score} – {match.away_score}
-            </span>
-          ) : (
-            <span className={`text-sm font-bold tabular-nums ${isToday ? 'text-brand-gold' : 'text-gray-500'}`}>
-              {timeStr}
-            </span>
+
+        {/* center: teams + score + venue pill */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
+              <span className={`text-sm font-semibold truncate text-right ${finished ? 'text-white' : 'text-gray-300'}`}>
+                {match.home_team}
+              </span>
+              <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
+            </div>
+            <div className="w-20 shrink-0 text-center">
+              {finished ? (
+                <span className="font-black text-brand-gold text-lg tabular-nums">
+                  {match.home_score} – {match.away_score}
+                </span>
+              ) : (
+                <span className={`text-sm font-bold tabular-nums ${isToday ? 'text-brand-gold' : 'text-gray-500'}`}>
+                  {timeStr}
+                </span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <Flag code={match.away_code} name={match.away_team} className="w-7 h-7 shrink-0" />
+              <span className={`text-sm font-semibold truncate ${finished ? 'text-white' : 'text-gray-300'}`}>
+                {match.away_team}
+              </span>
+            </div>
+          </div>
+          {venue && (
+            <div className="mt-2 flex justify-center">
+              <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-500 whitespace-nowrap">
+                {venue}
+              </span>
+            </div>
           )}
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          <Flag code={match.away_code} name={match.away_team} className="w-7 h-7 shrink-0" />
-          <span className={`text-sm font-semibold truncate ${finished ? 'text-white' : 'text-gray-300'}`}>
-            {match.away_team}
-          </span>
-        </div>
-        <div className="w-16 shrink-0 text-right hidden sm:block">
+
+        {/* FT / Today / date — spans full height */}
+        <div className="w-16 shrink-0 hidden sm:flex items-center justify-end">
           {finished ? (
             <span className="tag pts-exact text-xs">FT</span>
           ) : isToday ? (
@@ -236,11 +256,6 @@ function MatchRow({ match }) {
           )}
         </div>
       </div>
-      {VENUE_BY_MATCH[match.match_number] && (
-        <div className="mt-1 flex justify-center">
-          <span className="text-xs text-gray-500">{VENUE_BY_MATCH[match.match_number]}</span>
-        </div>
-      )}
     </div>
   );
 }

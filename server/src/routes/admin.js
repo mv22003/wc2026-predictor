@@ -344,27 +344,6 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
   }
 });
 
-// Update match details (venue, match_date)
-router.patch('/matches/:id', adminAuth, async (req, res) => {
-  try {
-    const db = getDb();
-    const { venue, match_date } = req.body;
-    const matchId = parseInt(req.params.id, 10);
-    const updates = [];
-    const params = [];
-    let idx = 1;
-    if (venue !== undefined)      { updates.push(`venue = $${idx++}`);      params.push(venue || null); }
-    if (match_date !== undefined) { updates.push(`match_date = $${idx++}`); params.push(match_date || null); }
-    if (updates.length === 0) return res.json({ success: true });
-    params.push(matchId);
-    await db.query(`UPDATE matches SET ${updates.join(', ')} WHERE id = $${idx}`, params);
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Reset a result — clears score, sets status back to upcoming, zeroes all points
 router.delete('/matches/:id/result', adminAuth, async (req, res) => {
   try {
