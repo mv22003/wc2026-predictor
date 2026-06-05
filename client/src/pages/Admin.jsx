@@ -361,11 +361,11 @@ function RecalculateButton({ adminKey, onDone }) {
       setResult(data);
       setState('done');
       onDone?.();
-      setTimeout(() => setState('idle'), 4000);
+      setTimeout(() => setState('idle'), 5000);
     } catch (e) {
       setState('error');
       setResult({ error: e.message });
-      setTimeout(() => setState('idle'), 4000);
+      setTimeout(() => setState('idle'), 5000);
     }
   }
 
@@ -383,13 +383,19 @@ function RecalculateButton({ adminKey, onDone }) {
       <button
         onClick={() => setShowConfirm(true)}
         disabled={state === 'running'}
-        className="card flex flex-col items-center justify-center gap-1 px-5 shrink-0 text-center
+        className="card relative flex flex-col items-center justify-center gap-2 px-8 py-4 text-center flex-1
                    hover:bg-white/5 transition-colors disabled:opacity-50 cursor-pointer"
       >
-        <span className="text-xs font-bold text-gray-300 whitespace-nowrap">
-          {state === 'running' ? 'Recalculating…' : state === 'done' ? '✓ Done' : 'Recalculate'}
+        {state === 'done' && (
+          <span className="absolute inset-0 flex items-center justify-center text-2xl text-green-400 bg-[#0d1117]/80 rounded-xl">✓</span>
+        )}
+        {state === 'error' && (
+          <span className="absolute inset-0 flex items-center justify-center text-2xl text-red-400 bg-[#0d1117]/80 rounded-xl">✗</span>
+        )}
+        <span className="text-sm font-bold text-gray-300 whitespace-nowrap">
+          {state === 'running' ? 'Recalculating…' : 'Recalculate User Scores'}
         </span>
-        <span className="text-[10px] text-gray-600 whitespace-nowrap">scores</span>
+        <span className="text-[10px] text-gray-500 leading-tight">Recompute all player scores using the current scoring rules</span>
       </button>
     </>
   );
@@ -924,7 +930,7 @@ export default function Admin() {
 
       {/* Live sync + recalculate */}
       <div className="flex gap-4 items-stretch">
-        <div className="flex-1 min-w-0">
+        <div className="flex-[2] min-w-0">
           <LiveSyncCard adminKey={key} onDone={() => load(key)} />
         </div>
         {stats?.finished > 0 && (
