@@ -647,20 +647,6 @@ function BracketTab({ allMatches }) {
   );
 }
 
-// ─── Demo live match (visible when ?demo is in the URL) ───────────────────────
-const DEMO_MATCH = {
-  id: 9999, match_number: 9999,
-  home_team: 'Mexico',  home_code: 'MEX',
-  away_team: 'USA',     away_code: 'USA',
-  status: 'live', live_minute: 67,
-  home_score: 2,  away_score: 1,
-  home_scorers: '[{"name":"Jiménez","minute":"23"},{"name":"Vega","minute":"58"}]',
-  away_scorers: '[{"name":"Pulisic","minute":"45+2"}]',
-  match_date: new Date().toISOString(),
-  phase: 'group', group_name: 'A',
-  venue: 'Estadio Azteca, Mexico City',
-};
-
 // ─── Main page ─────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'groups',   label: 'Groups' },
@@ -672,13 +658,12 @@ export default function LiveResults() {
   const [matches, setMatches] = useState([]);
   const [groups,  setGroups]  = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState('calendar');
-  const isDemo = new URLSearchParams(window.location.search).has('demo');
+  const [tab,     setTab]     = useState('groups');
 
   function load() {
     Promise.all([api.getMatches(), api.getGroups()])
       .then(([mts, grps]) => {
-        setMatches(isDemo ? [DEMO_MATCH, ...mts] : mts);
+        setMatches(mts);
         setGroups(grps);
       })
       .catch(console.error)

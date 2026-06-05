@@ -131,34 +131,21 @@ function LiveNowSection({ matches }) {
   );
 }
 
-const DEMO_LIVE = {
-  id: 9999, match_number: 9999,
-  home_team: 'Mexico', home_code: 'MEX',
-  away_team: 'USA',    away_code: 'USA',
-  status: 'live', live_minute: 67,
-  home_score: 2, away_score: 1,
-  home_scorers: '[{"name":"Jiménez","minute":"23"},{"name":"Vega","minute":"58"}]',
-  away_scorers: '[{"name":"Pulisic","minute":"45+2"}]',
-  group_name: 'A',
-};
-
 export default function Home() {
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
   const [matches, setMatches] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const isDemo = new URLSearchParams(window.location.search).has('demo');
 
   function load() {
     Promise.all([api.getLeaderboard(), api.getMatches()])
       .then(([lb, mts]) => {
-        const allMatches = isDemo ? [DEMO_LIVE, ...mts] : mts;
         setLeaderboard(lb);
-        setMatches(allMatches);
-        const finished = allMatches.filter(m => m.status === 'finished').length;
+        setMatches(mts);
+        const finished = mts.filter(m => m.status === 'finished').length;
         const participants = lb.length;
-        setStats({ participants, finished, total: allMatches.length });
+        setStats({ participants, finished, total: mts.length });
       })
       .catch(console.error)
       .finally(() => setLoading(false));
