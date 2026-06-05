@@ -3,19 +3,19 @@ services:
     name: wc2026-predictor
     env: node
     region: oregon
-    plan: free
-    buildCommand: cd server && npm install && cd ../client && npm install && npm run build
-    startCommand: node server/index.js
+    plan: starter
+    buildCommand: npm run install:all && npm run build
+    startCommand: npm start
     envVars:
+      - key: NODE_VERSION
+        value: 22.5.0
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3001
-      - key: ADMIN_KEY
-        generateValue: true   # Render will auto-generate — check the Render dashboard
       - key: DB_PATH
-        value: /var/data/wc2026.db
+        value: /data/wc2026.db
+      - key: ADMIN_KEY
+        generateValue: true
     disk:
       name: wc2026-data
-      mountPath: /var/data
+      mountPath: /data
       sizeGB: 1

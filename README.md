@@ -53,46 +53,37 @@ wc2026-predictor/
 
 ---
 
-## Deploying to Production (Railway)
+## Deploying to Production (Render)
 
-[Railway](https://railway.app) is the recommended host — it supports Node 22 and persistent volumes for the SQLite database.
+[Render](https://render.com) is the recommended host — persistent disk, Node 22 support, and auto-deploys from GitHub. The **Starter plan** is ~$7/month (includes the persistent disk needed for SQLite).
 
-### 1. Push your repo to GitHub (if not already done)
+> The free tier does **not** include a persistent disk, so the database would reset on every deploy — not suitable for production.
 
-### 2. Create a new Railway project
+### 1. Push your repo to GitHub
 
-- Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**
-- Select this repository
+### 2. Create a new Web Service on Render
 
-### 3. Add a persistent volume
+- Go to [dashboard.render.com](https://dashboard.render.com) → **New** → **Web Service**
+- Connect your GitHub repo
+- Render will detect `render.yaml` automatically and pre-fill all settings
 
-The SQLite database must survive deploys:
+### 3. Set your admin key
 
-- In your Railway service → **Volumes** tab → **Add Volume**
-- Mount path: `/data`
+In the Render dashboard → **Environment** tab, find the auto-generated `ADMIN_KEY` value and save it somewhere safe — you'll need it to access `/admin`.
 
-### 4. Set environment variables
+### 4. Deploy
 
-In Railway → **Variables** tab:
-
-| Variable | Value |
-|---|---|
-| `NODE_ENV` | `production` |
-| `ADMIN_KEY` | your secret admin password |
-| `DB_PATH` | `/data/wc2026.db` |
-
-### 5. Deploy
-
-Railway will automatically:
+Render will:
 1. Install all dependencies (`npm run install:all`)
 2. Build the React frontend (`npm run build`)
-3. Start the server (`npm start`)
+3. Mount a 1 GB persistent disk at `/data`
+4. Start the server (`npm start`)
 
 On first boot, `seed.js` runs automatically and loads all 48 teams and 72 group-stage matches. On subsequent deploys it detects existing data and skips seeding.
 
-### 6. Done
+### 5. Done
 
-Your app will be live at the Railway-provided URL (e.g. `https://yourapp.railway.app`). Share that link with players.
+Your app will be live at `https://wc2026-predictor.onrender.com` (or similar). Every `git push` to `main` triggers a redeploy.
 
 > **Note:** Knockout matches (R32 → Final) are created manually via the Admin panel as teams advance.
 
