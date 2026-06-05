@@ -592,7 +592,7 @@ function ResultRow({ match, adminKey, onSaved }) {
                     <div key={i} className="flex gap-1.5">
                       <input
                         type="text"
-                        placeholder={`Player ${i + 1}`}
+                        placeholder=""
                         className="flex-1 min-w-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
                                    focus:border-brand-gold focus:outline-none"
                         value={homeScorers[i]?.name ?? ''}
@@ -605,7 +605,7 @@ function ResultRow({ match, adminKey, onSaved }) {
                       />
                       <input
                         type="text"
-                        placeholder="45+3"
+                        placeholder=""
                         className="w-16 shrink-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
                                    focus:border-brand-gold focus:outline-none text-center"
                         value={homeScorers[i]?.minute ?? ''}
@@ -628,7 +628,7 @@ function ResultRow({ match, adminKey, onSaved }) {
                     <div key={i} className="flex gap-1.5">
                       <input
                         type="text"
-                        placeholder={`Player ${i + 1}`}
+                        placeholder=""
                         className="flex-1 min-w-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
                                    focus:border-brand-gold focus:outline-none"
                         value={awayScorers[i]?.name ?? ''}
@@ -641,7 +641,7 @@ function ResultRow({ match, adminKey, onSaved }) {
                       />
                       <input
                         type="text"
-                        placeholder="45+3"
+                        placeholder=""
                         className="w-16 shrink-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
                                    focus:border-brand-gold focus:outline-none text-center"
                         value={awayScorers[i]?.minute ?? ''}

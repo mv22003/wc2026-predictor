@@ -228,7 +228,7 @@ function ScorerLine({ homeScorers, awayScorers }) {
   const rows = Math.max(home.length, away.length);
 
   return (
-    <div className="mt-1.5 px-1 space-y-0.5">
+    <div className="mt-3 px-1 space-y-1">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
           <span className="flex-1 text-right leading-snug">{home[i] ? fmtHome(home[i]) : ''}</span>
@@ -253,7 +253,7 @@ function MatchRow({ match }) {
   const venue = VENUE_BY_MATCH[match.match_number];
 
   return (
-    <div className={`pt-4 pb-3 px-4 border-b border-brand-border/50 last:border-0
+    <div className={`pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors
       ${live ? 'bg-emerald-900/10' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
       <div className="flex items-stretch gap-3">
@@ -299,7 +299,7 @@ function MatchRow({ match }) {
             <ScorerLine homeScorers={match.home_scorers} awayScorers={match.away_scorers} />
           )}
           {venue && (
-            <div className="mt-2 flex justify-center">
+            <div className="mt-3 flex justify-center">
               <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-500 whitespace-nowrap">
                 {venue}
               </span>
