@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -20,7 +20,7 @@ function MiniLeaderRow({ row }) {
         {medal || `#${row.rank}`}
       </span>
       <span className="flex-1 font-semibold truncate">{row.name}</span>
-      <span className="text-xs text-gray-400">{row.exact_scores} exact</span>
+
       <span className="font-black text-brand-gold text-lg w-12 text-right">{row.total_points}</span>
     </div>
   );
@@ -85,6 +85,7 @@ function LiveNowSection({ matches }) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
   const [matches, setMatches] = useState([]);
   const [stats, setStats] = useState({});
@@ -144,12 +145,9 @@ export default function Home() {
             <p className="text-gray-400 mt-2 text-sm whitespace-nowrap">
               Predict every match, climb the leaderboard, and prove your football knowledge!
             </p>
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4">
               <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
                 Make Predictions →
-              </Link>
-              <Link to="/leaderboard" className="btn-secondary inline-flex items-center justify-center text-sm">
-                View Leaderboard
               </Link>
             </div>
           </div>
@@ -186,7 +184,7 @@ export default function Home() {
       <div className="grid sm:grid-cols-5 gap-6">
 
         {/* Leaderboard preview */}
-        <div className="card sm:col-span-2">
+        <div className="card sm:col-span-2 cursor-pointer" onClick={() => navigate('/leaderboard')}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-lg">Leaderboard</h2>
             <Link to="/leaderboard" className="text-brand-gold text-xs font-semibold hover:underline">
@@ -201,7 +199,7 @@ export default function Home() {
         </div>
 
         {/* Matches */}
-        <div className="card sm:col-span-3">
+        <div className="card sm:col-span-3 cursor-pointer" onClick={() => navigate('/live')}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-lg">
               {recent.length > 0 ? 'Recent Results' : 'Upcoming Matches'}
