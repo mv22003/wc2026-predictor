@@ -75,7 +75,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
   return (
     <tr className="bg-brand-surface/50">
       <td colSpan={7} className="px-4 py-2">
-        <div className="flex flex-col">
+        <div className="flex flex-col overflow-y-auto max-h-48 scrollbar-thin">
           {predictions.map(p => (
             <div key={p.id} className={`flex items-center gap-3 px-3 py-2 text-xs ${rowTint(p.points)}`}>
               <div className="flex items-center gap-1.5 shrink-0">
