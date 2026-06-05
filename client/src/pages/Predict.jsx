@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { useBlocker } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -78,6 +80,33 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
   );
 }
 
+function ConfirmModal({ title, message, onConfirm, onCancel, confirmLabel = 'Confirm' }) {
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-brand-card border border-brand-border rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-4">
+        <h3 className="text-base font-bold text-white">{title}</h3>
+        <p className="text-sm text-gray-400 leading-relaxed">{message}</p>
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded text-sm font-semibold bg-brand-border/60 text-gray-300 hover:bg-brand-border transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded text-sm font-bold bg-brand-gold text-brand-navy hover:brightness-110 transition-colors"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function Predict() {
   const [name, setName]         = useState(() => localStorage.getItem(LS_NAME_KEY) || '');
   const [nameInput, setNameInput] = useState(() => localStorage.getItem(LS_NAME_KEY) || '');
@@ -89,6 +118,22 @@ export default function Predict() {
   const [loading, setLoading]   = useState(false);
   const [status, setStatus]     = useState(null);  // { type: 'success'|'error', msg }
   const [checking, setChecking] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const hasUnsaved = !locked && name && Object.values(preds).some(
+    p => p && p.home !== '' && p.home != null && p.away !== '' && p.away != null
+  );
+
+  // Warn on tab close / refresh
+  useEffect(() => {
+    if (!hasUnsaved) return;
+    const handler = e => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsaved]);
+
+  // Block in-app navigation and show modal
+  const blocker = useBlocker(hasUnsaved);
 
   // Load matches on mount
   useEffect(() => {
@@ -155,6 +200,16 @@ export default function Predict() {
   }
 
   const groupMatches = matches.filter(m => m.group_name === activeGroup);
+
+  const groupAllFilled = groupMatches.length > 0 && groupMatches.every(m => {
+    const p = preds[m.id];
+    return p && p.home !== '' && p.home != null && p.away !== '' && p.away != null;
+  });
+  const nextGroup = (() => {
+    const idx = groups.indexOf(activeGroup);
+    return idx !== -1 && idx < groups.length - 1 ? groups[idx + 1] : null;
+  })();
+
   const filledCount  = matches.filter(m => {
     const p = preds[m.id];
     return p && p.home !== '' && p.home != null && p.away !== '' && p.away != null;
@@ -292,6 +347,18 @@ export default function Predict() {
             ))}
           </div>
 
+          {/* ── Next group prompt ───────────────────────────────────────────── */}
+          {!locked && groupAllFilled && nextGroup && (
+            <div className="flex justify-end">
+              <button
+                className="btn-primary"
+                onClick={() => setActiveGroup(nextGroup)}
+              >
+                Next: Group {nextGroup} →
+              </button>
+            </div>
+          )}
+
           {/* ── Submit ──────────────────────────────────────────────────────── */}
           {!locked && (
             <div className="card flex flex-col sm:flex-row items-center gap-4">
@@ -305,7 +372,7 @@ export default function Predict() {
               </div>
               <button
                 className="btn-primary whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={handleSubmit}
+                onClick={() => setShowConfirm(true)}
                 disabled={loading || filledCount < matches.length}
               >
                 {loading ? 'Submitting…' : `Submit All ${matches.length} Predictions`}
@@ -313,6 +380,26 @@ export default function Predict() {
             </div>
           )}
         </>
+      )}
+
+      {showConfirm && (
+        <ConfirmModal
+          title="Submit Predictions"
+          message={`You're about to lock in all ${matches.length} predictions as ${name}. This cannot be undone — are you sure?`}
+          confirmLabel="Submit"
+          onConfirm={() => { setShowConfirm(false); handleSubmit(); }}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
+
+      {blocker.state === 'blocked' && (
+        <ConfirmModal
+          title="Leave page?"
+          message="You have unsaved predictions. If you leave now your progress will be lost."
+          confirmLabel="Leave"
+          onConfirm={() => blocker.proceed()}
+          onCancel={() => blocker.reset()}
+        />
       )}
     </div>
   );
