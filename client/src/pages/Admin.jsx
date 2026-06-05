@@ -66,7 +66,7 @@ function KOPanel({ matches, adminKey, onRefresh }) {
       return {
         match_number: num,
         phase: round.phase,
-        group_name: round.label.slice(0, 8),
+        group_name: round.phase.toUpperCase(),
         home_code: home?.code ?? null,
         away_code: away?.code ?? null,
         match_date: null,
@@ -408,14 +408,14 @@ function ResultRow({ match, adminKey, onSaved }) {
       </td>
       <td className="px-3 py-3 text-sm hidden md:table-cell text-gray-400">{dateStr}</td>
       <td className="px-3 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6" />
+        <div className="flex items-center justify-end gap-2 text-sm font-semibold">
           <span className="hidden sm:inline">{match.home_team}</span>
           <span className="sm:hidden">{match.home_code}</span>
+          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6" />
         </div>
       </td>
       <td className="px-3 py-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-center gap-1.5">
           <input
             type="number" min="0" max="99"
             className="w-10 h-9 text-center font-bold rounded bg-brand-navy border border-brand-border
@@ -435,9 +435,9 @@ function ResultRow({ match, adminKey, onSaved }) {
       </td>
       <td className="px-3 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
+          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6" />
           <span className="hidden sm:inline">{match.away_team}</span>
           <span className="sm:hidden">{match.away_code}</span>
-          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6" />
         </div>
       </td>
       <td className="px-3 py-3 text-xs text-gray-400 hidden lg:table-cell">
@@ -625,8 +625,8 @@ export default function Admin() {
               <tr className="border-b border-brand-border text-gray-500 text-xs uppercase tracking-wider bg-brand-navy/50">
                 <th className="px-3 py-2 text-left">Grp</th>
                 <th className="px-3 py-2 text-left hidden md:table-cell">Date</th>
-                <th className="px-3 py-2 text-left">Home</th>
-                <th className="px-3 py-2 text-left">Score</th>
+                <th className="px-3 py-2 text-right">Home</th>
+                <th className="px-3 py-2 text-center">Score</th>
                 <th className="px-3 py-2 text-left">Away</th>
                 <th className="px-3 py-2 hidden lg:table-cell"></th>
                 <th className="px-3 py-2 text-left">Action</th>
