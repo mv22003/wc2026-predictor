@@ -75,13 +75,7 @@ async function syncScores() {
     const token = await getToken();
     const games = await fetchGames(token);
 
-    const db        = getDb();
-    const getMatch  = db.prepare('SELECT * FROM matches WHERE match_number = ?');
-    const setResult = db.prepare(
-      "UPDATE matches SET home_score = ?, away_score = ?, status = 'finished' WHERE id = ?"
-    );
-    const getPreds  = db.prepare('SELECT * FROM predictions WHERE match_id = ?');
-    const setPts    = db.prepare('UPDATE predictions SET points = ? WHERE id = ?');
+    const db = getDb();
 
     let updated = 0, skipped = 0;
     const errors = [];
@@ -95,7 +89,8 @@ async function syncScores() {
       const as_      = parseInt(game.away_score, 10);
       if (isNaN(hs) || isNaN(as_)) { errors.push(`Match ${matchNum}: invalid scores`); continue; }
 
-      const our = getMatch.get(matchNum);
+      const { rows: matchRows } = await db.query('SELECT * FROM matches WHERE match_number = $1', [matchNum]);
+      const our = matchRows[0];
       if (!our) { errors.push(`Match ${matchNum}: not in our DB`); continue; }
 
       // Already up to date?
@@ -105,12 +100,26 @@ async function syncScores() {
       }
 
       // Update result + recalculate points in one transaction
-      db.transaction(() => {
-        setResult.run(hs, as_, our.id);
-        for (const p of getPreds.all(our.id)) {
-          setPts.run(calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id);
+      const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [our.id]);
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(
+          "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished' WHERE id = $3",
+          [hs, as_, our.id]
+        );
+        for (const p of preds) {
+          await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+            calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+          ]);
         }
-      })();
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
 
       updated++;
     }

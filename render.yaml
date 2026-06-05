@@ -3,7 +3,7 @@ services:
     name: wc2026-predictor
     env: node
     region: oregon
-    plan: starter
+    plan: free
     buildCommand: npm run install:all && npm run build
     startCommand: npm start
     envVars:
@@ -11,11 +11,7 @@ services:
         value: 22.5.0
       - key: NODE_ENV
         value: production
-      - key: DB_PATH
-        value: /data/wc2026.db
       - key: ADMIN_KEY
         generateValue: true
-    disk:
-      name: wc2026-data
-      mountPath: /data
-      sizeGB: 1
+      - key: DATABASE_URL
+        sync: false

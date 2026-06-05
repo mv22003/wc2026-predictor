@@ -30,11 +30,8 @@ try {
   require('./server/node_modules/dotenv').config({ path: path.join(PROJECT_ROOT, '.env') });
 } catch { /* .env optional */ }
 
+const { Pool } = require('./server/node_modules/pg');
 const schedule = require('./world-cup-2026-schedule.json');
-const { initDb, getDb } = require('./server/src/db');
-
-initDb();
-const db = getDb();
 
 // ─── Flag emojis ──────────────────────────────────────────────────────────────
 const FLAGS = {
@@ -165,68 +162,101 @@ const teams = Object.entries(teamGroupMap)
   }));
 
 // ─── Run ──────────────────────────────────────────────────────────────────────
-function run() {
-  const existingTeams = db.prepare('SELECT COUNT(*) as n FROM teams').get().n;
+(async () => {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  });
 
-  if (existingTeams > 0) {
-    if (!process.argv.includes('--force')) {
-      console.log(`⚠️  Database already has ${existingTeams} teams. Use --force to wipe and reseed.`);
-      process.exit(0);
-    }
-    db.exec('DELETE FROM predictions; DELETE FROM users; DELETE FROM matches; DELETE FROM teams;');
-    console.log('🗑️  Wiped existing data (--force).');
-  }
+  try {
+    const { rows: countRows } = await pool.query('SELECT COUNT(*) AS n FROM teams');
+    const existingTeams = parseInt(countRows[0].n, 10);
 
-  // Insert teams
-  const insertTeam = db.prepare(
-    'INSERT INTO teams (name, code, group_name, flag_emoji) VALUES (?, ?, ?, ?)'
-  );
-  db.transaction(() => {
-    for (const t of teams) insertTeam.run(t.name, t.code, t.group_name, t.flag_emoji);
-  })();
-  console.log(`✅ Inserted ${teams.length} teams across 12 groups`);
-
-  // Build name → id lookup
-  const teamId = {};
-  for (const row of db.prepare('SELECT id, name FROM teams').all()) {
-    teamId[row.name] = row.id;
-  }
-
-  // Insert group stage matches
-  const insertMatch = db.prepare(`
-    INSERT INTO matches (home_team_id, away_team_id, match_date, venue, phase, group_name, match_number)
-    VALUES (?, ?, ?, ?, 'group', ?, ?)
-  `);
-
-  let inserted = 0;
-  const warnings = [];
-
-  db.transaction(() => {
-    for (const m of groupMatches) {
-      const homeId = teamId[m.team_a];
-      const awayId = teamId[m.team_b];
-      if (!homeId || !awayId) {
-        warnings.push(`Unknown team in match ${m.match_number}: "${m.team_a}" vs "${m.team_b}"`);
-        continue;
+    if (existingTeams > 0) {
+      if (!process.argv.includes('--force')) {
+        console.log(`⚠️  Database already has ${existingTeams} teams. Use --force to wipe and reseed.`);
+        process.exit(0);
       }
-      insertMatch.run(
-        homeId, awayId,
-        isoDate(m.date, m.time_et),
-        `${m.venue}, ${m.city}`,
-        m.group,
-        m.match_number
-      );
-      inserted++;
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM predictions');
+        await client.query('DELETE FROM users');
+        await client.query('DELETE FROM matches');
+        await client.query('DELETE FROM teams');
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+      console.log('🗑️  Wiped existing data (--force).');
     }
-  })();
 
-  if (warnings.length) warnings.forEach(w => console.warn('⚠️ ', w));
+    // Insert teams
+    const teamClient = await pool.connect();
+    try {
+      await teamClient.query('BEGIN');
+      for (const t of teams) {
+        await teamClient.query(
+          'INSERT INTO teams (name, code, group_name, flag_emoji) VALUES ($1, $2, $3, $4) ON CONFLICT (name) DO NOTHING',
+          [t.name, t.code, t.group_name, t.flag_emoji]
+        );
+      }
+      await teamClient.query('COMMIT');
+    } catch (err) {
+      await teamClient.query('ROLLBACK');
+      throw err;
+    } finally {
+      teamClient.release();
+    }
+    console.log(`✅ Inserted ${teams.length} teams across 12 groups`);
 
-  const knockoutCount = schedule.matches.length - groupMatches.length;
-  console.log(`✅ Inserted ${inserted} group stage matches`);
-  console.log(`ℹ️  ${knockoutCount} knockout bracket slots skipped — add them via the admin panel as teams advance.`);
-  console.log('');
-  console.log('🎉 Seed complete!');
-}
+    // Build name → id lookup
+    const teamId = {};
+    const { rows: teamRows } = await pool.query('SELECT id, name FROM teams');
+    for (const row of teamRows) {
+      teamId[row.name] = row.id;
+    }
 
-run();
+    // Insert group stage matches
+    let inserted = 0;
+    const warnings = [];
+
+    const matchClient = await pool.connect();
+    try {
+      await matchClient.query('BEGIN');
+      for (const m of groupMatches) {
+        const homeId = teamId[m.team_a];
+        const awayId = teamId[m.team_b];
+        if (!homeId || !awayId) {
+          warnings.push(`Unknown team in match ${m.match_number}: "${m.team_a}" vs "${m.team_b}"`);
+          continue;
+        }
+        await matchClient.query(
+          `INSERT INTO matches (home_team_id, away_team_id, match_date, venue, phase, group_name, match_number)
+           VALUES ($1, $2, $3, $4, 'group', $5, $6)`,
+          [homeId, awayId, isoDate(m.date, m.time_et), `${m.venue}, ${m.city}`, m.group, m.match_number]
+        );
+        inserted++;
+      }
+      await matchClient.query('COMMIT');
+    } catch (err) {
+      await matchClient.query('ROLLBACK');
+      throw err;
+    } finally {
+      matchClient.release();
+    }
+
+    if (warnings.length) warnings.forEach(w => console.warn('⚠️ ', w));
+
+    const knockoutCount = schedule.matches.length - groupMatches.length;
+    console.log(`✅ Inserted ${inserted} group stage matches`);
+    console.log(`ℹ️  ${knockoutCount} knockout bracket slots skipped — add them via the admin panel as teams advance.`);
+    console.log('');
+    console.log('🎉 Seed complete!');
+  } finally {
+    await pool.end();
+  }
+})();

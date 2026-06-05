@@ -196,7 +196,7 @@ function MatchRow({ match }) {
   return (
     <div className={`flex items-center gap-3 py-3 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors ${isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
-      <span className="tag bg-brand-border text-gray-400 text-xs text-center shrink-0 whitespace-nowrap">
+      <span className="tag bg-brand-border text-gray-400 text-xs text-center shrink-0 whitespace-nowrap w-20">
         {match.group_name} · M{match.match_number}
       </span>
       <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">

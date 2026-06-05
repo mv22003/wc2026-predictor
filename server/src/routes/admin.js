@@ -13,15 +13,15 @@ for (const m of schedule.matches) {
 }
 
 // After any group result changes, sync pending R32 team assignments from live standings
-function recalcR32Teams(db) {
-  const groupMatches = db.prepare(`
+async function recalcR32Teams(db) {
+  const { rows: groupMatches } = await db.query(`
     SELECT m.*, ht.name AS home_team, ht.code AS home_code,
                 at.name AS away_team,  at.code AS away_code
     FROM matches m
     JOIN teams ht ON m.home_team_id = ht.id
     JOIN teams at ON m.away_team_id = at.id
     WHERE m.phase = 'group'
-  `).all();
+  `);
 
   const groups = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
   const byGroup = {};
@@ -30,12 +30,10 @@ function recalcR32Teams(db) {
   }
 
   const best3rdMap = resolveBest3rdSlots(byGroup) || {};
-  const getTeam    = db.prepare('SELECT id FROM teams WHERE UPPER(code) = UPPER(?) OR name = ? COLLATE NOCASE');
-  const updateTeams = db.prepare(
-    "UPDATE matches SET home_team_id = ?, away_team_id = ? WHERE match_number = ? AND (status IS NULL OR status != 'finished')"
-  );
 
-  db.transaction(() => {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
     for (const [numStr, slots] of Object.entries(R32_SLOTS)) {
       const num = Number(numStr);
       const homeTeam = resolveTeam(slots.home, byGroup, {});
@@ -44,11 +42,30 @@ function recalcR32Teams(db) {
         : resolveTeam(slots.away, byGroup, {});
 
       if (!homeTeam || !awayTeam) continue;
-      const homeId = getTeam.get(homeTeam.code, homeTeam.code)?.id;
-      const awayId = getTeam.get(awayTeam.code, awayTeam.code)?.id;
-      if (homeId && awayId) updateTeams.run(homeId, awayId, num);
+      const { rows: hr } = await client.query(
+        'SELECT id FROM teams WHERE UPPER(code) = UPPER($1) OR LOWER(name) = LOWER($2)',
+        [homeTeam.code, homeTeam.code]
+      );
+      const { rows: ar } = await client.query(
+        'SELECT id FROM teams WHERE UPPER(code) = UPPER($1) OR LOWER(name) = LOWER($2)',
+        [awayTeam.code, awayTeam.code]
+      );
+      const homeId = hr[0]?.id;
+      const awayId = ar[0]?.id;
+      if (homeId && awayId) {
+        await client.query(
+          "UPDATE matches SET home_team_id = $1, away_team_id = $2 WHERE match_number = $3 AND (status IS NULL OR status != 'finished')",
+          [homeId, awayId, num]
+        );
+      }
     }
-  })();
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 function adminAuth(req, res, next) {
@@ -97,213 +114,341 @@ router.post('/sync/stop', adminAuth, (req, res) => {
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
-router.get('/stats', adminAuth, (req, res) => {
-  const db = getDb();
-  res.json({
-    total_users:    db.prepare("SELECT COUNT(*) as n FROM users WHERE submitted_at IS NOT NULL").get().n,
-    total_matches:  db.prepare("SELECT COUNT(*) as n FROM matches").get().n,
-    finished:       db.prepare("SELECT COUNT(*) as n FROM matches WHERE status = 'finished'").get().n,
-    total_preds:    db.prepare("SELECT COUNT(*) as n FROM predictions").get().n,
-  });
+router.get('/stats', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const [r1, r2, r3, r4] = await Promise.all([
+      db.query("SELECT COUNT(*) AS n FROM users WHERE submitted_at IS NOT NULL"),
+      db.query("SELECT COUNT(*) AS n FROM matches"),
+      db.query("SELECT COUNT(*) AS n FROM matches WHERE status = 'finished'"),
+      db.query("SELECT COUNT(*) AS n FROM predictions"),
+    ]);
+    res.json({
+      total_users:   parseInt(r1.rows[0].n, 10),
+      total_matches: parseInt(r2.rows[0].n, 10),
+      finished:      parseInt(r3.rows[0].n, 10),
+      total_preds:   parseInt(r4.rows[0].n, 10),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
-router.get('/teams', adminAuth, (req, res) => {
-  const db = getDb();
-  res.json(db.prepare('SELECT * FROM teams ORDER BY group_name, name').all());
+router.get('/teams', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { rows } = await db.query('SELECT * FROM teams ORDER BY group_name, name');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-router.post('/teams/bulk', adminAuth, (req, res) => {
-  const db = getDb();
-  const { teams } = req.body;
-  if (!Array.isArray(teams)) return res.status(400).json({ error: 'teams must be array' });
+router.post('/teams/bulk', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { teams } = req.body;
+    if (!Array.isArray(teams)) return res.status(400).json({ error: 'teams must be array' });
 
-  const insert = db.prepare(
-    'INSERT OR IGNORE INTO teams (name, code, group_name, flag_emoji) VALUES (?, ?, ?, ?)'
-  );
-  const tx = db.transaction(() => {
-    for (const t of teams) insert.run(t.name, t.code?.toUpperCase(), t.group_name?.toUpperCase(), t.flag_emoji || '🏳️');
-  });
-  tx();
-  res.json({ success: true, count: teams.length });
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      for (const t of teams) {
+        await client.query(
+          'INSERT INTO teams (name, code, group_name, flag_emoji) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
+          [t.name, t.code?.toUpperCase(), t.group_name?.toUpperCase(), t.flag_emoji || '🏳️']
+        );
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    res.json({ success: true, count: teams.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Matches ───────────────────────────────────────────────────────────────────
-router.get('/matches', adminAuth, (req, res) => {
-  const db = getDb();
-  const rows = db.prepare(`
-    SELECT m.*,
-      ht.name as home_team, ht.code as home_code, ht.flag_emoji as home_flag,
-      at.name as away_team, at.code as away_code, at.flag_emoji as away_flag,
-      COUNT(p.id) as prediction_count
-    FROM matches m
-    JOIN teams ht ON m.home_team_id = ht.id
-    JOIN teams at ON m.away_team_id = at.id
-    LEFT JOIN predictions p ON m.id = p.match_id
-    GROUP BY m.id
-    ORDER BY m.match_date, m.id
-  `).all();
-  res.json(rows);
+router.get('/matches', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { rows } = await db.query(`
+      SELECT m.*,
+        ht.name as home_team, ht.code as home_code, ht.flag_emoji as home_flag,
+        at.name as away_team, at.code as away_code, at.flag_emoji as away_flag,
+        COUNT(p.id) as prediction_count
+      FROM matches m
+      JOIN teams ht ON m.home_team_id = ht.id
+      JOIN teams at ON m.away_team_id = at.id
+      LEFT JOIN predictions p ON m.id = p.match_id
+      GROUP BY m.id, ht.name, ht.code, ht.flag_emoji, at.name, at.code, at.flag_emoji
+      ORDER BY m.match_date, m.id
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-router.post('/matches/bulk', adminAuth, (req, res) => {
-  const db = getDb();
-  const { matches } = req.body;
-  if (!Array.isArray(matches)) return res.status(400).json({ error: 'matches must be array' });
+router.post('/matches/bulk', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { matches } = req.body;
+    if (!Array.isArray(matches)) return res.status(400).json({ error: 'matches must be array' });
 
-  const insertMatch = db.prepare(`
-    INSERT OR IGNORE INTO matches
-      (home_team_id, away_team_id, match_date, venue, phase, group_name, match_number)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  const getTeam = db.prepare(
-    'SELECT id FROM teams WHERE UPPER(code) = UPPER(?) OR name = ? COLLATE NOCASE'
-  );
-
-  const results = [];
-  const tx = db.transaction(() => {
-    for (const m of matches) {
-      let homeId = m.home_team_id;
-      let awayId = m.away_team_id;
-      if (!homeId && m.home_code) homeId = getTeam.get(m.home_code, m.home_code)?.id;
-      if (!awayId && m.away_code) awayId = getTeam.get(m.away_code, m.away_code)?.id;
-      if (!homeId || !awayId) {
-        results.push({ error: `Team not found: ${m.home_code} vs ${m.away_code}` });
-        continue;
+    const results = [];
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      for (const m of matches) {
+        let homeId = m.home_team_id;
+        let awayId = m.away_team_id;
+        if (!homeId && m.home_code) {
+          const { rows } = await client.query(
+            'SELECT id FROM teams WHERE UPPER(code) = UPPER($1) OR LOWER(name) = LOWER($2)',
+            [m.home_code, m.home_code]
+          );
+          homeId = rows[0]?.id;
+        }
+        if (!awayId && m.away_code) {
+          const { rows } = await client.query(
+            'SELECT id FROM teams WHERE UPPER(code) = UPPER($1) OR LOWER(name) = LOWER($2)',
+            [m.away_code, m.away_code]
+          );
+          awayId = rows[0]?.id;
+        }
+        if (!homeId || !awayId) {
+          results.push({ error: `Team not found: ${m.home_code} vs ${m.away_code}` });
+          continue;
+        }
+        const matchDate = m.match_date ?? scheduleDateByNum[m.match_number] ?? null;
+        const { rows: inserted } = await client.query(`
+          INSERT INTO matches (home_team_id, away_team_id, match_date, venue, phase, group_name, match_number)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          ON CONFLICT DO NOTHING
+          RETURNING id
+        `, [homeId, awayId, matchDate, m.venue, m.phase || 'group', m.group_name?.toUpperCase(), m.match_number]);
+        results.push({ id: inserted[0]?.id ?? null });
       }
-      const matchDate = m.match_date ?? scheduleDateByNum[m.match_number] ?? null;
-      const r = insertMatch.run(homeId, awayId, matchDate, m.venue, m.phase || 'group', m.group_name?.toUpperCase(), m.match_number);
-      results.push({ id: r.lastInsertRowid });
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-  });
-  tx();
-  res.json(results);
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Match results ─────────────────────────────────────────────────────────────
-router.post('/matches/:id/result', adminAuth, (req, res) => {
-  const db = getDb();
-  const { home_score, away_score } = req.body;
-  const matchId = parseInt(req.params.id, 10);
+router.post('/matches/:id/result', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { home_score, away_score } = req.body;
+    const matchId = parseInt(req.params.id, 10);
 
-  if (home_score == null || away_score == null)
-    return res.status(400).json({ error: 'home_score and away_score required' });
+    if (home_score == null || away_score == null)
+      return res.status(400).json({ error: 'home_score and away_score required' });
 
-  const hs = parseInt(home_score, 10);
-  const as_ = parseInt(away_score, 10);
+    const hs = parseInt(home_score, 10);
+    const as_ = parseInt(away_score, 10);
 
-  const saved = db.prepare("SELECT phase FROM matches WHERE id = ?").get(matchId);
-  db.prepare(
-    "UPDATE matches SET home_score = ?, away_score = ?, status = 'finished' WHERE id = ?"
-  ).run(hs, as_, matchId);
+    const { rows: savedRows } = await db.query('SELECT phase FROM matches WHERE id = $1', [matchId]);
+    const saved = savedRows[0];
 
-  const preds = db.prepare('SELECT * FROM predictions WHERE match_id = ?').all(matchId);
-  const updatePts = db.prepare('UPDATE predictions SET points = ? WHERE id = ?');
-  const tx = db.transaction(() => {
-    for (const p of preds) updatePts.run(calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id);
-  });
-  tx();
+    const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
 
-  if (saved?.phase === 'group') recalcR32Teams(db);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished' WHERE id = $3",
+        [hs, as_, matchId]
+      );
+      for (const p of preds) {
+        await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+          calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+        ]);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
 
-  res.json({ success: true, match_id: matchId, predictions_updated: preds.length });
+    if (saved?.phase === 'group') await recalcR32Teams(db);
+
+    res.json({ success: true, match_id: matchId, predictions_updated: preds.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Correct a result already entered
-router.put('/matches/:id/result', adminAuth, (req, res) => {
-  const db = getDb();
-  const { home_score, away_score, status } = req.body;
-  const matchId = parseInt(req.params.id, 10);
+router.put('/matches/:id/result', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { home_score, away_score, status } = req.body;
+    const matchId = parseInt(req.params.id, 10);
 
-  const hs = parseInt(home_score, 10);
-  const as_ = parseInt(away_score, 10);
+    const hs = parseInt(home_score, 10);
+    const as_ = parseInt(away_score, 10);
 
-  const savedPut = db.prepare("SELECT phase FROM matches WHERE id = ?").get(matchId);
-  db.prepare(
-    'UPDATE matches SET home_score = ?, away_score = ?, status = ? WHERE id = ?'
-  ).run(hs, as_, status || 'finished', matchId);
+    const { rows: savedRows } = await db.query('SELECT phase FROM matches WHERE id = $1', [matchId]);
+    const savedPut = savedRows[0];
 
-  const preds = db.prepare('SELECT * FROM predictions WHERE match_id = ?').all(matchId);
-  const updatePts = db.prepare('UPDATE predictions SET points = ? WHERE id = ?');
-  const tx = db.transaction(() => {
-    for (const p of preds) updatePts.run(calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id);
-  });
-  tx();
+    const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
 
-  if (savedPut?.phase === 'group') recalcR32Teams(db);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        'UPDATE matches SET home_score = $1, away_score = $2, status = $3 WHERE id = $4',
+        [hs, as_, status || 'finished', matchId]
+      );
+      for (const p of preds) {
+        await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+          calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+        ]);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
 
-  res.json({ success: true });
+    if (savedPut?.phase === 'group') await recalcR32Teams(db);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Reset a result — clears score, sets status back to upcoming, zeroes all points
-router.delete('/matches/:id/result', adminAuth, (req, res) => {
-  const db = getDb();
-  const matchId = parseInt(req.params.id, 10);
+router.delete('/matches/:id/result', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const matchId = parseInt(req.params.id, 10);
 
-  db.prepare(
-    "UPDATE matches SET home_score = NULL, away_score = NULL, status = 'upcoming' WHERE id = ?"
-  ).run(matchId);
+    await db.query(
+      "UPDATE matches SET home_score = NULL, away_score = NULL, status = 'upcoming' WHERE id = $1",
+      [matchId]
+    );
+    await db.query('UPDATE predictions SET points = 0 WHERE match_id = $1', [matchId]);
 
-  db.prepare('UPDATE predictions SET points = 0 WHERE match_id = ?').run(matchId);
-
-  res.json({ success: true, match_id: matchId });
+    res.json({ success: true, match_id: matchId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Recalculate all prediction points using current scoring rules
-router.post('/recalculate', adminAuth, (req, res) => {
-  const db = getDb();
+router.post('/recalculate', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
 
-  const finishedMatches = db.prepare(
-    "SELECT * FROM matches WHERE status = 'finished'"
-  ).all();
+    const { rows: finishedMatches } = await db.query(
+      "SELECT * FROM matches WHERE status = 'finished'"
+    );
 
-  const getPreds  = db.prepare('SELECT * FROM predictions WHERE match_id = ?');
-  const updatePts = db.prepare('UPDATE predictions SET points = ? WHERE id = ?');
-
-  let predictionsUpdated = 0;
-  const tx = db.transaction(() => {
-    for (const match of finishedMatches) {
-      for (const p of getPreds.all(match.id)) {
-        updatePts.run(
-          calculatePoints(p.pred_home, p.pred_away, match.home_score, match.away_score),
-          p.id
+    let predictionsUpdated = 0;
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      for (const match of finishedMatches) {
+        const { rows: preds } = await client.query(
+          'SELECT * FROM predictions WHERE match_id = $1', [match.id]
         );
-        predictionsUpdated++;
+        for (const p of preds) {
+          await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+            calculatePoints(p.pred_home, p.pred_away, match.home_score, match.away_score),
+            p.id,
+          ]);
+          predictionsUpdated++;
+        }
       }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-  });
-  tx();
 
-  res.json({
-    success:              true,
-    matches_processed:    finishedMatches.length,
-    predictions_updated:  predictionsUpdated,
-  });
+    res.json({
+      success:             true,
+      matches_processed:   finishedMatches.length,
+      predictions_updated: predictionsUpdated,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Users ─────────────────────────────────────────────────────────────────────
-router.get('/users', adminAuth, (req, res) => {
-  const db = getDb();
-  res.json(db.prepare(`
-    SELECT u.*, COUNT(p.id) as predictions, COALESCE(SUM(p.points), 0) as total_points
-    FROM users u
-    LEFT JOIN predictions p ON u.id = p.user_id
-    GROUP BY u.id
-    ORDER BY total_points DESC, u.name
-  `).all());
+router.get('/users', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { rows } = await db.query(`
+      SELECT u.*, COUNT(p.id) AS predictions, COALESCE(SUM(p.points), 0) AS total_points
+      FROM users u
+      LEFT JOIN predictions p ON u.id = p.user_id
+      GROUP BY u.id
+      ORDER BY total_points DESC, u.name
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Danger zone ───────────────────────────────────────────────────────────────
-router.delete('/reset', adminAuth, (req, res) => {
+router.delete('/reset', adminAuth, async (req, res) => {
   if (req.body?.confirm !== 'RESET_ALL_DATA')
     return res.status(400).json({ error: 'Send body: { confirm: "RESET_ALL_DATA" }' });
-  const db = getDb();
-  db.exec(`
-    DELETE FROM predictions;
-    DELETE FROM users;
-    UPDATE matches SET home_score = NULL, away_score = NULL, status = 'upcoming';
-  `);
-  res.json({ success: true });
+  try {
+    const db = getDb();
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM predictions');
+      await client.query('DELETE FROM users');
+      await client.query("UPDATE matches SET home_score = NULL, away_score = NULL, status = 'upcoming'");
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
