@@ -52,19 +52,22 @@ function LiveMatchCard({ match, showMinute = false }) {
 
   return (
     <div className="py-2 px-1">
-      {/* teams + score */}
+      {/* minute pill — own row so flags align purely with the score */}
+      {showMinute && (
+        <div className="flex justify-center mb-1">
+          <span className="flex items-center gap-1 text-sm font-black text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+          </span>
+        </div>
+      )}
+      {/* teams + score — flags now center-align with score only */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           <span className="text-lg font-black text-white text-right leading-tight truncate">{match.home_team}</span>
           <Flag code={match.home_code} name={match.home_team} className="w-12 h-12 shrink-0" />
         </div>
-        <div className="shrink-0 px-2 flex flex-col items-center gap-0.5">
-          {showMinute && (
-            <span className="flex items-center gap-1 text-sm font-black text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
-            </span>
-          )}
+        <div className="shrink-0 px-2">
           <span className="text-4xl font-black text-white tabular-nums">
             {match.home_score} – {match.away_score}
           </span>
