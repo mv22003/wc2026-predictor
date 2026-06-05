@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
+import { VENUE_BY_MATCH } from '../venueData';
 
 function StatBox({ label, value, color = 'text-brand-gold' }) {
   return (
@@ -41,11 +42,12 @@ function parseMinute(m) {
   return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
 }
 
-function MatchRow({ match }) {
-  const live = match.status === 'live';
+function MatchRow({ match, prominent = false }) {
+  const live     = match.status === 'live';
   const finished = match.status === 'finished';
-  const d = match.match_date ? new Date(match.match_date) : null;
-  const dateStr = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBD';
+  const d        = match.match_date ? new Date(match.match_date) : null;
+  const dateStr  = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBD';
+  const venue    = VENUE_BY_MATCH[match.match_number] || match.venue;
 
   const homeScorers = parseScorers(match.home_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   const awayScorers = parseScorers(match.away_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
@@ -54,36 +56,46 @@ function MatchRow({ match }) {
     && awayScorers.length === (match.away_score ?? 0)
     && (homeScorers.length > 0 || awayScorers.length > 0);
 
+  // Fixed-width right column so scorer rows can mirror it exactly
+  const RIGHT_W   = live ? 'w-14' : 'w-44';
+  const flagSize  = prominent ? 'w-9 h-9' : 'w-6 h-6';
+  const nameSize  = prominent ? 'text-base font-black' : 'text-sm font-semibold';
+  const scoreSize = prominent ? 'text-2xl' : 'text-base';
+  const rowPy     = prominent ? 'py-4' : 'py-3';
+
   return (
-    <div className="py-3 border-b border-brand-border last:border-0">
+    <div className={`${rowPy} border-b border-brand-border last:border-0`}>
+      {/* main row */}
       <div className="flex items-center gap-3">
         <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
         <div className="flex-1 flex items-center gap-2 min-w-0">
-          <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
+          <span className={`flex-1 ${nameSize} flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
             <span className="truncate text-right">{match.home_team}</span>
-            <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
+            <Flag code={match.home_code} name={match.home_team} className={`${flagSize} shrink-0`} />
           </span>
           <span className="w-12 shrink-0 flex items-center justify-center">
             {finished ? (
-              <span className="font-black text-brand-gold tabular-nums">{match.home_score}–{match.away_score}</span>
+              <span className={`font-black text-brand-gold tabular-nums ${scoreSize}`}>{match.home_score}–{match.away_score}</span>
             ) : live ? (
-              <span className="font-black text-white tabular-nums">{match.home_score}–{match.away_score}</span>
+              <span className={`font-black text-white tabular-nums ${scoreSize}`}>{match.home_score}–{match.away_score}</span>
             ) : (
               <span className="text-gray-500 text-xs">vs</span>
             )}
           </span>
-          <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
-            <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
+          <span className={`flex-1 ${nameSize} flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
+            <Flag code={match.away_code} name={match.away_team} className={`${flagSize} shrink-0`} />
             <span className="truncate">{match.away_team}</span>
           </span>
         </div>
         {live ? (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 whitespace-nowrap shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
-          </span>
+          <div className={`${RIGHT_W} shrink-0 flex items-center justify-end`}>
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+            </span>
+          </div>
         ) : (
-          <span className="hidden sm:flex items-center justify-end gap-1.5 shrink-0 w-44">
+          <span className={`hidden sm:flex items-center justify-end gap-1.5 shrink-0 ${RIGHT_W}`}>
             <span className="text-xs text-gray-500 whitespace-nowrap">{dateStr}</span>
             <span className="w-7 shrink-0 flex justify-center">
               {finished && <span className="tag pts-exact text-xs">FT</span>}
@@ -92,12 +104,13 @@ function MatchRow({ match }) {
         )}
       </div>
 
+      {/* scorer rows — mirrors main row layout exactly */}
       {showScorers && (
         <div className="mt-2 space-y-0.5">
           {Array.from({ length: Math.max(homeScorers.length, awayScorers.length) }, (_, i) => (
             <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
               <span className="w-16 shrink-0" />
-              <div className="flex-1 flex items-start gap-2">
+              <div className="flex-1 flex items-start gap-2 min-w-0">
                 <span className="flex-1 text-right leading-snug">
                   {homeScorers[i] ? `${homeScorers[i].name}${homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''} ⚽️` : ''}
                 </span>
@@ -106,8 +119,18 @@ function MatchRow({ match }) {
                   {awayScorers[i] ? `⚽️ ${awayScorers[i].name}${awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}` : ''}
                 </span>
               </div>
+              <span className={`${RIGHT_W} shrink-0`} />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* venue pill */}
+      {venue && (live || finished) && (
+        <div className="mt-2 flex justify-center">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-500 whitespace-nowrap">
+            {venue}
+          </span>
         </div>
       )}
     </div>
@@ -122,11 +145,8 @@ function LiveNowSection({ matches }) {
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
         <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
         <span className="text-xs text-emerald-600 font-semibold">{matches.length} match{matches.length !== 1 ? 'es' : ''} in progress</span>
-        <Link to="/live" className="ml-auto text-emerald-500 text-xs font-semibold hover:underline">
-          Full view →
-        </Link>
       </div>
-      {matches.map(m => <MatchRow key={m.id} match={m} />)}
+      {matches.map(m => <MatchRow key={m.id} match={m} prominent />)}
     </div>
   );
 }
