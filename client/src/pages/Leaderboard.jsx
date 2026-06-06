@@ -150,25 +150,26 @@ export default function Leaderboard() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black">Leaderboard</h1>
           <p className="text-gray-400 text-sm">{board.length} players · updates every 30 s</p>
         </div>
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            placeholder="Search player…"
-            className="bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-sm
-                       focus:border-brand-gold focus:outline-none w-48 transition-colors"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <Link to="/leaderboard/compare" className="text-brand-gold text-sm font-semibold hover:underline whitespace-nowrap">
-            Head-to-Head →
-          </Link>
-        </div>
+        <Link
+          to="/leaderboard/compare"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-gold/50 bg-brand-gold/10 text-brand-gold text-sm font-bold hover:bg-brand-gold/20 transition-colors whitespace-nowrap"
+        >
+          ⚔ Head-to-Head
+        </Link>
       </div>
+      <input
+        type="text"
+        placeholder="Search player…"
+        className="bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-sm
+                   focus:border-brand-gold focus:outline-none w-full sm:w-64 transition-colors"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
 
       {/* Top 3 podium */}
       {board.length >= 3 && !search && (
