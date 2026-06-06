@@ -33,11 +33,8 @@ function Navbar() {
           <NavLink to="/predict"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Predict
           </NavLink>
-          <NavLink to="/leaderboard" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+          <NavLink to="/leaderboard" className={({ isActive }) => `nav-link${isActive || loc.pathname.startsWith('/leaderboard') ? ' active' : ''}`}>
             Leaderboard
-          </NavLink>
-          <NavLink to="/compare"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            Compare
           </NavLink>
           <NavLink to="/admin"     className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Admin
@@ -60,7 +57,7 @@ export default function App() {
           <Route path="/bracket"     element={<Navigate to="/live" replace />} />
           <Route path="/predict"     element={<Predict />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/compare"     element={<Compare />} />
+          <Route path="/leaderboard/compare" element={<Compare />} />
           <Route path="/admin"       element={<Admin />} />
         </Routes>
       </main>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -247,7 +247,8 @@ export default function Compare() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black">Head-to-Head</h1>
+        <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
+        <h1 className="text-2xl font-black mt-1">Head-to-Head</h1>
         <p className="text-gray-400 text-sm">Compare predictions between two players</p>
       </div>
 

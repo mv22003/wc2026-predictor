@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -154,14 +155,19 @@ export default function Leaderboard() {
           <h1 className="text-2xl font-black">Leaderboard</h1>
           <p className="text-gray-400 text-sm">{board.length} players · updates every 30 s</p>
         </div>
-        <input
-          type="text"
-          placeholder="Search player…"
-          className="bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-sm
-                     focus:border-brand-gold focus:outline-none w-48 transition-colors"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search player…"
+            className="bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-sm
+                       focus:border-brand-gold focus:outline-none w-48 transition-colors"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <Link to="/leaderboard/compare" className="text-brand-gold text-sm font-semibold hover:underline whitespace-nowrap">
+            Head-to-Head →
+          </Link>
+        </div>
       </div>
 
       {/* Top 3 podium */}
