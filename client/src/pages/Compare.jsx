@@ -78,32 +78,32 @@ function MatchRow({ predA, predB }) {
 
   return (
     <div className="grid grid-cols-3 items-stretch border-b border-brand-border/30 last:border-b-0">
-      {/* A: score + badge right-aligned as a unit */}
+      {/* A: badge on outer-left, score on inner-right */}
       <div className={`flex items-center justify-end gap-2 px-4 py-2.5 ${tintA}`}>
-        <span className="font-mono text-sm text-gray-200">{predStrA}</span>
         {isFinished && predA && <PtsBadge pts={ptsA} />}
+        <span className="font-mono text-sm text-gray-200">{predStrA}</span>
       </div>
 
-      {/* Centre: fixed-width score/vs so flags never shift between rows */}
+      {/* Centre: code flag [result] flag code — flags flank the result so vs/score always centred */}
       <div className="flex items-center justify-center px-2 py-2.5 border-x border-brand-border/30">
         <div className="flex items-center gap-1.5 text-sm font-semibold">
-          <Flag code={src.home_code} name={src.home_team} className="w-6 h-6" />
-          <span className="text-gray-300">{src.home_code}</span>
-          <span className="w-12 text-center">
+          <span className="text-gray-400 text-xs w-7 text-right">{src.home_code}</span>
+          <Flag code={src.home_code} name={src.home_team} className="w-6 h-6 shrink-0" />
+          <span className="w-12 text-center shrink-0">
             {isFinished && src.home_score != null
               ? <span className="text-white font-bold tabular-nums">{src.home_score} – {src.away_score}</span>
               : <span className="text-gray-500 font-semibold">vs</span>
             }
           </span>
-          <span className="text-gray-300">{src.away_code}</span>
-          <Flag code={src.away_code} name={src.away_team} className="w-6 h-6" />
+          <Flag code={src.away_code} name={src.away_team} className="w-6 h-6 shrink-0" />
+          <span className="text-gray-400 text-xs w-7 text-left">{src.away_code}</span>
         </div>
       </div>
 
-      {/* B: badge + score left-aligned as a unit */}
+      {/* B: score on inner-left, badge on outer-right */}
       <div className={`flex items-center justify-start gap-2 px-4 py-2.5 ${tintB}`}>
-        {isFinished && predB && <PtsBadge pts={ptsB} />}
         <span className="font-mono text-sm text-gray-200">{predStrB}</span>
+        {isFinished && predB && <PtsBadge pts={ptsB} />}
       </div>
     </div>
   );
