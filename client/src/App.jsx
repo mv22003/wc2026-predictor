@@ -3,6 +3,7 @@ import Home        from './pages/Home';
 import LiveResults from './pages/LiveResults';
 import Predict     from './pages/Predict';
 import Leaderboard from './pages/Leaderboard';
+import Compare     from './pages/Compare';
 import Admin       from './pages/Admin';
 
 function Navbar() {
@@ -35,6 +36,9 @@ function Navbar() {
           <NavLink to="/leaderboard" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Leaderboard
           </NavLink>
+          <NavLink to="/compare"   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Compare
+          </NavLink>
           <NavLink to="/admin"     className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Admin
           </NavLink>
@@ -56,6 +60,7 @@ export default function App() {
           <Route path="/bracket"     element={<Navigate to="/live" replace />} />
           <Route path="/predict"     element={<Predict />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/compare"     element={<Compare />} />
           <Route path="/admin"       element={<Admin />} />
         </Routes>
       </main>
