@@ -132,44 +132,60 @@ function GroupCard({ groupName, predsA, predsB }) {
   );
 }
 
+function PlayerCard({ name, stats }) {
+  return (
+    <div className="card text-center flex flex-col gap-3">
+      <p className="font-black text-lg truncate">{name}</p>
+      <div>
+        <p className="text-brand-gold font-black text-4xl">{stats.pts}</p>
+        <p className="text-gray-500 text-xs mt-0.5">points</p>
+      </div>
+      <div className="grid grid-cols-4 gap-1 text-center">
+        <div>
+          <span className="tag pts-exact block w-full">{stats.exact}</span>
+          <span className="text-[10px] text-gray-600 mt-1 block">Exact</span>
+        </div>
+        <div>
+          <span className="tag pts-correct block w-full">{stats.correct}</span>
+          <span className="text-[10px] text-gray-600 mt-1 block">Result+GD</span>
+        </div>
+        <div>
+          <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 block w-full">{stats.partial}</span>
+          <span className="text-[10px] text-gray-600 mt-1 block">Result</span>
+        </div>
+        <div>
+          <span className="tag pts-zero block w-full">{stats.wrong}</span>
+          <span className="text-[10px] text-gray-600 mt-1 block">Wrong</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StatsHeader({ nameA, statsA, nameB, statsB, record }) {
   return (
-    <div className="grid grid-cols-3 gap-4 items-start">
-      <div className="card text-center">
-        <p className="text-lg font-black truncate">{nameA}</p>
-        <p className="text-brand-gold font-black text-3xl">{statsA.pts}</p>
-        <p className="text-gray-500 text-xs mb-3">pts</p>
-        <div className="flex justify-center gap-2 flex-wrap">
-          <span className="tag pts-exact">{statsA.exact}</span>
-          <span className="tag pts-correct">{statsA.correct}</span>
-          <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30">{statsA.partial}</span>
-          <span className="tag pts-zero">{statsA.wrong}</span>
+    <div className="grid grid-cols-3 gap-4 items-stretch">
+      <PlayerCard name={nameA} stats={statsA} />
+
+      <div className="card text-center flex flex-col items-center justify-center gap-4">
+        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Match wins</p>
+        <div className="flex items-end justify-center gap-3">
+          <div className="text-center">
+            <p className="text-3xl font-black text-emerald-400">{record.winsA}</p>
+            <p className="text-xs text-gray-600 mt-1">Wins</p>
+          </div>
+          <div className="text-center pb-1">
+            <p className="text-xl font-black text-gray-500">{record.draws}</p>
+            <p className="text-xs text-gray-600 mt-1">Draws</p>
+          </div>
+          <div className="text-center">
+            <p className="text-3xl font-black text-emerald-400">{record.winsB}</p>
+            <p className="text-xs text-gray-600 mt-1">Wins</p>
+          </div>
         </div>
       </div>
 
-      <div className="card text-center flex flex-col items-center justify-center gap-2">
-        <p className="text-xs text-gray-500 uppercase tracking-wider">Match wins</p>
-        <div className="flex items-center gap-3 text-lg font-black">
-          <span className="text-emerald-400">{record.winsA}</span>
-          <span className="text-gray-600">/</span>
-          <span className="text-gray-400">{record.draws}</span>
-          <span className="text-gray-600">/</span>
-          <span className="text-emerald-400">{record.winsB}</span>
-        </div>
-        <p className="text-[10px] text-gray-600">W / D / W</p>
-      </div>
-
-      <div className="card text-center">
-        <p className="text-lg font-black truncate">{nameB}</p>
-        <p className="text-brand-gold font-black text-3xl">{statsB.pts}</p>
-        <p className="text-gray-500 text-xs mb-3">pts</p>
-        <div className="flex justify-center gap-2 flex-wrap">
-          <span className="tag pts-exact">{statsB.exact}</span>
-          <span className="tag pts-correct">{statsB.correct}</span>
-          <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30">{statsB.partial}</span>
-          <span className="tag pts-zero">{statsB.wrong}</span>
-        </div>
-      </div>
+      <PlayerCard name={nameB} stats={statsB} />
     </div>
   );
 }
@@ -246,19 +262,22 @@ export default function Compare() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
-        <h1 className="text-2xl font-black mt-1">Head-to-Head</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
+          <h1 className="text-2xl font-black mt-1">Head-to-Head</h1>
+        </div>
+        {compared && dataA && dataB && (
+          <button
+            className="btn-primary text-sm shrink-0"
+            onClick={() => { setCompared(false); setDataA(null); setDataB(null); setSelA(''); setSelB(''); setSearchParams({}); }}
+          >
+            New comparison
+          </button>
+        )}
       </div>
 
-      {compared && dataA && dataB ? (
-        <button
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          onClick={() => { setCompared(false); setDataA(null); setDataB(null); setSelA(''); setSelB(''); setSearchParams({}); }}
-        >
-          New comparison
-        </button>
-      ) : (
+      {!compared && (
         <div className="card flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-36 space-y-1">
             <label className="text-xs text-gray-500 uppercase tracking-wider">Player A</label>
