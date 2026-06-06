@@ -83,20 +83,20 @@ function MatchRow({ predA, predB }) {
         {isFinished && predA && <PtsBadge pts={ptsA} />}
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-1 px-2 py-3 border-x border-brand-border/30">
-        <div className="flex items-center gap-2 text-xs font-semibold">
-          <Flag code={src.home_code} name={src.home_team} className="w-5 h-5" />
-          <span className="text-gray-400">{src.home_code}</span>
+      <div className="flex flex-col items-center justify-center px-2 py-2.5 border-x border-brand-border/30 gap-0.5">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Flag code={src.home_code} name={src.home_team} className="w-6 h-6" />
+          <span className="text-gray-300">{src.home_code}</span>
           {isFinished && src.home_score != null
-            ? <span className="text-white font-bold">{src.home_score} – {src.away_score}</span>
-            : <span className="text-gray-600">–</span>
+            ? <span className="text-white font-bold tabular-nums">{src.home_score} – {src.away_score}</span>
+            : <span className="text-gray-600 font-bold">–</span>
           }
-          <span className="text-gray-400">{src.away_code}</span>
-          <Flag code={src.away_code} name={src.away_team} className="w-5 h-5" />
+          <span className="text-gray-300">{src.away_code}</span>
+          <Flag code={src.away_code} name={src.away_team} className="w-6 h-6" />
         </div>
-        {isUpcoming && (
-          <span className="text-[10px] uppercase tracking-wider text-gray-600">upcoming</span>
-        )}
+        <span className="text-[10px] uppercase tracking-wider text-gray-600 leading-3">
+          {isUpcoming ? 'upcoming' : ' '}
+        </span>
       </div>
 
       <div className={`flex items-center justify-start gap-2 px-4 py-3 ${tintB}`}>
@@ -134,28 +134,30 @@ function GroupCard({ groupName, predsA, predsB }) {
 
 function PlayerCard({ name, stats }) {
   return (
-    <div className="card text-center flex flex-col gap-3">
-      <p className="font-black text-lg truncate">{name}</p>
-      <div>
-        <p className="text-brand-gold font-black text-4xl">{stats.pts}</p>
-        <p className="text-gray-500 text-xs mt-0.5">points</p>
+    <div className="card flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-black text-lg truncate">{name}</p>
+        <div className="shrink-0 text-right">
+          <span className="text-brand-gold font-black text-3xl">{stats.pts}</span>
+          <span className="text-gray-500 text-xs ml-1">pts</span>
+        </div>
       </div>
       <div className="grid grid-cols-4 gap-1 text-center">
         <div>
           <span className="tag pts-exact block w-full">{stats.exact}</span>
-          <span className="text-[10px] text-gray-600 mt-1 block">Exact</span>
+          <span className="text-[10px] text-gray-600 mt-0.5 block">Exact</span>
         </div>
         <div>
           <span className="tag pts-correct block w-full">{stats.correct}</span>
-          <span className="text-[10px] text-gray-600 mt-1 block">Result+GD</span>
+          <span className="text-[10px] text-gray-600 mt-0.5 block">Result+GD</span>
         </div>
         <div>
           <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 block w-full">{stats.partial}</span>
-          <span className="text-[10px] text-gray-600 mt-1 block">Result</span>
+          <span className="text-[10px] text-gray-600 mt-0.5 block">Result</span>
         </div>
         <div>
           <span className="tag pts-zero block w-full">{stats.wrong}</span>
-          <span className="text-[10px] text-gray-600 mt-1 block">Wrong</span>
+          <span className="text-[10px] text-gray-600 mt-0.5 block">Wrong</span>
         </div>
       </div>
     </div>
