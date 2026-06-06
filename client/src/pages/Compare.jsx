@@ -78,34 +78,32 @@ function MatchRow({ predA, predB }) {
 
   return (
     <div className="grid grid-cols-3 items-stretch border-b border-brand-border/30 last:border-b-0">
-      {/* A: badge far-left (fixed slot), score flush against centre */}
-      <div className={`flex items-center gap-2 pl-3 pr-2 py-2.5 ${tintA}`}>
-        <div className="w-8 shrink-0 flex justify-center">
-          {isFinished && predA && <PtsBadge pts={ptsA} />}
-        </div>
-        <span className="flex-1 text-right font-mono text-sm text-gray-200">{predStrA}</span>
+      {/* A: score + badge right-aligned as a unit */}
+      <div className={`flex items-center justify-end gap-2 px-4 py-2.5 ${tintA}`}>
+        <span className="font-mono text-sm text-gray-200">{predStrA}</span>
+        {isFinished && predA && <PtsBadge pts={ptsA} />}
       </div>
 
-      {/* Centre: always truly centred */}
+      {/* Centre: fixed-width score/vs so flags never shift between rows */}
       <div className="flex items-center justify-center px-2 py-2.5 border-x border-brand-border/30">
         <div className="flex items-center gap-1.5 text-sm font-semibold">
           <Flag code={src.home_code} name={src.home_team} className="w-6 h-6" />
           <span className="text-gray-300">{src.home_code}</span>
-          {isFinished && src.home_score != null
-            ? <span className="text-white font-bold tabular-nums">{src.home_score} – {src.away_score}</span>
-            : <span className="text-gray-500 font-semibold">vs</span>
-          }
+          <span className="w-12 text-center">
+            {isFinished && src.home_score != null
+              ? <span className="text-white font-bold tabular-nums">{src.home_score} – {src.away_score}</span>
+              : <span className="text-gray-500 font-semibold">vs</span>
+            }
+          </span>
           <span className="text-gray-300">{src.away_code}</span>
           <Flag code={src.away_code} name={src.away_team} className="w-6 h-6" />
         </div>
       </div>
 
-      {/* B: score flush against centre, badge far-right (fixed slot) */}
-      <div className={`flex items-center gap-2 pl-2 pr-3 py-2.5 ${tintB}`}>
-        <span className="flex-1 font-mono text-sm text-gray-200">{predStrB}</span>
-        <div className="w-8 shrink-0 flex justify-center">
-          {isFinished && predB && <PtsBadge pts={ptsB} />}
-        </div>
+      {/* B: badge + score left-aligned as a unit */}
+      <div className={`flex items-center justify-start gap-2 px-4 py-2.5 ${tintB}`}>
+        {isFinished && predB && <PtsBadge pts={ptsB} />}
+        <span className="font-mono text-sm text-gray-200">{predStrB}</span>
       </div>
     </div>
   );
