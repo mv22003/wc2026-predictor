@@ -162,29 +162,10 @@ function PlayerCard({ name, stats }) {
   );
 }
 
-function StatsHeader({ nameA, statsA, nameB, statsB, record }) {
+function StatsHeader({ nameA, statsA, nameB, statsB }) {
   return (
-    <div className="grid grid-cols-3 gap-4 items-stretch">
+    <div className="grid grid-cols-2 gap-4 items-stretch">
       <PlayerCard name={nameA} stats={statsA} />
-
-      <div className="card text-center flex flex-col items-center justify-center gap-4">
-        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Match wins</p>
-        <div className="flex items-end justify-center gap-3">
-          <div className="text-center">
-            <p className="text-3xl font-black text-emerald-400">{record.winsA}</p>
-            <p className="text-xs text-gray-600 mt-1">Wins</p>
-          </div>
-          <div className="text-center pb-1">
-            <p className="text-xl font-black text-gray-500">{record.draws}</p>
-            <p className="text-xs text-gray-600 mt-1">Draws</p>
-          </div>
-          <div className="text-center">
-            <p className="text-3xl font-black text-emerald-400">{record.winsB}</p>
-            <p className="text-xs text-gray-600 mt-1">Wins</p>
-          </div>
-        </div>
-      </div>
-
       <PlayerCard name={nameB} stats={statsB} />
     </div>
   );
@@ -265,7 +246,7 @@ export default function Compare() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
-          <h1 className="text-2xl font-black mt-1">Head-to-Head</h1>
+          <h1 className="text-2xl font-black mt-1">H2H Prediction Comparison</h1>
         </div>
         {compared && dataA && dataB && (
           <button
@@ -336,7 +317,6 @@ export default function Compare() {
             statsA={statsA}
             nameB={dataB.user.name}
             statsB={statsB}
-            record={record}
           />
 
           <div className="space-y-4">
