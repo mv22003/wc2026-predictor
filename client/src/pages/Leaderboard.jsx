@@ -156,6 +156,12 @@ export default function Leaderboard() {
           <p className="text-gray-400 text-sm">{board.length} players · updates every 30 s</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            to="/leaderboard/compare"
+            className="inline-flex items-center px-4 py-2 rounded-lg border border-brand-gold/50 bg-brand-gold/10 text-brand-gold text-sm font-bold hover:bg-brand-gold/20 transition-colors whitespace-nowrap"
+          >
+            Head-to-Head
+          </Link>
           <input
             type="text"
             placeholder="Search player…"
@@ -164,12 +170,6 @@ export default function Leaderboard() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          <Link
-            to="/leaderboard/compare"
-            className="inline-flex items-center px-4 py-2 rounded-lg border border-brand-gold/50 bg-brand-gold/10 text-brand-gold text-sm font-bold hover:bg-brand-gold/20 transition-colors whitespace-nowrap"
-          >
-            Head-to-Head
-          </Link>
         </div>
       </div>
 
