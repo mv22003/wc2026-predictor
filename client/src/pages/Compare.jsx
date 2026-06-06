@@ -249,52 +249,60 @@ export default function Compare() {
       <div>
         <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
         <h1 className="text-2xl font-black mt-1">Head-to-Head</h1>
-        <p className="text-gray-400 text-sm">Compare predictions between two players</p>
       </div>
 
-      <div className="card flex flex-wrap items-end gap-4">
-        <div className="flex-1 min-w-36 space-y-1">
-          <label className="text-xs text-gray-500 uppercase tracking-wider">Player A</label>
-          <select
-            className="w-full bg-brand-navy border border-brand-border rounded-lg px-3 py-2 text-sm
-                       focus:border-brand-gold focus:outline-none transition-colors"
-            value={selA}
-            onChange={e => setSelA(e.target.value)}
-            disabled={playersLoading}
-          >
-            <option value="">Select player…</option>
-            {players.map(n => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="shrink-0 text-gray-600 font-bold pb-2">vs</div>
-
-        <div className="flex-1 min-w-36 space-y-1">
-          <label className="text-xs text-gray-500 uppercase tracking-wider">Player B</label>
-          <select
-            className="w-full bg-brand-navy border border-brand-border rounded-lg px-3 py-2 text-sm
-                       focus:border-brand-gold focus:outline-none transition-colors"
-            value={selB}
-            onChange={e => setSelB(e.target.value)}
-            disabled={playersLoading}
-          >
-            <option value="">Select player…</option>
-            {players.map(n => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-        </div>
-
+      {compared && dataA && dataB ? (
         <button
-          className="btn-primary shrink-0"
-          disabled={!selA || !selB || selA === selB || comparing}
-          onClick={handleCompare}
+          className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          onClick={() => { setCompared(false); setDataA(null); setDataB(null); setSelA(''); setSelB(''); setSearchParams({}); }}
         >
-          {comparing ? 'Loading…' : 'Compare →'}
+          New comparison
         </button>
-      </div>
+      ) : (
+        <div className="card flex flex-wrap items-end gap-4">
+          <div className="flex-1 min-w-36 space-y-1">
+            <label className="text-xs text-gray-500 uppercase tracking-wider">Player A</label>
+            <select
+              className="w-full bg-brand-navy border border-brand-border rounded-lg px-3 py-2 text-sm
+                         focus:border-brand-gold focus:outline-none transition-colors"
+              value={selA}
+              onChange={e => setSelA(e.target.value)}
+              disabled={playersLoading}
+            >
+              <option value="">Select player…</option>
+              {players.map(n => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="shrink-0 text-gray-600 font-bold pb-2">vs</div>
+
+          <div className="flex-1 min-w-36 space-y-1">
+            <label className="text-xs text-gray-500 uppercase tracking-wider">Player B</label>
+            <select
+              className="w-full bg-brand-navy border border-brand-border rounded-lg px-3 py-2 text-sm
+                         focus:border-brand-gold focus:outline-none transition-colors"
+              value={selB}
+              onChange={e => setSelB(e.target.value)}
+              disabled={playersLoading}
+            >
+              <option value="">Select player…</option>
+              {players.map(n => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            className="btn-primary shrink-0"
+            disabled={!selA || !selB || selA === selB || comparing}
+            onClick={handleCompare}
+          >
+            {comparing ? 'Loading…' : 'Compare →'}
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg px-4 py-3 text-sm font-medium bg-red-500/20 text-red-400 border border-red-500/30">
@@ -312,12 +320,6 @@ export default function Compare() {
             record={record}
           />
 
-          <div className="grid grid-cols-3 text-xs text-gray-600 uppercase tracking-wider text-center px-1">
-            <div className="text-right pr-4">{dataA.user.name}</div>
-            <div>Match</div>
-            <div className="text-left pl-4">{dataB.user.name}</div>
-          </div>
-
           <div className="space-y-4">
             {allGroups.map(g => (
               <GroupCard
@@ -334,7 +336,6 @@ export default function Compare() {
       {!compared && !comparing && !error && (
         <div className="card text-center py-12 text-gray-500">
           <p className="font-semibold">Select two players and click Compare</p>
-          <p className="text-sm mt-1">Share the URL to send your comparison to others</p>
         </div>
       )}
     </div>
