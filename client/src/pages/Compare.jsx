@@ -83,20 +83,17 @@ function MatchRow({ predA, predB }) {
         {isFinished && predA && <PtsBadge pts={ptsA} />}
       </div>
 
-      <div className="flex flex-col items-center justify-center px-2 py-2.5 border-x border-brand-border/30 gap-0.5">
+      <div className="flex items-center justify-center px-2 py-2.5 border-x border-brand-border/30">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Flag code={src.home_code} name={src.home_team} className="w-6 h-6" />
           <span className="text-gray-300">{src.home_code}</span>
           {isFinished && src.home_score != null
             ? <span className="text-white font-bold tabular-nums">{src.home_score} – {src.away_score}</span>
-            : <span className="text-gray-600 font-bold">–</span>
+            : <span className="text-gray-600 font-bold">vs</span>
           }
           <span className="text-gray-300">{src.away_code}</span>
           <Flag code={src.away_code} name={src.away_team} className="w-6 h-6" />
         </div>
-        <span className="text-[10px] uppercase tracking-wider text-gray-600 leading-3">
-          {isUpcoming ? 'upcoming' : ' '}
-        </span>
       </div>
 
       <div className={`flex items-center justify-start gap-2 px-4 py-3 ${tintB}`}>
