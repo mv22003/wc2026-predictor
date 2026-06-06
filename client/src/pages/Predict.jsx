@@ -175,12 +175,18 @@ export default function Predict() {
         setNameInput('');
         return;
       }
+      if (data.locked) {
+        // Already submitted — clear stored name so next visit starts fresh
+        localStorage.removeItem(LS_NAME_KEY);
+        setName('');
+        setNameInput('');
+        return;
+      }
       const map = {};
       for (const p of data.predictions ?? []) {
         map[p.match_id] = { home: p.pred_home, away: p.pred_away, points: p.points };
       }
       setPreds(map);
-      if (data.locked) setLocked(true);
     }).catch(console.error);
   }, []);
 
@@ -250,6 +256,7 @@ export default function Predict() {
     try {
       await api.submitPredictions(name, payload);
       setLocked(true);
+      localStorage.removeItem(LS_NAME_KEY); // clear so next visit opens fresh name modal
       setStatus({ type: 'success', msg: `Predictions submitted for ${name}! Good luck!` });
     } catch (err) {
       setStatus({ type: 'error', msg: err.message });
