@@ -3,11 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
+function ordinal(n) {
+  const v = n % 100;
+  const suffix = v >= 11 && v <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${suffix}`;
+}
+
 function RankBadge({ rank }) {
   if (rank === 1) return <span className="text-brand-gold font-black text-sm w-8 text-center">1st</span>;
   if (rank === 2) return <span className="text-gray-300 font-black text-sm w-8 text-center">2nd</span>;
   if (rank === 3) return <span className="text-amber-600 font-black text-sm w-8 text-center">3rd</span>;
-  return <span className="text-gray-400 font-bold text-sm w-8 text-center">{rank}</span>;
+  return <span className="text-gray-400 font-bold text-sm w-8 text-center">{ordinal(rank)}</span>;
 }
 
 function PtsBadge({ pts }) {
