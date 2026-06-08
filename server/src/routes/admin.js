@@ -7,7 +7,7 @@ const liveScores = require('../services/liveScores');
 const { R32_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } = require('../bracketUtils');
 const { getPrizePotSummary } = require('../prizePot');
 
-const schedule = require(path.join(__dirname, '../../../world-cup-2026-schedule.json'));
+const schedule = require(path.join(__dirname, '../../../data/world-cup-2026-schedule.json'));
 const scheduleDateByNum = {};
 for (const m of schedule.matches) {
   scheduleDateByNum[m.match_number] = `${m.date}T${m.time_et}:00-04:00`;
@@ -657,34 +657,6 @@ router.delete('/reset', adminAuth, async (req, res) => {
       client.release();
     }
     res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// One-time migration: rename non-English team names in the live DB
-const TEAM_NAME_MAP = {
-  'Korea Republic': 'South Korea',
-  'Türkiye':        'Turkey',
-  "Côte d'Ivoire":  'Ivory Coast',
-  'Curaçao':        'Curacao',
-  'Cabo Verde':     'Cape Verde',
-  'Congo DR':       'DR Congo',
-};
-
-router.post('/migrate-team-names', adminAuth, async (req, res) => {
-  try {
-    const db = getDb();
-    const results = [];
-    for (const [oldName, newName] of Object.entries(TEAM_NAME_MAP)) {
-      const { rowCount } = await db.query(
-        'UPDATE teams SET name = $1 WHERE name = $2',
-        [newName, oldName]
-      );
-      if (rowCount > 0) results.push(`${oldName} → ${newName}`);
-    }
-    res.json({ success: true, updated: results });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

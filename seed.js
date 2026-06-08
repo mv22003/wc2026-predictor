@@ -31,7 +31,7 @@ try {
 } catch { /* .env optional */ }
 
 const { Pool } = require('./server/node_modules/pg');
-const schedule = require('./world-cup-2026-schedule.json');
+const schedule = require('./data/world-cup-2026-schedule.json');
 
 // ─── Flag emojis ──────────────────────────────────────────────────────────────
 const FLAGS = {

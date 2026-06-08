@@ -1,6 +1,8 @@
 node_modules/
 client/dist/
-data/
+data/*
+!data/.gitkeep
+!data/world-cup-2026-schedule.json
 .env
 *.db
 *.db-shm
