@@ -250,6 +250,7 @@ export default function Predict() {
   const [preds, setPreds]       = useState({});   // { matchId: { home, away } }
   const [locked, setLocked]     = useState(false);
   const [loading, setLoading]   = useState(false);
+  const [matchesLoading, setMatchesLoading] = useState(true);
   const [status, setStatus]     = useState(null);  // { type: 'success'|'error', msg }
   const [checking, setChecking] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -287,7 +288,9 @@ export default function Predict() {
   // Load matches on mount and refresh every 30s so started matches lock in real time
   useEffect(() => {
     function loadMatches() {
-      api.getMatches({ phase: 'group' }).then(setMatches).catch(console.error);
+      api.getMatches({ phase: 'group' })
+        .then(mts => { setMatches(mts); setMatchesLoading(false); })
+        .catch(() => setMatchesLoading(false));
     }
     loadMatches();
     const t = setInterval(loadMatches, 30_000);
@@ -415,15 +418,19 @@ export default function Predict() {
     }
   }
 
+  // ── Wait for matches to load before showing anything ──────────────────────
+  if (matchesLoading) {
+    return <div className="flex items-center justify-center h-48 text-gray-400">Loading...</div>;
+  }
+
   // ── Predictions closed screen ─────────────────────────────────────────────
   if (predictionsDisabled) {
     return (
       <div className="max-w-md mx-auto mt-12">
         <div className="card text-center space-y-4">
-          <p className="text-5xl">🔒</p>
           <h1 className="text-2xl font-black">Predictions Closed</h1>
           <p className="text-gray-400 text-sm leading-relaxed">
-            More than 24 group matches have been played.<br />
+            24 or more group matches have been played.<br />
             Predictions are no longer accepted.
           </p>
         </div>
