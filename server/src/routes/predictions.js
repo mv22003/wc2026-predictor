@@ -44,6 +44,23 @@ router.post('/', async (req, res) => {
   if (!Array.isArray(predictions) || predictions.length === 0)
     return res.status(400).json({ error: 'No predictions provided' });
 
+  // Block submissions if more than 24 group matches have started or finished
+  const { rows: playedRows } = await db.query(
+    "SELECT COUNT(*) AS n FROM matches WHERE phase = 'group' AND status IN ('live', 'finished')"
+  );
+  if (parseInt(playedRows[0].n, 10) > 24)
+    return res.status(403).json({ error: 'Predictions are closed — more than 24 group matches have been played.' });
+
+  // Require a prediction for every upcoming group match (live/finished are locked)
+  const { rows: countRows } = await db.query(
+    "SELECT COUNT(*) AS n FROM matches WHERE phase = 'group' AND (status IS NULL OR status = 'upcoming')"
+  );
+  const totalPredictable = parseInt(countRows[0].n, 10);
+  if (totalPredictable > 0 && predictions.length < totalPredictable)
+    return res.status(400).json({
+      error: `You must predict all ${totalPredictable} available group matches before submitting (got ${predictions.length}).`,
+    });
+
   const { rows: existingRows } = await db.query(
     'SELECT * FROM users WHERE LOWER(name) = LOWER($1)',
     [name.trim()]
@@ -52,13 +69,6 @@ router.post('/', async (req, res) => {
   if (existing?.submitted_at)
     return res.status(409).json({ error: 'This name is already taken. Please choose a different name.' });
 
-  // Require a prediction for every group match
-  const { rows: countRows } = await db.query("SELECT COUNT(*) AS n FROM matches WHERE phase = 'group'");
-  const totalGroupMatches = parseInt(countRows[0].n, 10);
-  if (predictions.length < totalGroupMatches)
-    return res.status(400).json({
-      error: `You must predict all ${totalGroupMatches} group matches before submitting (got ${predictions.length}).`,
-    });
 
   const client = await db.connect();
   try {
@@ -73,11 +83,22 @@ router.post('/', async (req, res) => {
       userId = inserted[0].id;
     }
 
+    // Fetch all match statuses in one query to avoid N+1
+    const matchIds = predictions.map(p => p.match_id).filter(id => id != null);
+    const { rows: matchStatusRows } = await client.query(
+      `SELECT id, status FROM matches WHERE id = ANY($1)`, [matchIds]
+    );
+    const matchStatusMap = {};
+    for (const r of matchStatusRows) matchStatusMap[r.id] = r.status;
+
     for (const pred of predictions) {
       if (pred.match_id == null || pred.pred_home == null || pred.pred_away == null) continue;
       const ph = parseInt(pred.pred_home, 10);
       const pa = parseInt(pred.pred_away, 10);
       if (isNaN(ph) || isNaN(pa) || ph < 0 || pa < 0) continue;
+      // Skip predictions for matches that have already started or finished
+      const status = matchStatusMap[pred.match_id];
+      if (!status || status === 'live' || status === 'finished') continue;
       await client.query(`
         INSERT INTO predictions (user_id, match_id, pred_home, pred_away, points)
         VALUES ($1, $2, $3, $4, 0)

@@ -27,6 +27,8 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
     ? d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
     : 'Date TBD';
 
+  const matchStarted = match.status === 'live' || match.status === 'finished';
+  const isLocked = locked || matchStarted;
   const filled = predHome !== '' && predHome != null && predAway !== '' && predAway != null;
 
   let pts = null;
@@ -40,21 +42,27 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
   }
 
   return (
-    <div className={`card !p-2.5 transition-all ${filled ? 'border-brand-border' : 'border-yellow-600/30 bg-yellow-900/5'}`}>
+    <div className={`card !p-2.5 transition-all ${matchStarted ? 'opacity-60 border-brand-border/40' : filled ? 'border-brand-border' : 'border-yellow-600/30 bg-yellow-900/5'}`}>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[11px] text-gray-500 truncate">
           {dateStr}{match.venue && ` · ${match.venue}`}
         </span>
-        {pts !== null && (
-          <span className={`tag font-bold px-1.5 py-0.5 text-[11px] shrink-0 ml-1 ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
-            {pts === 5 ? '+5' : pts === 3 ? '+3' : pts === 1 ? '+1' : '0 pts'}
-          </span>
-        )}
-        {locked && match.status === 'finished' && (
-          <span className="text-[11px] text-gray-400 shrink-0 ml-1">
-            {match.home_score}–{match.away_score}
-          </span>
-        )}
+        <div className="flex items-center gap-1 shrink-0 ml-1">
+          {match.status === 'live' && (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              LIVE
+            </span>
+          )}
+          {match.status === 'finished' && (
+            <span className="text-[11px] text-gray-500 font-semibold">FT · {match.home_score}–{match.away_score}</span>
+          )}
+          {pts !== null && (
+            <span className={`tag font-bold px-1.5 py-0.5 text-[11px] ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
+              {pts === 5 ? '+5' : pts === 3 ? '+3' : pts === 1 ? '+1' : '0 pts'}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 justify-between">
@@ -69,14 +77,14 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
           <ScoreInput
             value={predHome}
             onChange={v => onUpdate(match.id, 'home', v)}
-            disabled={locked}
+            disabled={isLocked}
             className="w-8 h-7 text-center font-bold rounded bg-brand-navy border border-brand-border focus:border-brand-gold focus:outline-none text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span className="text-gray-500 text-xs font-bold">vs</span>
           <ScoreInput
             value={predAway}
             onChange={v => onUpdate(match.id, 'away', v)}
-            disabled={locked}
+            disabled={isLocked}
             className="w-8 h-7 text-center font-bold rounded bg-brand-navy border border-brand-border focus:border-brand-gold focus:outline-none text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
@@ -105,9 +113,17 @@ function calcPredictedStandings(groupMatches, preds) {
     }
   }
   for (const m of groupMatches) {
-    const p = preds[m.id];
-    if (!p || p.home === '' || p.home == null || p.away === '' || p.away == null) continue;
-    const hs = parseInt(p.home), as_ = parseInt(p.away);
+    let hs, as_;
+    if (m.status === 'finished' || m.status === 'live') {
+      // Use actual scores for started/finished matches
+      if (m.home_score == null || m.away_score == null) continue;
+      hs = m.home_score; as_ = m.away_score;
+    } else {
+      // Use user's prediction for upcoming matches
+      const p = preds[m.id];
+      if (!p || p.home === '' || p.home == null || p.away === '' || p.away == null) continue;
+      hs = parseInt(p.home); as_ = parseInt(p.away);
+    }
     const h = table[m.home_team], a = table[m.away_team];
     h.played++; h.gf += hs; h.ga += as_; h.gd = h.gf - h.ga;
     a.played++; a.gf += as_; a.ga += hs; a.gd = a.gf - a.ga;
@@ -133,7 +149,8 @@ function getPredicted3rds(matches, groups, preds) {
 
 function PredictedStandingsTable({ groupName, groupMatches, preds, qualifying3rd }) {
   const standings = calcPredictedStandings(groupMatches, preds);
-  const filledCount = groupMatches.filter(m => {
+  const upcomingGroupMatches = groupMatches.filter(m => m.status !== 'live' && m.status !== 'finished');
+  const filledCount = upcomingGroupMatches.filter(m => {
     const p = preds[m.id];
     return p && p.home !== '' && p.home != null && p.away !== '' && p.away != null;
   }).length;
@@ -142,7 +159,7 @@ function PredictedStandingsTable({ groupName, groupMatches, preds, qualifying3rd
     <div className="card p-0 overflow-hidden flex flex-col flex-1">
       <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60 shrink-0">
         <h3 className="font-black text-base">Group {groupName}</h3>
-        <span className="text-xs text-gray-500">{filledCount}/6 predicted</span>
+        <span className="text-xs text-gray-500">{filledCount}/{upcomingGroupMatches.length} predicted</span>
       </div>
       <table className="w-full text-xs">
         <thead>
@@ -267,11 +284,17 @@ export default function Predict() {
     return () => document.removeEventListener('click', handler, true);
   }, [hasUnsaved]);
 
-  // Load matches on mount
+  // Load matches on mount and refresh every 30s so started matches lock in real time
   useEffect(() => {
-    api.getMatches({ phase: 'group' }).then(mts => {
-      setMatches(mts);
-    }).catch(console.error);
+    function loadMatches() {
+      api.getMatches({ phase: 'group' }).then(setMatches).catch(console.error);
+    }
+    loadMatches();
+    const t = setInterval(loadMatches, 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
     api.getGroups().then(g => {
       setGroups(g);
       if (g.length) setActiveGroup(g[0]);
@@ -337,9 +360,15 @@ export default function Predict() {
     }));
   }
 
-  const groupMatches = matches.filter(m => m.group_name === activeGroup);
+  const finishedCount = matches.filter(m => m.status === 'finished' || m.status === 'live').length;
+  const predictionsDisabled = finishedCount > 24;
 
-  const groupAllFilled = groupMatches.length > 0 && groupMatches.every(m => {
+  const groupMatches = matches.filter(m => m.group_name === activeGroup);
+  const predictableMatches = matches.filter(m => m.status !== 'live' && m.status !== 'finished');
+  const predictableGroupMatches = groupMatches.filter(m => m.status !== 'live' && m.status !== 'finished');
+
+  // Group is "done" if there are no predictable matches left, or all predictable ones are filled
+  const groupAllFilled = predictableGroupMatches.length === 0 || predictableGroupMatches.every(m => {
     const p = preds[m.id];
     return p && p.home !== '' && p.home != null && p.away !== '' && p.away != null;
   });
@@ -348,7 +377,7 @@ export default function Predict() {
     return idx !== -1 && idx < groups.length - 1 ? groups[idx + 1] : null;
   })();
 
-  const filledCount  = matches.filter(m => {
+  const filledCount = predictableMatches.filter(m => {
     const p = preds[m.id];
     return p && p.home !== '' && p.home != null && p.away !== '' && p.away != null;
   }).length;
@@ -384,6 +413,22 @@ export default function Predict() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // ── Predictions closed screen ─────────────────────────────────────────────
+  if (predictionsDisabled) {
+    return (
+      <div className="max-w-md mx-auto mt-12">
+        <div className="card text-center space-y-4">
+          <p className="text-5xl">🔒</p>
+          <h1 className="text-2xl font-black">Predictions Closed</h1>
+          <p className="text-gray-400 text-sm leading-relaxed">
+            More than 24 group matches have been played.<br />
+            Predictions are no longer accepted.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // ── Name entry screen ──────────────────────────────────────────────────────
@@ -432,7 +477,7 @@ export default function Predict() {
           </h1>
           <p className="text-gray-400 text-sm mt-0.5">
             Playing as: <span className="text-brand-gold font-bold">{name}</span>
-            {' '}· {filledCount}/{matches.length} predictions
+            {' '}· {filledCount}/{predictableMatches.length} predictions
             {locked && <span className="ml-2 tag pts-exact px-2 py-0.5">Submitted</span>}
           </p>
         </div>
@@ -520,17 +565,17 @@ export default function Predict() {
               <div className="flex-1">
                 <p className="font-semibold">Ready to submit?</p>
                 <p className="text-sm text-gray-400">
-                  {filledCount < matches.length
-                    ? `${matches.length - filledCount} prediction${matches.length - filledCount !== 1 ? 's' : ''} missing — fill all ${matches.length} matches to submit.`
+                  {filledCount < predictableMatches.length
+                    ? `${predictableMatches.length - filledCount} prediction${predictableMatches.length - filledCount !== 1 ? 's' : ''} missing — fill all ${predictableMatches.length} available matches to submit.`
                     : 'All predictions filled! Submit to lock them in.'}
                 </p>
               </div>
               <button
                 className="btn-primary whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                 onClick={() => setShowConfirm(true)}
-                disabled={loading || filledCount < matches.length}
+                disabled={loading || predictableMatches.length === 0 || filledCount < predictableMatches.length}
               >
-                {loading ? 'Submitting…' : `Submit All ${matches.length} Predictions`}
+                {loading ? 'Submitting…' : `Submit All ${predictableMatches.length} Predictions`}
               </button>
             </div>
           )}
@@ -540,7 +585,7 @@ export default function Predict() {
       {showConfirm && (
         <ConfirmModal
           title="Submit Predictions"
-          message={`You're about to lock in all ${matches.length} predictions as ${name}. This cannot be undone — are you sure?`}
+          message={`You're about to lock in all ${predictableMatches.length} predictions as ${name}. This cannot be undone — are you sure?`}
           confirmLabel="Submit"
           onConfirm={() => { setShowConfirm(false); handleSubmit(); }}
           onCancel={() => setShowConfirm(false)}
