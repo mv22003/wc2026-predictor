@@ -1,19 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { getPrizePotSummary } = require('../prizePot');
 
 router.get('/pot', async (req, res) => {
   try {
     const db = getDb();
-    const { rows } = await db.query(`
-      SELECT COUNT(*) AS paid_count, COALESCE(SUM(paid_amount), 0) AS total
-      FROM users
-      WHERE paid = true
-    `);
-    res.json({
-      paid_count: parseInt(rows[0].paid_count, 10),
-      total:      parseFloat(rows[0].total),
-    });
+    const summary = await getPrizePotSummary(db);
+    res.json(summary);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

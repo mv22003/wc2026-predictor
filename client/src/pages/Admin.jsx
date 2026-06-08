@@ -1107,6 +1107,96 @@ function UserPredictionsPanel({ adminKey }) {
   );
 }
 
+function PrizePotCard({ adminKey, stats, onUpdated }) {
+  const pot = stats?.prize_pot;
+  const [value, setValue] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!pot) return;
+    setValue(String(pot.override_total ?? pot.total ?? 0));
+  }, [pot?.override_total, pot?.total]);
+
+  async function saveOverride() {
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const parsed = value.trim() === '' ? null : parseFloat(value);
+      if (parsed !== null && (!Number.isFinite(parsed) || parsed < 0)) {
+        throw new Error('Enter a valid non-negative number');
+      }
+      const res = await api.updatePrizePot(adminKey, parsed);
+      onUpdated?.(res.prize_pot);
+      setMessage(parsed === null ? 'Using auto-calculated pot.' : 'Prize pot updated.');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function resetOverride() {
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const res = await api.updatePrizePot(adminKey, null);
+      onUpdated?.(res.prize_pot);
+      setValue(String(res.prize_pot.auto_total ?? 0));
+      setMessage('Prize pot reset to auto-calculated total.');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!pot) return null;
+
+  return (
+    <div className="card space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-gray-400">Current Prize Pot</p>
+          <p className="text-3xl font-black text-brand-gold">{"\u00A3"}{pot.total % 1 === 0 ? pot.total.toFixed(0) : pot.total.toFixed(2)}</p>
+        </div>
+        <div className="text-right text-xs text-gray-500">
+          <p>{pot.paid_count} paid player{pot.paid_count !== 1 ? 's' : ''}</p>
+          <p>{pot.has_override ? 'Manual override active' : 'Auto-calculated from paid users'}</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs uppercase tracking-wider text-gray-500 font-bold">Assign Current Pot</label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          className="w-full bg-brand-navy border-2 border-brand-border rounded-lg px-4 py-3 focus:border-brand-gold focus:outline-none transition-colors"
+          placeholder="Enter current pot total"
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button onClick={saveOverride} disabled={saving} className="btn-primary text-sm">
+          {saving ? 'Saving...' : 'Save Pot'}
+        </button>
+        <button onClick={resetOverride} disabled={saving || !pot.has_override} className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+          Use Auto Total
+        </button>
+      </div>
+
+      {error && <p className="text-sm text-red-400">{error}</p>}
+      {message && <p className="text-sm text-emerald-400">{message}</p>}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [key, setKey]       = useState(() => localStorage.getItem(LS_KEY) || '');
   const [keyInput, setKeyInput] = useState('');
@@ -1153,6 +1243,10 @@ export default function Admin() {
     : filter === 'pending'
     ? matches.filter(m => m.status !== 'finished')
     : matches.filter(m => m.status === 'finished');
+
+  function handlePrizePotUpdated(prize_pot) {
+    setStats(prev => prev ? { ...prev, prize_pot } : prev);
+  }
 
   // ── Auth gate ──────────────────────────────────────────────────────────────
   if (!authed) {
@@ -1209,12 +1303,15 @@ export default function Admin() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label="Players"         value={stats.total_users}   />
-          <StatCard label="Matches Total"   value={stats.total_matches} color="text-sky-400" />
-          <StatCard label="Results Entered" value={stats.finished}      color="text-emerald-400" />
-          <StatCard label="Predictions"     value={stats.total_preds}   color="text-purple-400" />
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard label="Players"         value={stats.total_users}   />
+            <StatCard label="Matches Total"   value={stats.total_matches} color="text-sky-400" />
+            <StatCard label="Results Entered" value={stats.finished}      color="text-emerald-400" />
+            <StatCard label="Predictions"     value={stats.total_preds}   color="text-purple-400" />
+          </div>
+          <PrizePotCard adminKey={key} stats={stats} onUpdated={handlePrizePotUpdated} />
+        </>
       )}
 
       {/* Match results entry */}
@@ -1292,3 +1389,4 @@ export default function Admin() {
     </div>
   );
 }
+

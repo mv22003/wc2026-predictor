@@ -5,6 +5,7 @@ const { getDb } = require('../db');
 const { calculatePoints } = require('../scoring');
 const liveScores = require('../services/liveScores');
 const { R32_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } = require('../bracketUtils');
+const { getPrizePotSummary } = require('../prizePot');
 
 const schedule = require(path.join(__dirname, '../../../world-cup-2026-schedule.json'));
 const scheduleDateByNum = {};
@@ -117,18 +118,46 @@ router.post('/sync/stop', adminAuth, (req, res) => {
 router.get('/stats', adminAuth, async (req, res) => {
   try {
     const db = getDb();
-    const [r1, r2, r3, r4] = await Promise.all([
+    const [r1, r2, r3, r4, pot] = await Promise.all([
       db.query("SELECT COUNT(*) AS n FROM users WHERE submitted_at IS NOT NULL"),
       db.query("SELECT COUNT(*) AS n FROM matches"),
       db.query("SELECT COUNT(*) AS n FROM matches WHERE status = 'finished'"),
       db.query("SELECT COUNT(*) AS n FROM predictions"),
+      getPrizePotSummary(db),
     ]);
     res.json({
       total_users:   parseInt(r1.rows[0].n, 10),
       total_matches: parseInt(r2.rows[0].n, 10),
       finished:      parseInt(r3.rows[0].n, 10),
       total_preds:   parseInt(r4.rows[0].n, 10),
+      prize_pot:     pot,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/prize-pot', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const { total } = req.body ?? {};
+
+    if (total !== null && total !== undefined) {
+      const parsed = Number(total);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        return res.status(400).json({ error: 'total must be a non-negative number or null' });
+      }
+      await db.query(`
+        INSERT INTO app_settings (key, value_text)
+        VALUES ('prize_pot_override', $1)
+        ON CONFLICT (key) DO UPDATE SET value_text = EXCLUDED.value_text
+      `, [parsed.toFixed(2)]);
+    } else {
+      await db.query(`DELETE FROM app_settings WHERE key = 'prize_pot_override'`);
+    }
+
+    res.json({ success: true, prize_pot: await getPrizePotSummary(db) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

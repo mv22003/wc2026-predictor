@@ -55,6 +55,11 @@ async function initDb() {
       points    INTEGER NOT NULL DEFAULT 0,
       UNIQUE(user_id, match_id)
     );
+
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key        TEXT PRIMARY KEY,
+      value_text TEXT
+    );
   `);
 
   // Migrations for columns added after initial deploy
