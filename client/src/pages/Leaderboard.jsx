@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
@@ -239,9 +239,8 @@ export default function Leaderboard() {
               </tr>
             ) : (
               sorted.map((row, idx) => (
-                <>
+                <React.Fragment key={row.id}>
                   <tr
-                    key={row.id}
                     onClick={() => toggle(row.id)}
                     className={`border-b border-brand-border/50 cursor-pointer hover:bg-white/5 transition-colors ${
                       expanded === row.id ? 'bg-white/5 border-brand-border' : ''
@@ -296,7 +295,7 @@ export default function Leaderboard() {
                       setCache={setPredCache}
                     />
                   )}
-                </>
+                </React.Fragment>
               ))
             )}
           </tbody>

@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -58,7 +58,6 @@ function cellTint(ptsA, ptsB, side) {
 
 function MatchRow({ predA, predB }) {
   const isFinished = predA?.status === 'finished' || predB?.status === 'finished';
-  const isUpcoming = predA?.status === 'upcoming' || predB?.status === 'upcoming';
 
   const src = predA ?? predB;
   if (!src) return null;
@@ -176,70 +175,40 @@ function StatsHeader({ nameA, statsA, nameB, statsB }) {
 }
 
 export default function Compare() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  const [players, setPlayers] = useState([]);
-  const [playersLoading, setPlayersLoading] = useState(true);
-
-  const [selA, setSelA] = useState(searchParams.get('a') ?? '');
-  const [selB, setSelB] = useState(searchParams.get('b') ?? '');
+  const a = searchParams.get('a') ?? '';
+  const b = searchParams.get('b') ?? '';
 
   const [dataA, setDataA] = useState(null);
   const [dataB, setDataB] = useState(null);
   const [comparing, setComparing] = useState(false);
   const [error, setError] = useState(null);
-  const [compared, setCompared] = useState(false);
+
+  if (!a || !b) return <Navigate to="/leaderboard" replace />;
 
   useEffect(() => {
-    api.getLeaderboard()
-      .then(board => setPlayers(board.map(r => r.name)))
-      .catch(() => setPlayers([]))
-      .finally(() => setPlayersLoading(false));
-  }, []);
-
-  const runCompare = useCallback(async (a, b) => {
-    if (!a || !b) return;
     setComparing(true);
     setError(null);
     setDataA(null);
     setDataB(null);
-    setCompared(false);
-    try {
-      const [resA, resB] = await Promise.all([api.getUser(a), api.getUser(b)]);
-      if (!resA.exists) { setError(`Player "${a}" not found.`); return; }
-      if (!resB.exists) { setError(`Player "${b}" not found.`); return; }
-      setDataA(resA);
-      setDataB(resB);
-      setCompared(true);
-    } catch (e) {
-      setError(e.message ?? 'Failed to load data.');
-    } finally {
-      setComparing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const a = searchParams.get('a') ?? '';
-    const b = searchParams.get('b') ?? '';
-    if (a && b) {
-      setSelA(a);
-      setSelB(b);
-      runCompare(a, b);
-    }
-  }, []);
-
-  function handleCompare() {
-    if (!selA || !selB) return;
-    setSearchParams({ a: selA, b: selB });
-    runCompare(selA, selB);
-  }
+    Promise.all([api.getUser(a), api.getUser(b)])
+      .then(([resA, resB]) => {
+        if (!resA.exists) { setError(`Player "${a}" not found.`); return; }
+        if (!resB.exists) { setError(`Player "${b}" not found.`); return; }
+        setDataA(resA);
+        setDataB(resB);
+      })
+      .catch(e => setError(e.message ?? 'Failed to load data.'))
+      .finally(() => setComparing(false));
+  }, [a, b]);
 
   const predsA = dataA?.predictions ?? [];
   const predsB = dataB?.predictions ?? [];
 
   const statsA = computeStats(predsA);
   const statsB = computeStats(predsB);
-  const record = computeMatchRecord(predsA, predsB);
 
   const groupsA = groupByGroup(predsA);
   const groupsB = groupByGroup(predsB);
@@ -252,60 +221,16 @@ export default function Compare() {
           <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
           <h1 className="text-xl sm:text-2xl font-black mt-1">H2H Comparison</h1>
         </div>
-        {compared && dataA && dataB && (
-          <button
-            className="btn-primary text-sm shrink-0"
-            onClick={() => { setCompared(false); setDataA(null); setDataB(null); setSelA(''); setSelB(''); setSearchParams({}); }}
-          >
-            New comparison
-          </button>
-        )}
+        <button
+          className="btn-primary text-sm shrink-0"
+          onClick={() => navigate('/leaderboard')}
+        >
+          New comparison
+        </button>
       </div>
 
-      {!compared && (
-        <div className="card flex flex-wrap items-end gap-4">
-          <div className="flex-1 min-w-36 space-y-1">
-            <label className="text-xs text-gray-500 uppercase tracking-wider">Player A</label>
-            <select
-              className="w-full bg-brand-navy border border-brand-border rounded-lg px-3 py-2 text-sm
-                         focus:border-brand-gold focus:outline-none transition-colors"
-              value={selA}
-              onChange={e => setSelA(e.target.value)}
-              disabled={playersLoading}
-            >
-              <option value="">Select player…</option>
-              {players.map(n => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="shrink-0 text-gray-600 font-bold pb-2">vs</div>
-
-          <div className="flex-1 min-w-36 space-y-1">
-            <label className="text-xs text-gray-500 uppercase tracking-wider">Player B</label>
-            <select
-              className="w-full bg-brand-navy border border-brand-border rounded-lg px-3 py-2 text-sm
-                         focus:border-brand-gold focus:outline-none transition-colors"
-              value={selB}
-              onChange={e => setSelB(e.target.value)}
-              disabled={playersLoading}
-            >
-              <option value="">Select player…</option>
-              {players.map(n => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            className="btn-primary shrink-0"
-            disabled={!selA || !selB || selA === selB || comparing}
-            onClick={handleCompare}
-          >
-            {comparing ? 'Loading…' : 'Compare →'}
-          </button>
-        </div>
+      {comparing && (
+        <div className="flex items-center justify-center h-48 text-gray-400">Loading…</div>
       )}
 
       {error && (
@@ -314,7 +239,7 @@ export default function Compare() {
         </div>
       )}
 
-      {compared && dataA && dataB && (
+      {!comparing && dataA && dataB && (
         <>
           <StatsHeader
             nameA={dataA.user.name}
@@ -334,12 +259,6 @@ export default function Compare() {
             ))}
           </div>
         </>
-      )}
-
-      {!compared && !comparing && !error && (
-        <div className="card text-center py-12 text-gray-500">
-          <p className="font-semibold">Select two players and click Compare</p>
-        </div>
       )}
     </div>
   );
