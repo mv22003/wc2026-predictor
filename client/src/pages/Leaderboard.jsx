@@ -9,7 +9,8 @@ function ordinal(n) {
   return `${n}${suffix}`;
 }
 
-function RankBadge({ rank }) {
+function RankBadge({ rank, hasResults }) {
+  if (!hasResults) return <span className="text-gray-600 font-bold text-sm w-8 text-center">—</span>;
   if (rank === 1) return <span className="text-brand-gold font-black text-sm w-8 text-center">1st</span>;
   if (rank === 2) return <span className="text-gray-300 font-black text-sm w-8 text-center">2nd</span>;
   if (rank === 3) return <span className="text-amber-600 font-black text-sm w-8 text-center">3rd</span>;
@@ -178,6 +179,7 @@ export default function Leaderboard() {
     });
   };
 
+  const hasResults = board.some(r => Number(r.total_points) > 0);
   const filtered = board.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
 
   const sorted = sort.key
@@ -313,7 +315,7 @@ export default function Leaderboard() {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <RankBadge rank={row.rank} />
+                      <RankBadge rank={row.rank} hasResults={hasResults} />
                     </td>
                     <td className="px-4 py-3 font-semibold">
                       <span className="flex items-center gap-1.5">
