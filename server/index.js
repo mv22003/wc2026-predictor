@@ -9,6 +9,7 @@ const { startAutoSync, isConfigured } = require('./src/services/liveScores');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
 app.use(express.json());
 
