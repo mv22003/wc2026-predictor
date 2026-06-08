@@ -296,14 +296,14 @@ export default function Home() {
             </Link>
 
             <div className="bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-4 py-3 backdrop-blur-sm shrink-0 min-w-[140px] text-center">
-              <p className="text-xs text-gray-400 uppercase tracking-[0.22em] font-bold mb-1">Prize Pot</p>
+              <p className="text-xs text-gray-400 uppercase tracking-[0.22em] font-bold mb-1">Current<br></br>Prize Pot</p>
               <p className="text-3xl font-black text-brand-gold leading-none">
                 {'\u00A3'}{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
               </p>
             </div>
           </div>
           <div className="hidden sm:block text-center bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-8 sm:px-10 py-4 sm:pt-5 sm:pb-6 backdrop-blur-sm shrink-0 w-full sm:w-auto">
-            <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Prize Pot</p>
+            <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Current Prize Pot</p>
             <p className="text-4xl sm:text-5xl font-black text-brand-gold leading-none">
               {'\u00A3'}{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
             </p>
@@ -315,9 +315,9 @@ export default function Home() {
       {/* ── Live Now ────────────────────────────────────────────────────────── */}
       <LiveNowSection matches={liveMatches} />
 
-      <div className="lg:grid lg:grid-cols-[1.25fr_0.75fr] gap-6 space-y-6 lg:space-y-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.3fr] gap-6">
         {/* Scoring guide */}
-        <div className="card">
+        <div className="card order-2 lg:order-1">
           <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">How Scoring Works</h2>
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
@@ -338,7 +338,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div className="card py-4">
+        <div className="card py-4 order-1 lg:order-2">
           <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-2">Prize Distribution</h2>
           <div className="text-sm flex flex-wrap gap-x-5 gap-y-1 lg:block lg:space-y-1">
             <div className="text-yellow-400 font-bold">1st - 60%</div>
