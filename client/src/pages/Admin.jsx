@@ -401,15 +401,6 @@ function RecalculateButton({ adminKey, onDone }) {
   );
 }
 
-function StatCard({ label, value, color = 'text-brand-gold' }) {
-  return (
-    <div className="card text-center">
-      <p className={`text-3xl font-black ${color}`}>{value ?? '—'}</p>
-      <p className="text-gray-400 text-sm">{label}</p>
-    </div>
-  );
-}
-
 // JSON scorer array ↔ [{name, minute}] (minute stored as string to support "45+3")
 function scorersJsonToArray(raw) {
   if (!raw || raw === 'null') return [];
@@ -442,7 +433,6 @@ function ResultRow({ match, adminKey, onSaved, openScorerId, setOpenScorerId }) 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [homeScorers, setHomeScorers]   = useState(() => scorersJsonToArray(match.home_scorers));
   const [awayScorers, setAwayScorers]   = useState(() => scorersJsonToArray(match.away_scorers));
   const [scorerSaving, setScorerSaving] = useState(false);
@@ -487,6 +477,20 @@ function ResultRow({ match, adminKey, onSaved, openScorerId, setOpenScorerId }) 
     }
     wasOpenRef.current = scorersOpen;
   }, [scorersOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function reset() {
+    setResetting(true);
+    try {
+      await api.resetResult(adminKey, match.id);
+      setHs('');
+      setAs('');
+      onSaved?.();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setResetting(false);
+    }
+  }
 
   async function save() {
     if (hs === '' || as_ === '') return;
@@ -588,7 +592,7 @@ function ResultRow({ match, adminKey, onSaved, openScorerId, setOpenScorerId }) 
 
           {isFinished && (
             <button
-              onClick={() => setShowResetConfirm(true)}
+              onClick={reset}
               disabled={resetting || saving}
               title="Reset result"
               className="px-2 py-1.5 rounded text-xs font-bold transition-all
@@ -707,29 +711,6 @@ function ResultRow({ match, adminKey, onSaved, openScorerId, setOpenScorerId }) 
           </div>
         </td>
       </tr>
-    )}
-    {showResetConfirm && (
-      <ConfirmModal
-        title="Reset Match Result"
-        message="This will clear the score and set all predictions for this match back to 0 points."
-        confirmLabel="Reset"
-        danger
-        onConfirm={async () => {
-          setShowResetConfirm(false);
-          setResetting(true);
-          try {
-            await api.resetResult(adminKey, match.id);
-            setHs('');
-            setAs('');
-            onSaved?.();
-          } catch (e) {
-            alert('Error: ' + e.message);
-          } finally {
-            setResetting(false);
-          }
-        }}
-        onCancel={() => setShowResetConfirm(false)}
-      />
     )}
   </>
   );
@@ -890,8 +871,6 @@ function UserRow({ user, adminKey, onUserDeleted, onUserUpdated }) {
     if (!open && preds.length === 0) loadPreds();
     setOpen(o => !o);
   }
-
-  function refresh() { loadPreds(); }
 
   async function saveName(e) {
     e.stopPropagation();
@@ -1054,7 +1033,7 @@ function UserRow({ user, adminKey, onUserDeleted, onUserUpdated }) {
                       pred={p}
                       adminKey={adminKey}
                       matchFinished={p.status === 'finished'}
-                      onSaved={refresh}
+                      onSaved={loadPreds}
                       onDelete={() => {
                         setPreds(ps => ps.filter(x => x.id !== p.id));
                       }}
