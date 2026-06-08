@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
@@ -14,6 +14,20 @@ function RankBadge({ rank }) {
   if (rank === 2) return <span className="text-gray-300 font-black text-sm w-8 text-center">2nd</span>;
   if (rank === 3) return <span className="text-amber-600 font-black text-sm w-8 text-center">3rd</span>;
   return <span className="text-gray-400 font-bold text-sm w-8 text-center">{ordinal(rank)}</span>;
+}
+
+function RankDelta({ delta }) {
+  if (!delta) return <span className="w-6" />;
+  if (delta > 0) return (
+    <span className="text-emerald-400 text-xs font-bold w-6 text-left leading-none">
+      ↑{delta}
+    </span>
+  );
+  return (
+    <span className="text-red-400 text-xs font-bold w-6 text-left leading-none">
+      ↓{Math.abs(delta)}
+    </span>
+  );
 }
 
 function PtsBadge({ pts }) {
@@ -106,6 +120,10 @@ function PredictionBreakdown({ name, cache, setCache }) {
   );
 }
 
+function formatTime(date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 export default function Leaderboard() {
   const navigate = useNavigate();
   const [board, setBoard] = useState([]);
@@ -115,18 +133,60 @@ export default function Leaderboard() {
   const [predCache, setPredCache] = useState({});
   const [sort, setSort] = useState({ key: null, dir: null });
   const [selected, setSelected] = useState(new Set());
+  const [flashIds, setFlashIds] = useState(new Set());
+  const [rankDeltas, setRankDeltas] = useState({});
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const prevBoardRef = useRef(null);
+  const flashTimerRef = useRef(null);
+
+  const applyUpdate = useCallback((newBoard) => {
+    const prev = prevBoardRef.current;
+    if (prev && prev.length > 0) {
+      const prevRankById = Object.fromEntries(prev.map(r => [r.id, r.rank]));
+      const prevPtsById  = Object.fromEntries(prev.map(r => [r.id, Number(r.total_points)]));
+
+      const deltas  = {};
+      const changed = new Set();
+
+      for (const row of newBoard) {
+        const prevRank = prevRankById[row.id];
+        if (prevRank !== undefined && prevRank !== row.rank) {
+          deltas[row.id] = prevRank - row.rank; // positive = moved up
+        }
+        if (prevPtsById[row.id] !== undefined && prevPtsById[row.id] !== Number(row.total_points)) {
+          changed.add(row.id);
+        }
+      }
+
+      if (Object.keys(deltas).length > 0) setRankDeltas(deltas);
+
+      if (changed.size > 0) {
+        clearTimeout(flashTimerRef.current);
+        setFlashIds(changed);
+        flashTimerRef.current = setTimeout(() => setFlashIds(new Set()), 2000);
+      }
+    }
+
+    prevBoardRef.current = newBoard;
+    setBoard(newBoard);
+    setLastUpdated(new Date());
+  }, []);
 
   useEffect(() => {
     api.getLeaderboard()
-      .then(setBoard)
+      .then(applyUpdate)
       .catch(console.error)
       .finally(() => setLoading(false));
 
     const t = setInterval(() => {
-      api.getLeaderboard().then(setBoard).catch(() => {});
+      api.getLeaderboard().then(applyUpdate).catch(() => {});
     }, 30_000);
-    return () => clearInterval(t);
-  }, []);
+
+    return () => {
+      clearInterval(t);
+      clearTimeout(flashTimerRef.current);
+    };
+  }, [applyUpdate]);
 
   const handleSort = (col) => {
     setSort(prev => {
@@ -176,8 +236,22 @@ export default function Leaderboard() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black">Leaderboard</h1>
-          <p className="text-gray-400 text-sm">{board.length} players · updates every 30 s</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black">Leaderboard</h1>
+            <span className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+              </span>
+              <span className="text-xs text-emerald-400 font-semibold uppercase tracking-wide">Live</span>
+            </span>
+          </div>
+          <p className="text-gray-400 text-sm">
+            {board.length} players
+            {lastUpdated && (
+              <span className="text-gray-600"> · updated {formatTime(lastUpdated)}</span>
+            )}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {selected.size === 2 && (
@@ -208,7 +282,7 @@ export default function Leaderboard() {
           <thead>
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
               <th className="px-3 py-3 w-8" />
-              <th className="px-4 py-3 text-left w-12">#</th>
+              <th className="px-4 py-3 text-left w-20">#</th>
               <th className="px-4 py-3 text-left">Player</th>
               <th className="px-4 py-3 text-center text-xs">Paid</th>
               <SortableCell col="pts_5" sort={sort} onSort={handleSort}>
@@ -248,9 +322,12 @@ export default function Leaderboard() {
                 <React.Fragment key={row.id}>
                   <tr
                     onClick={() => toggle(row.id)}
-                    className={`border-b border-brand-border/50 cursor-pointer hover:bg-white/5 transition-colors ${
-                      expanded === row.id ? 'bg-white/5 border-brand-border' : ''
-                    } ${selected.has(row.name) ? 'bg-brand-gold/5' : idx < 3 && !search ? 'bg-brand-gold/3' : ''}`}
+                    className={`border-b border-brand-border/50 cursor-pointer transition-colors duration-700 hover:bg-white/5 ${
+                      flashIds.has(row.id)    ? 'bg-emerald-900/25' :
+                      expanded === row.id     ? 'bg-white/5 border-brand-border' :
+                      selected.has(row.name)  ? 'bg-brand-gold/5' :
+                      idx < 3 && !search      ? 'bg-brand-gold/3' : ''
+                    }`}
                   >
                     <td className="px-3 py-3">
                       <input
@@ -263,7 +340,10 @@ export default function Leaderboard() {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <RankBadge rank={row.rank} />
+                      <div className="flex items-center gap-1">
+                        <RankBadge rank={row.rank} />
+                        <RankDelta delta={rankDeltas[row.id]} />
+                      </div>
                     </td>
                     <td className="px-4 py-3 font-semibold">
                       <span className="flex items-center gap-1.5">
