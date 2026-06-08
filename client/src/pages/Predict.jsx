@@ -370,9 +370,15 @@ export default function Predict() {
     setStatus(null);
     try {
       await api.submitPredictions(name, payload);
-      setLocked(true);
-      localStorage.removeItem(LS_NAME_KEY); // clear so next visit opens fresh name modal
-      setStatus({ type: 'success', msg: `Predictions submitted for ${name}! Good luck!` });
+      localStorage.removeItem(LS_NAME_KEY);
+      setStatus({ type: 'success', msg: `Predictions submitted for ${name}! Good luck! 🎉` });
+      setTimeout(() => {
+        setName('');
+        setNameInput('');
+        setLocked(false);
+        setPreds({});
+        setStatus(null);
+      }, 3000);
     } catch (err) {
       setStatus({ type: 'error', msg: err.message });
     } finally {
