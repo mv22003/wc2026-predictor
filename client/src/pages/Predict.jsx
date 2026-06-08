@@ -6,6 +6,15 @@ import Flag from '../components/Flag';
 
 const LS_NAME_KEY = 'wc2026_name';
 
+function TeamName({ name, code }) {
+  return (
+    <>
+      <span className="sm:hidden">{code}</span>
+      <span className="hidden sm:inline">{name}</span>
+    </>
+  );
+}
+
 function ScoreInput({ value, onChange, disabled, className = 'score-input' }) {
   return (
     <input
@@ -68,7 +77,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
       <div className="flex items-center gap-2 justify-between">
         {/* Home team */}
         <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
-          <span className="text-sm font-semibold truncate text-right">{match.home_team}</span>
+          <span className="text-sm font-semibold truncate text-right"><TeamName name={match.home_team} code={match.home_code} /></span>
           <Flag code={match.home_code} name={match.home_team} className="w-8 h-8 shrink-0" />
         </div>
 
@@ -92,7 +101,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
         {/* Away team */}
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <Flag code={match.away_code} name={match.away_team} className="w-8 h-8 shrink-0" />
-          <span className="text-sm font-semibold truncate">{match.away_team}</span>
+          <span className="text-sm font-semibold truncate"><TeamName name={match.away_team} code={match.away_code} /></span>
         </div>
       </div>
     </div>
@@ -519,13 +528,13 @@ export default function Predict() {
               <button
                 key={g}
                 onClick={() => setActiveGroup(g)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
+                className={`py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
                   activeGroup === g
                     ? 'bg-brand-gold text-brand-navy'
                     : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
                 }`}
               >
-                Group {g}
+                {g}
               </button>
             ))}
           </div>

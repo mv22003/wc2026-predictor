@@ -4,6 +4,15 @@ import { api } from '../api';
 import Flag from '../components/Flag';
 import { VENUE_BY_MATCH } from '../venueData';
 
+function TeamName({ name, code }) {
+  return (
+    <>
+      <span className="sm:hidden">{code}</span>
+      <span className="hidden sm:inline">{name}</span>
+    </>
+  );
+}
+
 function StatBox({ label, value, color = 'text-brand-gold' }) {
   return (
     <div className="card text-center">
@@ -21,7 +30,6 @@ function MiniLeaderRow({ row }) {
         {medal || `#${row.rank}`}
       </span>
       <span className="flex-1 font-semibold truncate">{row.name}</span>
-
       <span className="font-black text-brand-gold text-lg w-12 text-right">{row.total_points}</span>
     </div>
   );
@@ -64,7 +72,7 @@ function LiveMatchCard({ match, showMinute = false }) {
       {/* teams + score — flags now center-align with score only */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-          <span className="text-lg font-black text-white text-right leading-tight truncate">{match.home_team}</span>
+          <span className="text-lg font-black text-white text-right leading-tight truncate"><TeamName name={match.home_team} code={match.home_code} /></span>
           <Flag code={match.home_code} name={match.home_team} className="w-12 h-12 shrink-0" />
         </div>
         <div className="shrink-0 px-2">
@@ -74,7 +82,7 @@ function LiveMatchCard({ match, showMinute = false }) {
         </div>
         <div className="flex-1 flex items-center gap-2 min-w-0">
           <Flag code={match.away_code} name={match.away_team} className="w-12 h-12 shrink-0" />
-          <span className="text-lg font-black text-white leading-tight truncate">{match.away_team}</span>
+          <span className="text-lg font-black text-white leading-tight truncate"><TeamName name={match.away_team} code={match.away_code} /></span>
         </div>
       </div>
 
@@ -131,7 +139,7 @@ function MatchRow({ match }) {
         <span className="tag bg-brand-border text-gray-300 w-16 text-center shrink-0 whitespace-nowrap">{match.group_name}</span>
         <div className="flex-1 flex items-center gap-2 min-w-0">
           <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 justify-end min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
-            <span className="truncate text-right">{match.home_team}</span>
+            <span className="truncate text-right"><TeamName name={match.home_team} code={match.home_code} /></span>
             <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
           </span>
           <span className="w-12 shrink-0 flex items-center justify-center">
@@ -145,7 +153,7 @@ function MatchRow({ match }) {
           </span>
           <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
             <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
-            <span className="truncate">{match.away_team}</span>
+            <span className="truncate"><TeamName name={match.away_team} code={match.away_code} /></span>
           </span>
         </div>
         {live ? (
@@ -260,36 +268,34 @@ export default function Home() {
         {/* Background gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 via-transparent to-brand-blue/10 pointer-events-none" />
 
-        {/* Prize Pot */}
-        {(
-          <div className="absolute top-3 right-3 text-center bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-10 pt-5 pb-6 backdrop-blur-sm">
-            <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Prize Pot</p>
-            <p className="text-5xl font-black text-brand-gold leading-none">
-              £{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
-            </p>
-            <p className="text-xs text-gray-500 mt-2">{prizePot.paid_count} player{prizePot.paid_count !== 1 ? 's' : ''} paid</p>
-          </div>
-        )}
-
-        <div className="relative flex flex-col sm:flex-row items-center gap-6">
+        <div className="relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <img
             src="/wc-logos/wc2026-logo-white.svg"
             alt="FIFA World Cup 2026"
-            className="h-28 w-auto shrink-0 px-3"
+            className="h-20 sm:h-28 w-auto shrink-0 px-3"
           />
 
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-black leading-tight whitespace-nowrap">
+          <div className="flex-1 text-center sm:text-left">
+            <h1 className="text-3xl sm:text-4xl font-black leading-tight">
               FIFA World Cup <span className="text-brand-gold">2026</span>
             </h1>
-            <p className="text-gray-400 mt-2 text-sm whitespace-nowrap">
+            <p className="text-gray-400 mt-2 text-sm">
               Predict every match, climb the leaderboard, and prove your football knowledge!
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex justify-center sm:justify-start">
               <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
                 Make Predictions →
               </Link>
             </div>
+          </div>
+
+          {/* Prize Pot */}
+          <div className="text-center bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-8 sm:px-10 py-4 sm:pt-5 sm:pb-6 backdrop-blur-sm shrink-0 w-full sm:w-auto">
+            <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Prize Pot</p>
+            <p className="text-4xl sm:text-5xl font-black text-brand-gold leading-none">
+              £{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">{prizePot.paid_count} player{prizePot.paid_count !== 1 ? 's' : ''} paid</p>
           </div>
         </div>
       </div>
@@ -302,19 +308,19 @@ export default function Home() {
         <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">How Scoring Works</h2>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center gap-2">
-            <span className="tag pts-exact px-3 py-1 text-sm font-bold">5 pts</span>
+            <span className="tag pts-exact py-1 text-sm font-bold text-center w-14">5 pts</span>
             <span className="text-sm text-gray-300">Exact scoreline</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="tag pts-correct px-3 py-1 text-sm font-bold">3 pts</span>
+            <span className="tag pts-correct py-1 text-sm font-bold text-center w-14">3 pts</span>
             <span className="text-sm text-gray-300">Correct result + goal difference</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 px-3 py-1 text-sm font-bold">1 pt</span>
+            <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 py-1 text-sm font-bold text-center w-14">1 pt</span>
             <span className="text-sm text-gray-300">Correct result (W/D/L) only</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="tag pts-zero px-3 py-1 text-sm font-bold">0 pts</span>
+            <span className="tag pts-zero py-1 text-sm font-bold text-center w-14">0 pts</span>
             <span className="text-sm text-gray-300">Wrong prediction</span>
           </div>
         </div>

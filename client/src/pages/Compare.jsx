@@ -79,30 +79,30 @@ function MatchRow({ predA, predB }) {
   return (
     <div className="grid grid-cols-3 items-stretch border-b border-brand-border/30 last:border-b-0">
       {/* A: badge on outer-left, score on inner-right */}
-      <div className={`flex items-center justify-end gap-2 px-4 py-2.5 ${tintA}`}>
+      <div className={`flex items-center justify-end gap-1.5 px-2 sm:px-4 py-2.5 ${tintA}`}>
         {isFinished && predA && <PtsBadge pts={ptsA} />}
-        <span className="font-mono text-sm text-gray-200">{predStrA}</span>
+        <span className="font-mono text-xs sm:text-sm text-gray-200 tabular-nums">{predStrA}</span>
       </div>
 
-      {/* Centre: code flag [result] flag code — flags flank the result so vs/score always centred */}
-      <div className="flex items-center justify-center px-2 py-2.5 border-x border-brand-border/30">
-        <div className="flex items-center gap-1.5 text-sm font-semibold">
-          <span className="text-gray-400 text-xs w-7 text-right">{src.home_code}</span>
-          <Flag code={src.home_code} name={src.home_team} className="w-6 h-6 shrink-0" />
-          <span className="w-12 text-center shrink-0">
+      {/* Centre: [code] flag [result] flag [code] */}
+      <div className="flex items-center justify-center px-1 py-2.5 border-x border-brand-border/30">
+        <div className="flex items-center gap-1 sm:gap-1.5 text-sm font-semibold">
+          <span className="hidden sm:inline text-gray-400 text-xs w-7 text-right">{src.home_code}</span>
+          <Flag code={src.home_code} name={src.home_team} className="w-5 sm:w-6 h-5 sm:h-6 shrink-0" />
+          <span className="w-10 sm:w-12 text-center shrink-0 text-xs sm:text-sm">
             {isFinished && src.home_score != null
-              ? <span className="text-white font-bold tabular-nums">{src.home_score} – {src.away_score}</span>
+              ? <span className="text-white font-bold tabular-nums">{src.home_score}–{src.away_score}</span>
               : <span className="text-gray-500 font-semibold">vs</span>
             }
           </span>
-          <Flag code={src.away_code} name={src.away_team} className="w-6 h-6 shrink-0" />
-          <span className="text-gray-400 text-xs w-7 text-left">{src.away_code}</span>
+          <Flag code={src.away_code} name={src.away_team} className="w-5 sm:w-6 h-5 sm:h-6 shrink-0" />
+          <span className="hidden sm:inline text-gray-400 text-xs w-7 text-left">{src.away_code}</span>
         </div>
       </div>
 
       {/* B: score on inner-left, badge on outer-right */}
-      <div className={`flex items-center justify-start gap-2 px-4 py-2.5 ${tintB}`}>
-        <span className="font-mono text-sm text-gray-200">{predStrB}</span>
+      <div className={`flex items-center justify-start gap-1.5 px-2 sm:px-4 py-2.5 ${tintB}`}>
+        <span className="font-mono text-xs sm:text-sm text-gray-200 tabular-nums">{predStrB}</span>
         {isFinished && predB && <PtsBadge pts={ptsB} />}
       </div>
     </div>
@@ -147,19 +147,19 @@ function PlayerCard({ name, stats }) {
       <div className="grid grid-cols-4 gap-1 text-center">
         <div>
           <span className="tag pts-exact block w-full">{stats.exact}</span>
-          <span className="text-[10px] text-gray-600 mt-0.5 block">Exact</span>
+          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Exact</span>
         </div>
         <div>
           <span className="tag pts-correct block w-full">{stats.correct}</span>
-          <span className="text-[10px] text-gray-600 mt-0.5 block">Result+GD</span>
+          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Result+GD</span>
         </div>
         <div>
           <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 block w-full">{stats.partial}</span>
-          <span className="text-[10px] text-gray-600 mt-0.5 block">Result</span>
+          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Result</span>
         </div>
         <div>
           <span className="tag pts-zero block w-full">{stats.wrong}</span>
-          <span className="text-[10px] text-gray-600 mt-0.5 block">Wrong</span>
+          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Wrong</span>
         </div>
       </div>
     </div>
@@ -247,10 +247,10 @@ export default function Compare() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
-          <h1 className="text-2xl font-black mt-1">H2H Prediction Comparison</h1>
+          <h1 className="text-xl sm:text-2xl font-black mt-1">H2H Comparison</h1>
         </div>
         {compared && dataA && dataB && (
           <button

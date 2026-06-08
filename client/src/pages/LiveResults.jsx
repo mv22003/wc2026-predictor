@@ -48,6 +48,15 @@ function getBest3rds(allMatches, groups) {
   return new Set(thirds.slice(0, 8).map(t => t.name));
 }
 
+function TeamName({ name, code }) {
+  return (
+    <>
+      <span className="sm:hidden">{code}</span>
+      <span className="hidden sm:inline">{name}</span>
+    </>
+  );
+}
+
 // ─── Groups tab ────────────────────────────────────────────────────────────────
 function StandingsTable({ groupName, matches, qualifying3rd }) {
   const [open, setOpen] = useState(false);
@@ -97,7 +106,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               <td className="px-3 py-2.5 max-w-0 w-full">
                 <div className="flex items-center gap-2 min-w-0">
                   <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
-                  <span className="font-semibold truncate text-sm">{row.name}</span>
+                  <span className="font-semibold truncate text-sm"><TeamName name={row.name} code={row.code} /></span>
                 </div>
               </td>
               <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
@@ -133,7 +142,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                 </span>
                 <div className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
                   <span className={`text-xs font-semibold truncate text-right ${m.status === 'finished' ? 'text-white' : 'text-gray-400'}`}>
-                    {m.home_team}
+                    <TeamName name={m.home_team} code={m.home_code} />
                   </span>
                   <Flag code={m.home_code} name={m.home_team} className="w-5 h-5 shrink-0" />
                 </div>
@@ -149,7 +158,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                 <div className="flex-1 flex items-center gap-1.5 min-w-0">
                   <Flag code={m.away_code} name={m.away_team} className="w-5 h-5 shrink-0" />
                   <span className={`text-xs font-semibold truncate ${m.status === 'finished' ? 'text-white' : 'text-gray-400'}`}>
-                    {m.away_team}
+                    <TeamName name={m.away_team} code={m.away_code} />
                   </span>
                 </div>
                 <div className="w-28 shrink-0 hidden sm:flex items-center justify-end">
@@ -270,8 +279,8 @@ function MatchRow({ match }) {
       hover:bg-white/5 transition-colors
       ${live ? 'bg-emerald-900/10' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
       <div className="flex items-stretch gap-3">
-        {/* group · match# pill — spans full height including venue row */}
-        <div className="shrink-0 w-20 flex items-center justify-center">
+        {/* group · match# pill — desktop only */}
+        <div className="hidden sm:flex shrink-0 w-20 items-center justify-center">
           <span className="tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
             {match.group_name} · M{match.match_number}
           </span>
@@ -279,14 +288,14 @@ function MatchRow({ match }) {
 
         {/* center: teams + score + venue pill */}
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
-              <span className={`text-sm font-semibold truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                {match.home_team}
+              <span className={`text-sm font-semibold min-w-0 truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
+                <TeamName name={match.home_team} code={match.home_code} />
               </span>
-              <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
+              <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
             </div>
-            <div className="w-20 shrink-0 flex items-center justify-center">
+            <div className="w-16 sm:w-20 shrink-0 flex items-center justify-center">
               {finished ? (
                 <span className="font-black text-brand-gold text-lg tabular-nums">
                   {match.home_score} – {match.away_score}
@@ -302,9 +311,9 @@ function MatchRow({ match }) {
               )}
             </div>
             <div className="flex-1 min-w-0 flex items-center gap-2">
-              <Flag code={match.away_code} name={match.away_team} className="w-7 h-7 shrink-0" />
-              <span className={`text-sm font-semibold truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                {match.away_team}
+              <Flag code={match.away_code} name={match.away_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
+              <span className={`text-sm font-semibold min-w-0 truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
+                <TeamName name={match.away_team} code={match.away_code} />
               </span>
             </div>
           </div>
@@ -716,19 +725,19 @@ export default function LiveResults() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black">Live Results</h1>
           <p className="text-gray-400 text-sm mt-0.5">
             {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30 s
           </p>
         </div>
-        <div className="flex rounded-lg overflow-hidden border border-brand-border">
+        <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
           {TABS.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-4 py-2 text-sm font-bold transition-all ${
+              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-bold transition-all ${
                 tab === t.id ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:text-white hover:bg-white/5'
               }`}
             >
