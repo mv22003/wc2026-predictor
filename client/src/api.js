@@ -31,6 +31,18 @@ export const api = {
   adminStats:    (key)           => req('/admin/stats',   { headers: { 'x-admin-key': key } }),
   adminMatches:  (key)           => req('/admin/matches', { headers: { 'x-admin-key': key } }),
   adminUsers:    (key)           => req('/admin/users',   { headers: { 'x-admin-key': key } }),
+  createAdminUser: (key, name)   =>
+    req('/admin/users', {
+      method: 'POST',
+      headers: { 'x-admin-key': key },
+      body: { name },
+    }),
+  renameAdminUser: (key, userId, name) =>
+    req(`/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': key },
+      body: { name },
+    }),
   updatePrizePot: (key, total)   =>
     req('/admin/prize-pot', {
       method: 'PATCH',

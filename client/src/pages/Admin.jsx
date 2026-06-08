@@ -857,16 +857,22 @@ function PredictionRow({ pred, adminKey, matchFinished, onSaved, onDelete }) {
   );
 }
 
-function UserRow({ user, adminKey, onUserDeleted }) {
+function UserRow({ user, adminKey, onUserDeleted, onUserUpdated }) {
   const [open, setOpen]         = useState(false);
   const [preds, setPreds]       = useState([]);
   const [loading, setLoading]   = useState(false);
   const [showDel, setShowDel]   = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [name, setName] = useState(user.name);
+  const [nameSaving, setNameSaving] = useState(false);
   const [paid, setPaid]             = useState(!!user.paid);
   const [paidAmount, setPaidAmount] = useState(user.paid_amount ?? '');
   const [paymentType, setPaymentType] = useState(user.payment_type ?? '');
   const [paidSaving, setPaidSaving]   = useState(false);
+
+  useEffect(() => {
+    setName(user.name);
+  }, [user.name]);
 
   async function loadPreds() {
     setLoading(true);
@@ -886,6 +892,22 @@ function UserRow({ user, adminKey, onUserDeleted }) {
   }
 
   function refresh() { loadPreds(); }
+
+  async function saveName(e) {
+    e.stopPropagation();
+    const next = name.trim();
+    if (!next || next === user.name) return;
+    setNameSaving(true);
+    try {
+      const updated = await api.renameAdminUser(adminKey, user.id, next);
+      onUserUpdated?.(updated);
+    } catch (err) {
+      setName(user.name);
+      alert('Error: ' + err.message);
+    } finally {
+      setNameSaving(false);
+    }
+  }
 
   async function togglePaid(e) {
     e.stopPropagation();
@@ -918,15 +940,34 @@ function UserRow({ user, adminKey, onUserDeleted }) {
     <>
       <div className="border-b border-brand-border/40 last:border-0">
         <div
-          className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/3 transition-colors cursor-pointer"
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 hover:bg-white/3 transition-colors cursor-pointer"
           onClick={toggle}
         >
+          {/* Name row */}
           <div className="flex items-center gap-3 min-w-0">
-            <span className={`text-gray-500 transition-transform text-xs ${open ? 'rotate-90' : ''}`}>▶</span>
-            <span className="font-bold text-sm truncate">{user.name}</span>
+            <span className={`text-gray-500 transition-transform text-xs shrink-0 ${open ? 'rotate-90' : ''}`}>▶</span>
+            <input
+              type="text"
+              value={name}
+              onClick={e => e.stopPropagation()}
+              onChange={e => setName(e.target.value)}
+              onBlur={saveName}
+              className="font-bold text-sm bg-transparent border border-transparent rounded px-2 py-1 min-w-0 flex-1
+                         focus:bg-brand-navy focus:border-brand-gold/40 focus:outline-none"
+            />
             <span className="text-xs text-gray-500 shrink-0">{user.predictions} preds</span>
           </div>
-          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          {/* Actions row */}
+          <div className="flex items-center gap-2 flex-wrap ml-5 sm:ml-0">
+            <button
+              onClick={saveName}
+              disabled={nameSaving || !name.trim() || name.trim() === user.name}
+              className="px-2 py-1 rounded text-xs font-bold transition-all disabled:opacity-40
+                         bg-sky-500/10 text-sky-400 border border-sky-500/30
+                         hover:bg-sky-500/20"
+            >
+              {nameSaving ? '...' : 'Rename'}
+            </button>
             <span className="text-sm font-bold text-brand-gold">{user.total_points} pts</span>
             <label
               className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border cursor-pointer transition-all select-none ${
@@ -982,7 +1023,7 @@ function UserRow({ user, adminKey, onUserDeleted }) {
                          bg-red-500/10 text-red-400 border border-red-500/30
                          hover:bg-red-500/20 disabled:opacity-40"
             >
-              {deleting ? '…' : 'Delete user'}
+              {deleting ? '…' : 'Delete'}
             </button>
           </div>
         </div>
@@ -1054,6 +1095,8 @@ function UserPredictionsPanel({ adminKey }) {
   const [users, setUsers]     = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen]       = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [creatingUser, setCreatingUser] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -1072,6 +1115,22 @@ function UserPredictionsPanel({ adminKey }) {
     setOpen(o => !o);
   }
 
+  async function createUser(e) {
+    e.preventDefault();
+    const name = newUserName.trim();
+    if (!name) return;
+    setCreatingUser(true);
+    try {
+      await api.createAdminUser(adminKey, name);
+      setNewUserName('');
+      await load();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setCreatingUser(false);
+    }
+  }
+
   return (
     <div className="card p-0 overflow-hidden">
       <button
@@ -1088,18 +1147,36 @@ function UserPredictionsPanel({ adminKey }) {
       {open && (
         loading ? (
           <p className="text-center text-gray-500 text-sm py-6">Loading…</p>
-        ) : users.length === 0 ? (
-          <p className="text-center text-gray-500 text-sm py-6">No users yet.</p>
         ) : (
           <div>
-            {users.map(u => (
-              <UserRow
-                key={u.id}
-                user={u}
-                adminKey={adminKey}
-                onUserDeleted={id => setUsers(us => us.filter(x => x.id !== id))}
+            <form onSubmit={createUser} className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-brand-border/40 bg-brand-navy/20">
+              <input
+                type="text"
+                value={newUserName}
+                onChange={e => setNewUserName(e.target.value)}
+                placeholder="Add dummy user name"
+                className="flex-1 min-w-[220px] bg-brand-navy border border-brand-border rounded px-3 py-2 text-sm text-gray-300
+                           focus:border-brand-gold focus:outline-none"
               />
-            ))}
+              <button type="submit" disabled={creatingUser || !newUserName.trim()} className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                {creatingUser ? 'Adding...' : 'Add Dummy User'}
+              </button>
+            </form>
+            {users.length === 0 ? (
+              <p className="text-center text-gray-500 text-sm py-6">No users yet.</p>
+            ) : (
+              <div>
+                {users.map(u => (
+                  <UserRow
+                    key={u.id}
+                    user={u}
+                    adminKey={adminKey}
+                    onUserDeleted={id => setUsers(us => us.filter(x => x.id !== id))}
+                    onUserUpdated={updated => setUsers(us => us.map(x => x.id === updated.id ? { ...x, ...updated } : x))}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )
       )}
@@ -1154,45 +1231,57 @@ function PrizePotCard({ adminKey, stats, onUpdated }) {
     }
   }
 
+  const [open, setOpen] = useState(false);
+
   if (!pot) return null;
 
   return (
-    <div className="card space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-gray-400">Current Prize Pot</p>
-          <p className="text-3xl font-black text-brand-gold">{"\u00A3"}{pot.total % 1 === 0 ? pot.total.toFixed(0) : pot.total.toFixed(2)}</p>
+    <div className="card p-0 overflow-hidden">
+      <button
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/3 transition-colors"
+        onClick={() => setOpen(o => !o)}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <h2 className="font-black text-lg shrink-0">Current Prize Pot</h2>
+          <span className="text-brand-gold font-black text-lg">
+            {'\u00A3'}{pot.total % 1 === 0 ? pot.total.toFixed(0) : pot.total.toFixed(2)}
+          </span>
+          {pot.has_override && <span className="text-xs text-amber-400 font-semibold shrink-0">override</span>}
         </div>
-        <div className="text-right text-xs text-gray-500">
-          <p>{pot.paid_count} paid player{pot.paid_count !== 1 ? 's' : ''}</p>
-          <p>{pot.has_override ? 'Manual override active' : 'Auto-calculated from paid users'}</p>
+        <span className={`text-gray-500 text-xs transition-transform shrink-0 ${open ? 'rotate-90' : ''}`}>{'\u25B6'}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-brand-border px-4 py-4 space-y-3">
+          <p className="text-xs text-gray-500">
+            {pot.paid_count} paid player{pot.paid_count !== 1 ? 's' : ''} &middot;{' '}
+            {pot.has_override ? 'Manual override active' : 'Auto-calculated'}
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              className="flex-1 bg-brand-navy border-2 border-brand-border rounded-lg px-3 py-2 focus:border-brand-gold focus:outline-none transition-colors text-sm"
+              placeholder="Override total (e.g. 215)"
+            />
+            <button onClick={saveOverride} disabled={saving} className="btn-primary text-sm shrink-0">
+              {saving ? 'Saving\u2026' : 'Save'}
+            </button>
+            {pot.has_override && (
+              <button onClick={resetOverride} disabled={saving} className="btn-secondary text-sm shrink-0 disabled:opacity-40">
+                Reset to Auto
+              </button>
+            )}
+          </div>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          {message && <p className="text-sm text-emerald-400">{message}</p>}
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-xs uppercase tracking-wider text-gray-500 font-bold">Assign Current Pot</label>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          className="w-full bg-brand-navy border-2 border-brand-border rounded-lg px-4 py-3 focus:border-brand-gold focus:outline-none transition-colors"
-          placeholder="Enter current pot total"
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button onClick={saveOverride} disabled={saving} className="btn-primary text-sm">
-          {saving ? 'Saving...' : 'Save Pot'}
-        </button>
-        <button onClick={resetOverride} disabled={saving || !pot.has_override} className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed">
-          Use Auto Total
-        </button>
-      </div>
-
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {message && <p className="text-sm text-emerald-400">{message}</p>}
+      )}
     </div>
   );
 }
@@ -1292,7 +1381,7 @@ export default function Admin() {
       </div>
 
       {/* Live sync + recalculate */}
-      <div className="flex gap-4 items-stretch">
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch">
         <div className="flex-[2] min-w-0">
           <LiveSyncCard adminKey={key} onDone={() => load(key)} />
         </div>

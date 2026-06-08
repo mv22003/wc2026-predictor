@@ -471,6 +471,53 @@ router.get('/users', adminAuth, async (req, res) => {
   }
 });
 
+router.post('/users', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const name = String(req.body?.name ?? '').trim();
+    if (!name) return res.status(400).json({ error: 'name is required' });
+
+    const { rows } = await db.query(`
+      INSERT INTO users (name, submitted_at)
+      VALUES ($1, NOW()::TEXT)
+      RETURNING *
+    `, [name]);
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'A user with that name already exists' });
+    }
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/users/:userId', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = parseInt(req.params.userId, 10);
+    const name = String(req.body?.name ?? '').trim();
+    if (!name) return res.status(400).json({ error: 'name is required' });
+
+    const { rows, rowCount } = await db.query(`
+      UPDATE users
+      SET name = $1
+      WHERE id = $2
+      RETURNING *
+    `, [name, userId]);
+
+    if (rowCount === 0) return res.status(404).json({ error: 'User not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'A user with that name already exists' });
+    }
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/users/:userId/predictions', adminAuth, async (req, res) => {
   try {
     const db = getDb();
