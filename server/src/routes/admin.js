@@ -663,4 +663,16 @@ router.delete('/reset', adminAuth, async (req, res) => {
   }
 });
 
+router.post('/fix-ivory-coast', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const oldName = 'Côte d’Ivoire';
+    const { rowCount } = await db.query('UPDATE teams SET name = $1 WHERE name = $2', ['Ivory Coast', oldName]);
+    res.json({ success: true, updated: rowCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
