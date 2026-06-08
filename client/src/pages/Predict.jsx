@@ -16,14 +16,31 @@ function TeamName({ name, code }) {
 }
 
 function ScoreInput({ value, onChange, disabled, className = 'score-input' }) {
+  const handleChange = (e) => {
+    const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+    onChange(val);
+    // Auto-advance to next enabled score input after a single-digit entry (0-9)
+    if (typeof val === 'number' && val >= 0 && val <= 9) {
+      const all = Array.from(document.querySelectorAll('[data-score-input]:not(:disabled)'));
+      const idx = all.indexOf(e.target);
+      if (idx >= 0 && idx < all.length - 1) {
+        setTimeout(() => { all[idx + 1].focus(); all[idx + 1].select(); }, 0);
+      }
+    }
+  };
+
   return (
     <input
       type="number"
+      inputMode="numeric"
+      pattern="[0-9]*"
       min="0"
       max="99"
+      data-score-input
       className={className}
       value={value ?? ''}
-      onChange={e => onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+      onChange={handleChange}
+      onFocus={e => e.target.select()}
       disabled={disabled}
       placeholder="–"
     />
