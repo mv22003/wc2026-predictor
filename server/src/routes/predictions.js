@@ -48,7 +48,7 @@ router.post('/', async (req, res) => {
   const { rows: playedRows } = await db.query(
     "SELECT COUNT(*) AS n FROM matches WHERE phase = 'group' AND status IN ('live', 'finished')"
   );
-  if (parseInt(playedRows[0].n, 10) > 24)
+  if (parseInt(playedRows[0].n, 10) >= 24)
     return res.status(403).json({ error: 'Predictions are closed — more than 24 group matches have been played.' });
 
   // Require a prediction for every upcoming group match (live/finished are locked)
