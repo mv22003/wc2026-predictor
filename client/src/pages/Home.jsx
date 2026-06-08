@@ -309,7 +309,6 @@ export default function Home() {
             <p className="text-4xl sm:text-5xl font-black text-brand-gold leading-none">
               {'\u00A3'}{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
             </p>
-            <p className="text-xs text-gray-500 mt-2">{prizePot.paid_count} player{prizePot.paid_count !== 1 ? 's' : ''} paid</p>
           </div>
         </div>
       </div>
