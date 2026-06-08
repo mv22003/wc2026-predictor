@@ -17,8 +17,9 @@ function RankBadge({ rank }) {
 }
 
 
-function PtsBadge({ pts }) {
+function PtsBadge({ pts, pending }) {
   const base = 'tag font-bold text-center w-8 shrink-0';
+  if (pending) return <span className={`${base} bg-brand-border text-gray-600`}>–</span>;
   if (pts === 5) return <span className={`${base} pts-exact`}>+5</span>;
   if (pts === 3) return <span className={`${base} pts-correct`}>+3</span>;
   if (pts === 1) return <span className={`${base} bg-amber-800/30 text-amber-500 border border-amber-700/30`}>+1</span>;
@@ -58,24 +59,25 @@ function PredictionBreakdown({ name, cache, setCache }) {
   if (loading) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
+        <td colSpan={9} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
       </tr>
     );
   }
 
-  const predictions = (cache[name] ?? [])
-    .filter(p => p.status === 'finished')
-    .sort((a, b) => b.points - a.points);
+  const finished = (cache[name] ?? []).filter(p => p.status === 'finished').sort((a, b) => b.points - a.points);
+  const pending  = (cache[name] ?? []).filter(p => p.status !== 'finished').sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+  const predictions = [...finished, ...pending];
 
   if (predictions.length === 0) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">No finished matches yet.</td>
+        <td colSpan={9} className="px-6 py-3 text-xs text-gray-500">No predictions yet.</td>
       </tr>
     );
   }
 
-  const rowTint = (pts) => {
+  const rowTint = (pts, status) => {
+    if (status !== 'finished') return 'border-b border-brand-border/30 last:border-b-0';
     if (pts === 5) return 'bg-emerald-900/20 border-l-2 border-l-emerald-400 border-b border-b-brand-border/30 last:border-b-0';
     if (pts === 3) return 'bg-blue-900/10 border-l-2 border-l-blue-500 border-b border-b-brand-border/30 last:border-b-0';
     if (pts === 1) return 'bg-amber-900/15 border-l-2 border-l-amber-500 border-b border-b-brand-border/30 last:border-b-0';
@@ -84,21 +86,24 @@ function PredictionBreakdown({ name, cache, setCache }) {
 
   return (
     <tr className="bg-brand-surface/50">
-      <td colSpan={8} className="px-4 py-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 overflow-y-auto max-h-48 scrollbar-thin">
+      <td colSpan={9} className="p-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 overflow-y-auto max-h-96 scrollbar-thin divide-y divide-brand-border/30 sm:divide-y-0">
           {predictions.map(p => (
-            <div key={p.id} className={`flex items-center gap-3 px-3 py-2 text-xs ${rowTint(p.points)}`}>
-              <div className="flex items-center gap-1.5 shrink-0">
+            <div key={p.id} className={`flex items-center gap-2 px-4 py-2 text-xs ${rowTint(p.points, p.status)}`}>
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
                 <span className="font-semibold text-gray-300">{p.home_code}</span>
                 <span className="text-gray-600">vs</span>
                 <span className="font-semibold text-gray-300">{p.away_code}</span>
                 <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
               </div>
-              <span className="font-mono text-gray-500 shrink-0 ml-auto">{p.pred_home}–{p.pred_away}</span>
-              <span className="text-gray-600 shrink-0">→</span>
-              <span className={`font-mono font-bold shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-600'}`}>{p.home_score}–{p.away_score}</span>
-              <PtsBadge pts={p.points} />
+              <span className="font-mono text-gray-500 w-8 text-right tabular-nums shrink-0">{p.pred_home}–{p.pred_away}</span>
+              <span className="text-gray-600 w-3 text-center shrink-0">→</span>
+              {p.status === 'finished'
+                ? <span className={`font-mono font-bold w-8 tabular-nums shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-600'}`}>{p.home_score}–{p.away_score}</span>
+                : <span className="text-gray-600 italic w-8 shrink-0">pend.</span>
+              }
+              <PtsBadge pts={p.points} pending={p.status !== 'finished'} />
             </div>
           ))}
         </div>
