@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 
@@ -51,7 +51,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
   if (loading) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={7} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
+        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
       </tr>
     );
   }
@@ -63,7 +63,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
   if (predictions.length === 0) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={7} className="px-6 py-3 text-xs text-gray-500">No finished matches yet.</td>
+        <td colSpan={8} className="px-6 py-3 text-xs text-gray-500">No finished matches yet.</td>
       </tr>
     );
   }
@@ -77,8 +77,8 @@ function PredictionBreakdown({ name, cache, setCache }) {
 
   return (
     <tr className="bg-brand-surface/50">
-      <td colSpan={7} className="px-4 py-2">
-        <div className="grid grid-cols-2 overflow-y-auto max-h-48 scrollbar-thin">
+      <td colSpan={8} className="px-4 py-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 overflow-y-auto max-h-48 scrollbar-thin">
           {predictions.map(p => (
             <div key={p.id} className={`flex items-center gap-3 px-3 py-2 text-xs ${rowTint(p.points)}`}>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -101,12 +101,14 @@ function PredictionBreakdown({ name, cache, setCache }) {
 }
 
 export default function Leaderboard() {
+  const navigate = useNavigate();
   const [board, setBoard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(null);
   const [predCache, setPredCache] = useState({});
   const [sort, setSort] = useState({ key: null, dir: null });
+  const [selected, setSelected] = useState(new Set());
 
   useEffect(() => {
     api.getLeaderboard()
@@ -140,6 +142,22 @@ export default function Leaderboard() {
 
   const toggle = (id) => setExpanded(prev => prev === id ? null : id);
 
+  const toggleSelect = (name, e) => {
+    e.stopPropagation();
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) { next.delete(name); return next; }
+      if (next.size >= 2) return prev;
+      next.add(name);
+      return next;
+    });
+  };
+
+  const handleCompare = () => {
+    const [a, b] = [...selected];
+    navigate(`/leaderboard/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
+  };
+
   const colSort = (col) => sort.key === col ? sort.dir : null;
 
   if (loading) {
@@ -155,18 +173,23 @@ export default function Leaderboard() {
           <h1 className="text-2xl font-black">Leaderboard</h1>
           <p className="text-gray-400 text-sm">{board.length} players · updates every 30 s</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/leaderboard/compare"
-            className="inline-flex items-center px-4 py-2 rounded-lg border border-brand-gold/50 bg-brand-gold/10 text-brand-gold text-sm font-bold hover:bg-brand-gold/20 transition-colors whitespace-nowrap"
-          >
-            Head-to-Head
-          </Link>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {selected.size === 2 && (
+            <button
+              onClick={handleCompare}
+              className="inline-flex items-center px-3 py-2 rounded-lg bg-brand-gold text-black text-sm font-bold hover:bg-brand-gold/80 transition-colors whitespace-nowrap"
+            >
+              Compare {[...selected].join(' vs ')} →
+            </button>
+          )}
+          {selected.size === 1 && (
+            <span className="text-xs text-gray-400 whitespace-nowrap">Pick one more to compare</span>
+          )}
           <input
             type="text"
             placeholder="Search player…"
             className="bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-sm
-                       focus:border-brand-gold focus:outline-none w-48 transition-colors"
+                       focus:border-brand-gold focus:outline-none w-full sm:w-48 transition-colors"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -178,8 +201,10 @@ export default function Leaderboard() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
+              <th className="px-3 py-3 w-8" />
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
+              <th className="px-4 py-3 text-center text-xs">Paid</th>
               <SortableCell col="pts_5" sort={sort} onSort={handleSort}>
                 <span className="tag pts-exact px-2">+5</span>
               </SortableCell>
@@ -208,7 +233,7 @@ export default function Leaderboard() {
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-10 text-gray-500">
+                <td colSpan={8} className="text-center py-10 text-gray-500">
                   {search ? 'No player found.' : 'No predictions submitted yet. Be the first!'}
                 </td>
               </tr>
@@ -220,8 +245,18 @@ export default function Leaderboard() {
                     onClick={() => toggle(row.id)}
                     className={`border-b border-brand-border/50 cursor-pointer hover:bg-white/5 transition-colors ${
                       expanded === row.id ? 'bg-white/5 border-brand-border' : ''
-                    } ${idx < 3 && !search ? 'bg-brand-gold/3' : ''}`}
+                    } ${selected.has(row.name) ? 'bg-brand-gold/5' : idx < 3 && !search ? 'bg-brand-gold/3' : ''}`}
                   >
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(row.name)}
+                        onChange={e => toggleSelect(row.name, e)}
+                        onClick={e => e.stopPropagation()}
+                        disabled={!selected.has(row.name) && selected.size >= 2}
+                        className="w-4 h-4 rounded accent-brand-gold cursor-pointer disabled:opacity-30"
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <RankBadge rank={row.rank} />
                     </td>
@@ -230,6 +265,12 @@ export default function Leaderboard() {
                         {row.name}
                         <span className={`text-gray-600 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {row.paid
+                        ? <span className="text-xs font-bold text-emerald-400">✓</span>
+                        : <span className="text-xs font-bold text-red-400/60">✗</span>
+                      }
                     </td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
                       <span className="tag pts-exact">{row.pts_5 ?? 0}</span>

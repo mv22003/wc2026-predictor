@@ -28,6 +28,7 @@ router.get('/', async (req, res) => {
       SELECT
         u.id,
         u.name,
+        u.paid,
         u.submitted_at,
         COALESCE(SUM(p.points), 0)                                                      AS total_points,
         SUM(CASE WHEN p.points = 5 THEN 1 ELSE 0 END)                                  AS pts_5,
