@@ -295,9 +295,9 @@ export default function Home() {
               Make Predictions
             </Link>
 
-            <div className="bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-4 py-3 backdrop-blur-sm shrink-0 min-w-[140px] text-center">
-              <p className="text-xs text-gray-400 uppercase tracking-[0.22em] font-bold mb-1">Current<br></br>Prize Pot</p>
-              <p className="text-3xl font-black text-brand-gold leading-none">
+            <div className="bg-brand-gold/10 border border-brand-gold/40 rounded-lg px-3 py-2 backdrop-blur-sm shrink-0 text-center">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Current Prize Pot</p>
+              <p className="text-2xl font-black text-brand-gold leading-none">
                 {'\u00A3'}{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
               </p>
             </div>
