@@ -274,6 +274,13 @@ export default function Bracket() {
                 </div>
               ))}
             </div>
+            <div className="flex justify-center -mt-2 mb-4">
+              <img
+                src="/wc-logos/world-cup-trophy.png"
+                alt="World Cup Trophy"
+                style={{ width: 72, height: 'auto', opacity: 0.9 }}
+              />
+            </div>
             <div className="mt-6 flex justify-center">
               <div className="text-center">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">3rd Place</p>

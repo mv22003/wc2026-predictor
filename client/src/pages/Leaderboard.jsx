@@ -173,27 +173,6 @@ export default function Leaderboard() {
         </div>
       </div>
 
-      {/* Top 3 podium */}
-      {board.length >= 3 && !search && (
-        <div className="grid grid-cols-3 gap-3">
-          {[board[1], board[0], board[2]].map((row, i) => (
-            <div
-              key={row.id}
-              className={`card text-center transition-all ${
-                i === 1 ? 'ring-2 ring-brand-gold/50 bg-brand-gold/5 sm:-mt-4' : ''
-              }`}
-            >
-              <p className={`text-lg font-black mb-1 ${i === 1 ? 'text-brand-gold' : i === 0 ? 'text-gray-300' : 'text-amber-600'}`}>
-                {i === 1 ? '1st' : i === 0 ? '2nd' : '3rd'}
-              </p>
-              <p className="font-black truncate text-sm">{row.name}</p>
-              <p className="text-brand-gold font-black text-2xl">{row.total_points}</p>
-              <p className="text-gray-500 text-xs">pts</p>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Full table */}
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-sm">

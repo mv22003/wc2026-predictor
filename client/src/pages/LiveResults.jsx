@@ -651,8 +651,21 @@ function BracketTab({ allMatches }) {
                 <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} flip={flip} />
               </div>
             ))}
+            <img
+              src="/wc-logos/world-cup-trophy.png"
+              alt="World Cup Trophy"
+              style={{
+                position: 'absolute',
+                left: FINAL + CW / 2,
+                top: yc.sf() + CH / 2 + (H - yc.sf() - CH / 2) / 2,
+                transform: 'translate(-50%, -50%)',
+                width: 140,
+                height: 'auto',
+                opacity: 0.95,
+              }}
+            />
           </div>
-          <div className="mt-6 flex justify-center">
+          <div className="flex justify-center mt-6">
             <div className="text-center">
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">3rd Place</p>
               <BCard matchNum={103} dbByNum={dbByNum} projMap={projMap} />
