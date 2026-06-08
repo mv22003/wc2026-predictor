@@ -269,31 +269,43 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 via-transparent to-brand-blue/10 pointer-events-none" />
 
         <div className="relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-          <img
-            src="/wc-logos/wc2026-logo-white.svg"
-            alt="FIFA World Cup 2026"
-            className="h-20 sm:h-28 w-auto shrink-0 px-3"
-          />
+          <div className="flex flex-row sm:contents items-center sm:items-start gap-3 w-full sm:w-auto">
+            <img
+              src="/wc-logos/wc2026-logo-white.svg"
+              alt="FIFA World Cup 2026"
+              className="h-20 sm:h-28 w-auto shrink-0 px-1 sm:px-3"
+            />
 
-          <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-3xl sm:text-4xl font-black leading-tight">
-              FIFA World Cup <span className="text-brand-gold">2026</span>
-            </h1>
-            <p className="text-gray-400 mt-2 text-sm">
-              Predict every match, climb the leaderboard, and prove your football knowledge!
-            </p>
-            <div className="mt-4 flex justify-center sm:justify-start">
-              <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
-                Make Predictions →
-              </Link>
+            <div className="flex-1 text-left sm:text-left">
+              <h1 className="text-2xl sm:text-4xl font-black leading-tight">
+                FIFA World Cup <span className="text-brand-gold">2026</span>
+              </h1>
+              <p className="text-gray-400 mt-2 text-sm">
+                Predict every match, climb the leaderboard, and prove your football knowledge!
+              </p>
+              <div className="mt-4 hidden sm:flex justify-start">
+                <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
+                  Make Predictions
+                </Link>
+              </div>
             </div>
           </div>
+          <div className="mt-1 flex w-full justify-center gap-3 sm:hidden">
+            <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
+              Make Predictions
+            </Link>
 
-          {/* Prize Pot */}
-          <div className="text-center bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-8 sm:px-10 py-4 sm:pt-5 sm:pb-6 backdrop-blur-sm shrink-0 w-full sm:w-auto">
+            <div className="bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-4 py-3 backdrop-blur-sm shrink-0 min-w-[140px] text-center">
+              <p className="text-xs text-gray-400 uppercase tracking-[0.22em] font-bold mb-1">Prize Pot</p>
+              <p className="text-3xl font-black text-brand-gold leading-none">
+                {'\u00A3'}{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
+              </p>
+            </div>
+          </div>
+          <div className="hidden sm:block text-center bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-8 sm:px-10 py-4 sm:pt-5 sm:pb-6 backdrop-blur-sm shrink-0 w-full sm:w-auto">
             <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Prize Pot</p>
             <p className="text-4xl sm:text-5xl font-black text-brand-gold leading-none">
-              £{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
+              {'\u00A3'}{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
             </p>
             <p className="text-xs text-gray-500 mt-2">{prizePot.paid_count} player{prizePot.paid_count !== 1 ? 's' : ''} paid</p>
           </div>
