@@ -6,13 +6,13 @@ import Flag from '../components/Flag';
 
 const LS_NAME_KEY = 'wc2026_name';
 
-function ScoreInput({ value, onChange, disabled }) {
+function ScoreInput({ value, onChange, disabled, className = 'score-input' }) {
   return (
     <input
       type="number"
       min="0"
       max="99"
-      className="score-input"
+      className={className}
       value={value ?? ''}
       onChange={e => onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
       disabled={disabled}
@@ -31,7 +31,6 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
 
   let pts = null;
   if (locked && match.status === 'finished' && filled) {
-    // Show points earned
     const ph = parseInt(predHome), pa = parseInt(predAway);
     const ah = match.home_score, aa = match.away_score;
     if (ph === ah && pa === aa) pts = 5;
@@ -41,43 +40,163 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
   }
 
   return (
-    <div className={`card transition-all ${filled ? 'border-brand-border' : 'border-yellow-600/30 bg-yellow-900/5'}`}>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-gray-500">
-          {dateStr}{match.venue && ` @ ${match.venue}`}
+    <div className={`card !p-2.5 transition-all ${filled ? 'border-brand-border' : 'border-yellow-600/30 bg-yellow-900/5'}`}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[11px] text-gray-500 truncate">
+          {dateStr}{match.venue && ` · ${match.venue}`}
         </span>
         {pts !== null && (
-          <span className={`tag font-bold px-2 py-0.5 ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
+          <span className={`tag font-bold px-1.5 py-0.5 text-[11px] shrink-0 ml-1 ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
             {pts === 5 ? '+5' : pts === 3 ? '+3' : pts === 1 ? '+1' : '0 pts'}
           </span>
         )}
         {locked && match.status === 'finished' && (
-          <span className="text-xs text-gray-400">
-            Result: {match.home_score}–{match.away_score}
+          <span className="text-[11px] text-gray-400 shrink-0 ml-1">
+            {match.home_score}–{match.away_score}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-3 justify-between">
+      <div className="flex items-center gap-2 justify-between">
         {/* Home team */}
-        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
-          <span className="text-sm font-semibold truncate text-right">{match.home_team}</span>
-          <Flag code={match.home_code} name={match.home_team} className="w-9 h-9" />
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-end">
+          <span className="text-xs font-semibold truncate text-right">{match.home_team}</span>
+          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
         </div>
 
         {/* Score inputs */}
-        <div className="flex items-center gap-2 shrink-0">
-          <ScoreInput value={predHome} onChange={v => onUpdate(match.id, 'home', v)} disabled={locked} />
-          <span className="text-gray-500 font-bold">–</span>
-          <ScoreInput value={predAway} onChange={v => onUpdate(match.id, 'away', v)} disabled={locked} />
+        <div className="flex items-center gap-1 shrink-0">
+          <ScoreInput
+            value={predHome}
+            onChange={v => onUpdate(match.id, 'home', v)}
+            disabled={locked}
+            className="w-8 h-7 text-center font-bold rounded bg-brand-navy border border-brand-border focus:border-brand-gold focus:outline-none text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <span className="text-gray-500 text-xs font-bold">–</span>
+          <ScoreInput
+            value={predAway}
+            onChange={v => onUpdate(match.id, 'away', v)}
+            disabled={locked}
+            className="w-8 h-7 text-center font-bold rounded bg-brand-navy border border-brand-border focus:border-brand-gold focus:outline-none text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
         </div>
 
         {/* Away team */}
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          <Flag code={match.away_code} name={match.away_team} className="w-9 h-9" />
-          <span className="text-sm font-semibold truncate">{match.away_team}</span>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
+          <span className="text-xs font-semibold truncate">{match.away_team}</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Predicted standings ───────────────────────────────────────────────────────
+function calcPredictedStandings(groupMatches, preds) {
+  const table = {};
+  for (const m of groupMatches) {
+    for (const side of ['home', 'away']) {
+      const name = m[`${side}_team`];
+      if (!table[name]) table[name] = {
+        name, code: m[`${side}_code`],
+        played: 0, won: 0, drawn: 0, lost: 0,
+        gf: 0, ga: 0, gd: 0, pts: 0,
+      };
+    }
+  }
+  for (const m of groupMatches) {
+    const p = preds[m.id];
+    if (!p || p.home === '' || p.home == null || p.away === '' || p.away == null) continue;
+    const hs = parseInt(p.home), as_ = parseInt(p.away);
+    const h = table[m.home_team], a = table[m.away_team];
+    h.played++; h.gf += hs; h.ga += as_; h.gd = h.gf - h.ga;
+    a.played++; a.gf += as_; a.ga += hs; a.gd = a.gf - a.ga;
+    if (hs > as_)      { h.won++;   h.pts += 3; a.lost++; }
+    else if (hs < as_) { a.won++;   a.pts += 3; h.lost++; }
+    else               { h.drawn++; h.pts++;     a.drawn++; a.pts++; }
+  }
+  return Object.values(table).sort((a, b) =>
+    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name)
+  );
+}
+
+function getPredicted3rds(matches, groups, preds) {
+  const thirds = [];
+  for (const g of groups) {
+    const gm = matches.filter(m => m.group_name === g);
+    const standings = calcPredictedStandings(gm, preds);
+    if (standings.length >= 3 && standings[2].played > 0) thirds.push(standings[2]);
+  }
+  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
+  return new Set(thirds.slice(0, 8).map(t => t.name));
+}
+
+function PredictedStandingsTable({ groupName, groupMatches, preds, qualifying3rd }) {
+  const standings = calcPredictedStandings(groupMatches, preds);
+  const filledCount = groupMatches.filter(m => {
+    const p = preds[m.id];
+    return p && p.home !== '' && p.home != null && p.away !== '' && p.away != null;
+  }).length;
+
+  return (
+    <div className="card p-0 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60">
+        <h3 className="font-black text-base">Group {groupName}</h3>
+        <span className="text-xs text-gray-500">{filledCount}/6 predicted</span>
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-[11px] uppercase tracking-wider text-gray-500 border-b border-brand-border/50">
+            <th className="px-3 py-2 text-left w-6">#</th>
+            <th className="px-3 py-2 text-left">Team</th>
+            <th className="px-2 py-2 text-center w-7">P</th>
+            <th className="px-2 py-2 text-center w-7">W</th>
+            <th className="px-2 py-2 text-center w-7">D</th>
+            <th className="px-2 py-2 text-center w-7">L</th>
+            <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GF</th>
+            <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GA</th>
+            <th className="px-2 py-2 text-center w-10">GD</th>
+            <th className="px-3 py-2 text-center w-10 font-bold text-brand-gold">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {standings.map((row, i) => (
+            <tr key={row.name}
+              className={`border-b border-brand-border/30 last:border-0 transition-colors
+                ${i < 2
+                  ? 'bg-emerald-900/10 hover:bg-emerald-900/20'
+                  : i === 2 && qualifying3rd?.has(row.name)
+                  ? 'bg-amber-900/10 hover:bg-amber-900/20'
+                  : 'hover:bg-white/5'}`}
+            >
+              <td className="px-3 py-2.5">
+                <span className={`text-xs font-bold
+                  ${i < 2 ? 'text-emerald-400'
+                    : i === 2 && qualifying3rd?.has(row.name) ? 'text-amber-400'
+                    : 'text-gray-600'}`}>
+                  {i + 1}
+                </span>
+              </td>
+              <td className="px-3 py-2.5 max-w-0 w-full">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
+                  <span className="font-semibold truncate text-sm">{row.name}</span>
+                </div>
+              </td>
+              <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
+              <td className="px-2 py-2.5 text-center text-gray-300">{row.won}</td>
+              <td className="px-2 py-2.5 text-center text-gray-300">{row.drawn}</td>
+              <td className="px-2 py-2.5 text-center text-gray-300">{row.lost}</td>
+              <td className="px-2 py-2.5 text-center text-gray-500 hidden sm:table-cell">{row.gf}</td>
+              <td className="px-2 py-2.5 text-center text-gray-500 hidden sm:table-cell">{row.ga}</td>
+              <td className="px-2 py-2.5 text-center text-gray-400">
+                {row.gd > 0 ? `+${row.gd}` : row.gd}
+              </td>
+              <td className="px-3 py-2.5 text-center font-black text-brand-gold">{row.pts}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -357,18 +476,28 @@ export default function Predict() {
             ))}
           </div>
 
-          {/* ── Match cards ─────────────────────────────────────────────────── */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            {groupMatches.map(match => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                predHome={preds[match.id]?.home ?? ''}
-                predAway={preds[match.id]?.away ?? ''}
-                onUpdate={updatePred}
-                locked={locked}
+          {/* ── Cards + standings side by side ──────────────────────────────── */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start">
+            <div className="flex-1 grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
+              {groupMatches.map(match => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  predHome={preds[match.id]?.home ?? ''}
+                  predAway={preds[match.id]?.away ?? ''}
+                  onUpdate={updatePred}
+                  locked={locked}
+                />
+              ))}
+            </div>
+            <div className="w-full lg:w-72 shrink-0">
+              <PredictedStandingsTable
+                groupName={activeGroup}
+                groupMatches={groupMatches}
+                preds={preds}
+                qualifying3rd={getPredicted3rds(matches, groups, preds)}
               />
-            ))}
+            </div>
           </div>
 
           {/* ── Next group prompt ───────────────────────────────────────────── */}

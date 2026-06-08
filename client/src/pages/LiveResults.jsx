@@ -224,17 +224,29 @@ function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
   if (home.length !== homeScore || away.length !== awayScore) return null;
   if (home.length === 0 && away.length === 0) return null;
 
-  const fmtHome = s => `${s.name}${s.minute != null ? ` ${s.minute}'` : ''} ⚽️`;
-  const fmtAway = s => `⚽️ ${s.name}${s.minute != null ? ` ${s.minute}'` : ''}`;
   const rows = Math.max(home.length, away.length);
 
   return (
     <div className="mt-3 px-1 space-y-1">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
-          <span className="flex-1 text-right leading-snug">{home[i] ? fmtHome(home[i]) : ''}</span>
+          <span className="flex-1 text-right leading-snug">
+            {home[i] ? (
+              <span className="inline-flex items-center justify-end gap-1">
+                {home[i].name}{home[i].minute != null ? ` ${home[i].minute}'` : ''}
+                <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] inline-block" />
+              </span>
+            ) : ''}
+          </span>
           <span className="w-20 shrink-0" />
-          <span className="flex-1 leading-snug">{away[i] ? fmtAway(away[i]) : ''}</span>
+          <span className="flex-1 leading-snug">
+            {away[i] ? (
+              <span className="inline-flex items-center gap-1">
+                <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] inline-block" />
+                {away[i].name}{away[i].minute != null ? ` ${away[i].minute}'` : ''}
+              </span>
+            ) : ''}
+          </span>
         </div>
       ))}
     </div>

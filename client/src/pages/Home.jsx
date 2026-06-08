@@ -84,13 +84,23 @@ function LiveMatchCard({ match, showMinute = false }) {
           {Array.from({ length: Math.max(homeScorers.length, awayScorers.length) }, (_, i) => (
             <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
               <span className="flex-1 text-right">
-                {homeScorers[i] ? `${homeScorers[i].name}${homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''} ⚽️` : ''}
+                {homeScorers[i] ? (
+                  <span className="inline-flex items-center justify-end gap-1">
+                    {homeScorers[i].name}{homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''}
+                    <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] inline-block" />
+                  </span>
+                ) : ''}
               </span>
               <span className="shrink-0 px-2 flex justify-center">
                 <span className="w-px h-3 bg-brand-border/60" />
               </span>
               <span className="flex-1">
-                {awayScorers[i] ? `⚽️ ${awayScorers[i].name}${awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}` : ''}
+                {awayScorers[i] ? (
+                  <span className="inline-flex items-center gap-1">
+                    <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] inline-block" />
+                    {awayScorers[i].name}{awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}
+                  </span>
+                ) : ''}
               </span>
             </div>
           ))}
