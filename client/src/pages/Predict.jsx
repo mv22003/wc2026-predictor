@@ -59,9 +59,9 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
 
       <div className="flex items-center gap-2 justify-between">
         {/* Home team */}
-        <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-end">
-          <span className="text-xs font-semibold truncate text-right">{match.home_team}</span>
-          <Flag code={match.home_code} name={match.home_team} className="w-6 h-6 shrink-0" />
+        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
+          <span className="text-sm font-semibold truncate text-right">{match.home_team}</span>
+          <Flag code={match.home_code} name={match.home_team} className="w-8 h-8 shrink-0" />
         </div>
 
         {/* Score inputs */}
@@ -82,9 +82,9 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
         </div>
 
         {/* Away team */}
-        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          <Flag code={match.away_code} name={match.away_team} className="w-6 h-6 shrink-0" />
-          <span className="text-xs font-semibold truncate">{match.away_team}</span>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <Flag code={match.away_code} name={match.away_team} className="w-8 h-8 shrink-0" />
+          <span className="text-sm font-semibold truncate">{match.away_team}</span>
         </div>
       </div>
     </div>
@@ -139,24 +139,22 @@ function PredictedStandingsTable({ groupName, groupMatches, preds, qualifying3rd
   }).length;
 
   return (
-    <div className="card p-0 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60">
+    <div className="card p-0 overflow-hidden flex flex-col flex-1">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60 shrink-0">
         <h3 className="font-black text-base">Group {groupName}</h3>
         <span className="text-xs text-gray-500">{filledCount}/6 predicted</span>
       </div>
-      <table className="w-full text-sm">
+      <table className="w-full text-xs">
         <thead>
-          <tr className="text-[11px] uppercase tracking-wider text-gray-500 border-b border-brand-border/50">
-            <th className="px-3 py-2 text-left w-6">#</th>
-            <th className="px-3 py-2 text-left">Team</th>
-            <th className="px-2 py-2 text-center w-7">P</th>
-            <th className="px-2 py-2 text-center w-7">W</th>
-            <th className="px-2 py-2 text-center w-7">D</th>
-            <th className="px-2 py-2 text-center w-7">L</th>
-            <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GF</th>
-            <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GA</th>
-            <th className="px-2 py-2 text-center w-10">GD</th>
-            <th className="px-3 py-2 text-center w-10 font-bold text-brand-gold">Pts</th>
+          <tr className="text-[10px] uppercase tracking-wider text-gray-500 border-b border-brand-border/50">
+            <th className="px-2 py-2 text-left w-5">#</th>
+            <th className="px-2 py-2 text-left">Team</th>
+            <th className="px-1.5 py-2 text-center w-6">P</th>
+            <th className="px-1.5 py-2 text-center w-6">W</th>
+            <th className="px-1.5 py-2 text-center w-6">D</th>
+            <th className="px-1.5 py-2 text-center w-6">L</th>
+            <th className="px-1.5 py-2 text-center w-8">GD</th>
+            <th className="px-2 py-2 text-center w-8 font-bold text-brand-gold">Pts</th>
           </tr>
         </thead>
         <tbody>
@@ -169,30 +167,28 @@ function PredictedStandingsTable({ groupName, groupMatches, preds, qualifying3rd
                   ? 'bg-amber-900/10 hover:bg-amber-900/20'
                   : 'hover:bg-white/5'}`}
             >
-              <td className="px-3 py-2.5">
-                <span className={`text-xs font-bold
+              <td className="px-2 py-2">
+                <span className={`text-[11px] font-bold
                   ${i < 2 ? 'text-emerald-400'
                     : i === 2 && qualifying3rd?.has(row.name) ? 'text-amber-400'
                     : 'text-gray-600'}`}>
                   {i + 1}
                 </span>
               </td>
-              <td className="px-3 py-2.5 max-w-0 w-full">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
-                  <span className="font-semibold truncate text-sm">{row.name}</span>
+              <td className="px-2 py-2">
+                <div className="flex items-center gap-1.5">
+                  <Flag code={row.code} name={row.name} className="w-4 h-4 shrink-0" />
+                  <span className="font-semibold text-xs text-gray-200">{row.code || row.name.slice(0,3).toUpperCase()}</span>
                 </div>
               </td>
-              <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
-              <td className="px-2 py-2.5 text-center text-gray-300">{row.won}</td>
-              <td className="px-2 py-2.5 text-center text-gray-300">{row.drawn}</td>
-              <td className="px-2 py-2.5 text-center text-gray-300">{row.lost}</td>
-              <td className="px-2 py-2.5 text-center text-gray-500 hidden sm:table-cell">{row.gf}</td>
-              <td className="px-2 py-2.5 text-center text-gray-500 hidden sm:table-cell">{row.ga}</td>
-              <td className="px-2 py-2.5 text-center text-gray-400">
+              <td className="px-1.5 py-2 text-center text-gray-400">{row.played}</td>
+              <td className="px-1.5 py-2 text-center text-gray-300">{row.won}</td>
+              <td className="px-1.5 py-2 text-center text-gray-300">{row.drawn}</td>
+              <td className="px-1.5 py-2 text-center text-gray-300">{row.lost}</td>
+              <td className="px-1.5 py-2 text-center text-gray-400">
                 {row.gd > 0 ? `+${row.gd}` : row.gd}
               </td>
-              <td className="px-3 py-2.5 text-center font-black text-brand-gold">{row.pts}</td>
+              <td className="px-2 py-2 text-center font-black text-brand-gold">{row.pts}</td>
             </tr>
           ))}
         </tbody>
@@ -477,8 +473,8 @@ export default function Predict() {
           </div>
 
           {/* ── Cards + standings side by side ──────────────────────────────── */}
-          <div className="flex flex-col lg:flex-row gap-4 items-start">
-            <div className="flex-1 grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+            <div className="flex-1 grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5 content-start">
               {groupMatches.map(match => (
                 <MatchCard
                   key={match.id}
@@ -490,7 +486,7 @@ export default function Predict() {
                 />
               ))}
             </div>
-            <div className="w-full lg:w-72 shrink-0">
+            <div className="w-full lg:w-72 shrink-0 flex flex-col">
               <PredictedStandingsTable
                 groupName={activeGroup}
                 groupMatches={groupMatches}
