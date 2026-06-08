@@ -72,7 +72,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
             disabled={locked}
             className="w-8 h-7 text-center font-bold rounded bg-brand-navy border border-brand-border focus:border-brand-gold focus:outline-none text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
-          <span className="text-gray-500 text-xs font-bold">–</span>
+          <span className="text-gray-500 text-xs font-bold">vs</span>
           <ScoreInput
             value={predAway}
             onChange={v => onUpdate(match.id, 'away', v)}
