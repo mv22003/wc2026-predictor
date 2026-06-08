@@ -147,7 +147,7 @@ function isoDate(date, time_et) {
 const NAME_MAP = {
   'Korea Republic': 'South Korea',
   'Türkiye':        'Turkey',
-  "Côte d'Ivoire":  'Ivory Coast',
+  'Côte d’Ivoire': 'Ivory Coast',
   'Curaçao':        'Curacao',
   'Cabo Verde':     'Cape Verde',
   'Congo DR':       'DR Congo',
