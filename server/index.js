@@ -2,19 +2,14 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 const { initDb } = require('./src/db');
 const { startAutoSync, isConfigured } = require('./src/services/liveScores');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
 app.use(express.json());
-
-app.use(rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false }));
-app.use('/api/predictions', rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false }));
 
 app.use('/api/matches',     require('./src/routes/matches'));
 app.use('/api/predictions', require('./src/routes/predictions'));

@@ -7,7 +7,7 @@ const liveScores = require('../services/liveScores');
 const { R32_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } = require('../bracketUtils');
 const { getPrizePotSummary } = require('../prizePot');
 
-const schedule = require(path.join(__dirname, '../../../data/world-cup-2026-schedule.json'));
+const schedule = require(path.join(__dirname, '../../../world-cup-2026-schedule.json'));
 const scheduleDateByNum = {};
 for (const m of schedule.matches) {
   scheduleDateByNum[m.match_number] = `${m.date}T${m.time_et}:00-04:00`;
