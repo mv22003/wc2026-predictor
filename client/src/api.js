@@ -75,6 +75,12 @@ export const api = {
     }),
   deletePrediction: (key, predId) =>
     req(`/admin/predictions/${predId}`, { method: 'DELETE', headers: { 'x-admin-key': key } }),
+  setUserPaid: (key, userId, paid, paid_amount, payment_type) =>
+    req(`/admin/users/${userId}/paid`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': key },
+      body: { paid, paid_amount, payment_type },
+    }),
   deleteUser: (key, userId) =>
     req(`/admin/users/${userId}`, { method: 'DELETE', headers: { 'x-admin-key': key } }),
 };

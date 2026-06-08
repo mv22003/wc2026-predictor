@@ -61,6 +61,9 @@ async function initDb() {
   await db.query(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS live_minute INTEGER`);
   await db.query(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS home_scorers TEXT`);
   await db.query(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS away_scorers TEXT`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT FALSE`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(10,2)`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_type TEXT`);
 
   const { rows } = await db.query('SELECT COUNT(*) AS n FROM teams');
   if (parseInt(rows[0].n, 10) === 0) {

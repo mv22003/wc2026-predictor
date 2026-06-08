@@ -61,8 +61,23 @@ export default function App() {
           <Route path="/admin"       element={<Admin />} />
         </Routes>
       </main>
-      <footer className="border-t border-brand-border text-center text-xs text-gray-600 py-4">
-        FIFA World Cup 2026 Predictor
+      <footer className="border-t border-brand-border text-center text-xs text-gray-600 py-5 space-y-1.5">
+        <p>
+          Not affiliated with or endorsed by FIFA. Made for fun only.
+        </p>
+        <p>
+          Built by{' '}
+          <span className="text-gray-400 font-semibold">Manuel Verduzco</span>
+          {' '}·{' '}
+          <a
+            href="https://github.com/mv22003/wc2026-predictor"
+            target="_blank"
+            rel="noreferrer"
+            className="text-gray-400 hover:text-brand-gold transition-colors"
+          >
+            GitHub
+          </a>
+        </p>
       </footer>
     </div>
   );

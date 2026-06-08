@@ -510,6 +510,23 @@ router.delete('/predictions/:predId', adminAuth, async (req, res) => {
   }
 });
 
+router.patch('/users/:userId/paid', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = parseInt(req.params.userId, 10);
+    const { paid, paid_amount, payment_type } = req.body;
+    if (typeof paid !== 'boolean') return res.status(400).json({ error: 'paid must be boolean' });
+    await db.query(
+      'UPDATE users SET paid = $1, paid_amount = $2, payment_type = $3 WHERE id = $4',
+      [paid, paid_amount ?? null, payment_type ?? null, userId]
+    );
+    res.json({ success: true, paid });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/users/:userId', adminAuth, async (req, res) => {
   try {
     const db = getDb();

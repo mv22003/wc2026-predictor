@@ -863,6 +863,10 @@ function UserRow({ user, adminKey, onUserDeleted }) {
   const [loading, setLoading]   = useState(false);
   const [showDel, setShowDel]   = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [paid, setPaid]             = useState(!!user.paid);
+  const [paidAmount, setPaidAmount] = useState(user.paid_amount ?? '');
+  const [paymentType, setPaymentType] = useState(user.payment_type ?? '');
+  const [paidSaving, setPaidSaving]   = useState(false);
 
   async function loadPreds() {
     setLoading(true);
@@ -883,6 +887,33 @@ function UserRow({ user, adminKey, onUserDeleted }) {
 
   function refresh() { loadPreds(); }
 
+  async function togglePaid(e) {
+    e.stopPropagation();
+    const next = !paid;
+    setPaid(next);
+    setPaidSaving(true);
+    try {
+      await api.setUserPaid(adminKey, user.id, next, paidAmount !== '' ? parseFloat(paidAmount) : null, paymentType || null);
+    } catch (err) {
+      setPaid(!next);
+      alert('Error: ' + err.message);
+    } finally {
+      setPaidSaving(false);
+    }
+  }
+
+  async function savePaidDetails(e) {
+    e.stopPropagation();
+    setPaidSaving(true);
+    try {
+      await api.setUserPaid(adminKey, user.id, paid, paidAmount !== '' ? parseFloat(paidAmount) : null, paymentType || null);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setPaidSaving(false);
+    }
+  }
+
   return (
     <>
       <div className="border-b border-brand-border/40 last:border-0">
@@ -895,8 +926,55 @@ function UserRow({ user, adminKey, onUserDeleted }) {
             <span className="font-bold text-sm truncate">{user.name}</span>
             <span className="text-xs text-gray-500 shrink-0">{user.predictions} preds</span>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
             <span className="text-sm font-bold text-brand-gold">{user.total_points} pts</span>
+            <label
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border cursor-pointer transition-all select-none ${
+                paid
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                  : 'bg-brand-border/60 text-gray-500 border-brand-border hover:border-gray-500'
+              } ${paidSaving ? 'opacity-50' : ''}`}
+              onClick={togglePaid}
+            >
+              <input
+                type="checkbox"
+                checked={paid}
+                onChange={() => {}}
+                className="accent-emerald-400 w-3.5 h-3.5"
+              />
+              Paid
+            </label>
+            {paid && (
+              <>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Amount"
+                  value={paidAmount}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => setPaidAmount(e.target.value)}
+                  onBlur={savePaidDetails}
+                  className="w-20 bg-brand-navy border border-brand-border rounded px-2 py-1 text-xs text-gray-300
+                             focus:border-emerald-500/60 focus:outline-none"
+                />
+                <select
+                  value={paymentType}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => { setPaymentType(e.target.value); }}
+                  onBlur={savePaidDetails}
+                  className="bg-brand-navy border border-brand-border rounded px-2 py-1 text-xs text-gray-300
+                             focus:border-emerald-500/60 focus:outline-none"
+                >
+                  <option value="">Type…</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="PayPal">PayPal</option>
+                  <option value="Venmo">Venmo</option>
+                  <option value="Other">Other</option>
+                </select>
+              </>
+            )}
             <button
               onClick={e => { e.stopPropagation(); setShowDel(true); }}
               disabled={deleting}
@@ -1100,9 +1178,6 @@ export default function Admin() {
               {loading ? 'Checking…' : 'Unlock →'}
             </button>
           </form>
-          <p className="text-xs text-gray-600">
-            Key is set via ADMIN_KEY environment variable.
-          </p>
         </div>
       </div>
     );
