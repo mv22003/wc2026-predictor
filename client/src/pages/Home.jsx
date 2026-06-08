@@ -194,8 +194,13 @@ export default function Home() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [matches, setMatches] = useState([]);
   const [stats, setStats] = useState({});
+  const [prizePot, setPrizePot] = useState({ total: 0, paid_count: 0 });
   const [loading, setLoading] = useState(true);
   const isDemo = new URLSearchParams(window.location.search).has('demo');
+
+  useEffect(() => {
+    api.getPrizePot().then(setPrizePot).catch(() => {});
+  }, []);
 
   function load() {
     Promise.all([api.getLeaderboard(), api.getMatches()])
@@ -235,8 +240,8 @@ export default function Home() {
   }, []);
 
   const liveMatches = matches.filter(m => m.status === 'live');
-  const upcoming    = matches.filter(m => m.status === 'upcoming').slice(0, 3);
   const recent      = matches.filter(m => m.status === 'finished').slice(-3).reverse();
+  const upcoming    = matches.filter(m => m.status === 'upcoming').slice(0, 6 - recent.length);
   const top5        = leaderboard.slice(0, 10);
 
   if (loading) {
@@ -254,6 +259,17 @@ export default function Home() {
       <div className="card relative overflow-hidden">
         {/* Background gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 via-transparent to-brand-blue/10 pointer-events-none" />
+
+        {/* Prize Pot */}
+        {(
+          <div className="absolute top-3 right-3 text-center bg-brand-gold/10 border border-brand-gold/40 rounded-xl px-10 pt-5 pb-6 backdrop-blur-sm">
+            <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Prize Pot</p>
+            <p className="text-5xl font-black text-brand-gold leading-none">
+              £{prizePot.total % 1 === 0 ? prizePot.total.toFixed(0) : prizePot.total.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">{prizePot.paid_count} player{prizePot.paid_count !== 1 ? 's' : ''} paid</p>
+          </div>
+        )}
 
         <div className="relative flex flex-col sm:flex-row items-center gap-6">
           <img
