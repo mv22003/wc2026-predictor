@@ -22,15 +22,17 @@ function StatBox({ label, value, color = 'text-brand-gold' }) {
   );
 }
 
-function MiniLeaderRow({ row }) {
-  const medal = null;
+function MiniLeaderRow({ row, hasResults }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-brand-border last:border-0">
-      <span className={`w-8 text-center font-bold text-sm rank-${row.rank}`}>
-        {medal || `#${row.rank}`}
+      <span className={`w-8 text-center font-bold text-sm ${hasResults ? `rank-${row.rank}` : 'text-gray-600'}`}>
+        {hasResults ? `#${row.rank}` : '—'}
       </span>
       <span className="flex-1 font-semibold truncate">{row.name}</span>
-      <span className="font-black text-brand-gold text-lg w-12 text-right">{row.total_points}</span>
+      <span className="font-black text-brand-gold text-lg text-right">
+        {row.total_points}
+        <span className="text-xs text-gray-500 font-normal ml-0.5">pts</span>
+      </span>
     </div>
   );
 }
@@ -362,7 +364,7 @@ export default function Home() {
           {top5.length === 0 ? (
             <p className="text-gray-500 text-sm py-4 text-center">No predictions yet. Be the first!</p>
           ) : (
-            top5.map(row => <MiniLeaderRow key={row.id} row={row} />)
+            top5.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={recent.length > 0} />)
           )}
         </div>
 
