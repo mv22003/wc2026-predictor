@@ -315,25 +315,35 @@ export default function Home() {
       {/* ── Live Now ────────────────────────────────────────────────────────── */}
       <LiveNowSection matches={liveMatches} />
 
-      {/* ── Scoring guide ───────────────────────────────────────────────────── */}
-      <div className="card">
-        <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">How Scoring Works</h2>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <span className="tag pts-exact py-1 text-sm font-bold text-center w-14">5 pts</span>
-            <span className="text-sm text-gray-300">Exact scoreline</span>
+      <div className="lg:grid lg:grid-cols-[1.25fr_0.75fr] gap-6 space-y-6 lg:space-y-0">
+        {/* Scoring guide */}
+        <div className="card">
+          <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">How Scoring Works</h2>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <span className="tag pts-exact py-1 text-sm font-bold text-center w-14">5 pts</span>
+              <span className="text-sm text-gray-300">Exact scoreline</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="tag pts-correct py-1 text-sm font-bold text-center w-14">3 pts</span>
+              <span className="text-sm text-gray-300">Correct result + goal difference</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 py-1 text-sm font-bold text-center w-14">1 pt</span>
+              <span className="text-sm text-gray-300">Correct result (W/D/L) only</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="tag pts-zero py-1 text-sm font-bold text-center w-14">0 pts</span>
+              <span className="text-sm text-gray-300">Wrong prediction</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="tag pts-correct py-1 text-sm font-bold text-center w-14">3 pts</span>
-            <span className="text-sm text-gray-300">Correct result + goal difference</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 py-1 text-sm font-bold text-center w-14">1 pt</span>
-            <span className="text-sm text-gray-300">Correct result (W/D/L) only</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="tag pts-zero py-1 text-sm font-bold text-center w-14">0 pts</span>
-            <span className="text-sm text-gray-300">Wrong prediction</span>
+        </div>
+        <div className="card py-4">
+          <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-2">Prize Distribution</h2>
+          <div className="text-sm flex flex-wrap gap-x-5 gap-y-1 lg:block lg:space-y-1">
+            <div className="text-yellow-400 font-bold">1st - 60%</div>
+            <div className="text-slate-200 font-bold">2nd - 30%</div>
+            <div className="text-amber-500 font-bold">3rd - 10%</div>
           </div>
         </div>
       </div>
