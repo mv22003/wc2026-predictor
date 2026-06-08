@@ -35,10 +35,21 @@ router.get('/', async (req, res) => {
       LEFT JOIN matches m     ON p.match_id = m.id
       WHERE u.submitted_at IS NOT NULL
       GROUP BY u.id
-      ORDER BY total_points DESC, pts_5 DESC, u.name ASC
+      ORDER BY total_points DESC, pts_5 DESC, pts_3 DESC, pts_1 DESC, pts_0 ASC, u.name ASC
     `);
 
-    const ranked = rows.map((row, i) => ({ ...row, rank: i + 1 }));
+    const isTied = (a, b) =>
+      Number(a.total_points) === Number(b.total_points) &&
+      Number(a.pts_5)        === Number(b.pts_5)        &&
+      Number(a.pts_3)        === Number(b.pts_3)        &&
+      Number(a.pts_1)        === Number(b.pts_1)        &&
+      Number(a.pts_0)        === Number(b.pts_0);
+
+    let rank = 1;
+    const ranked = rows.map((row, i) => {
+      if (i > 0 && !isTied(rows[i - 1], row)) rank = i + 1;
+      return { ...row, rank };
+    });
     res.json(ranked);
   } catch (err) {
     console.error(err);
