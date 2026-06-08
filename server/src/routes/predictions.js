@@ -95,7 +95,7 @@ router.post('/', async (req, res) => {
       if (pred.match_id == null || pred.pred_home == null || pred.pred_away == null) continue;
       const ph = parseInt(pred.pred_home, 10);
       const pa = parseInt(pred.pred_away, 10);
-      if (isNaN(ph) || isNaN(pa) || ph < 0 || pa < 0) continue;
+      if (isNaN(ph) || isNaN(pa) || ph < 0 || pa < 0 || ph > 20 || pa > 20) continue;
       // Skip predictions for matches that have already started or finished
       const status = matchStatusMap[pred.match_id];
       if (!status || status === 'live' || status === 'finished') continue;
