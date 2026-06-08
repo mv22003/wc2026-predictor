@@ -37,7 +37,7 @@ const schedule = require('./world-cup-2026-schedule.json');
 const FLAGS = {
   'Mexico':                  '🇲🇽',
   'South Africa':            '🇿🇦',
-  'Korea Republic':          '🇰🇷',
+  'South Korea':             '🇰🇷',
   'Czechia':                 '🇨🇿',
   'Canada':                  '🇨🇦',
   'Bosnia':  '🇧🇦',
@@ -50,11 +50,11 @@ const FLAGS = {
   'United States':           '🇺🇸',
   'Paraguay':                '🇵🇾',
   'Australia':               '🇦🇺',
-  'Türkiye':                 '🇹🇷',
-  "Côte d’Ivoire":           '🇨🇮',
+  ‘Turkey’:                  ‘🇹🇷’,
+  ‘Ivory Coast’:             ‘🇨🇮’,
   'Ecuador':                 '🇪🇨',
   'Germany':                 '🇩🇪',
-  'Curaçao':                 '🇨🇼',
+  'Curacao':                 '🇨🇼',
   'Netherlands':             '🇳🇱',
   'Japan':                   '🇯🇵',
   'Sweden':                  '🇸🇪',
@@ -66,7 +66,7 @@ const FLAGS = {
   'Saudi Arabia':            '🇸🇦',
   'Uruguay':                 '🇺🇾',
   'Spain':                   '🇪🇸',
-  'Cabo Verde':              '🇨🇻',
+  'Cape Verde':              '🇨🇻',
   'France':                  '🇫🇷',
   'Senegal':                 '🇸🇳',
   'Iraq':                    '🇮🇶',
@@ -76,7 +76,7 @@ const FLAGS = {
   'Austria':                 '🇦🇹',
   'Jordan':                  '🇯🇴',
   'Portugal':                '🇵🇹',
-  'Congo DR':                '🇨🇩',
+  'DR Congo':                '🇨🇩',
   'Uzbekistan':              '🇺🇿',
   'Colombia':                '🇨🇴',
   'Ghana':                   '🇬🇭',
@@ -89,7 +89,7 @@ const FLAGS = {
 const CODES = {
   'Mexico':                  'MEX',
   'South Africa':            'RSA',
-  'Korea Republic':          'KOR',
+  'South Korea':             'KOR',
   'Czechia':                 'CZE',
   'Canada':                  'CAN',
   'Bosnia':  'BIH',
@@ -102,11 +102,11 @@ const CODES = {
   'United States':           'USA',
   'Paraguay':                'PAR',
   'Australia':               'AUS',
-  'Türkiye':                 'TUR',
-  "Côte d’Ivoire":           'CIV',
+  ‘Turkey’:                  ‘TUR’,
+  ‘Ivory Coast’:             ‘CIV’,
   'Ecuador':                 'ECU',
   'Germany':                 'GER',
-  'Curaçao':                 'CUW',
+  'Curacao':                 'CUW',
   'Netherlands':             'NED',
   'Japan':                   'JPN',
   'Sweden':                  'SWE',
@@ -118,7 +118,7 @@ const CODES = {
   'Saudi Arabia':            'KSA',
   'Uruguay':                 'URU',
   'Spain':                   'ESP',
-  'Cabo Verde':              'CPV',
+  'Cape Verde':              'CPV',
   'France':                  'FRA',
   'Senegal':                 'SEN',
   'Iraq':                    'IRQ',
@@ -128,7 +128,7 @@ const CODES = {
   'Austria':                 'AUT',
   'Jordan':                  'JOR',
   'Portugal':                'POR',
-  'Congo DR':                'COD',
+  'DR Congo':                'COD',
   'Uzbekistan':              'UZB',
   'Colombia':                'COL',
   'Ghana':                   'GHA',
@@ -143,13 +143,24 @@ function isoDate(date, time_et) {
   return `${date}T${time_et}:00-04:00`;
 }
 
+// ─── Normalise non-English names from the schedule JSON ──────────────────────
+const NAME_MAP = {
+  'Korea Republic': 'South Korea',
+  'Türkiye':        'Turkey',
+  "Côte d'Ivoire":  'Ivory Coast',
+  'Curaçao':        'Curacao',
+  'Cabo Verde':     'Cape Verde',
+  'Congo DR':       'DR Congo',
+};
+function normName(n) { return NAME_MAP[n] || n; }
+
 // ─── Derive teams + groups from group-stage matches ───────────────────────────
 const groupMatches = schedule.matches.filter(m => m.stage === 'Group Stage');
 
 const teamGroupMap = {};
 for (const m of groupMatches) {
-  teamGroupMap[m.team_a] = m.group;
-  teamGroupMap[m.team_b] = m.group;
+  teamGroupMap[normName(m.team_a)] = m.group;
+  teamGroupMap[normName(m.team_b)] = m.group;
 }
 
 const teams = Object.entries(teamGroupMap)

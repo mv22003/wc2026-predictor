@@ -663,4 +663,32 @@ router.delete('/reset', adminAuth, async (req, res) => {
   }
 });
 
+// One-time migration: rename non-English team names in the live DB
+const TEAM_NAME_MAP = {
+  'Korea Republic': 'South Korea',
+  'Türkiye':        'Turkey',
+  "Côte d'Ivoire":  'Ivory Coast',
+  'Curaçao':        'Curacao',
+  'Cabo Verde':     'Cape Verde',
+  'Congo DR':       'DR Congo',
+};
+
+router.post('/migrate-team-names', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const results = [];
+    for (const [oldName, newName] of Object.entries(TEAM_NAME_MAP)) {
+      const { rowCount } = await db.query(
+        'UPDATE teams SET name = $1 WHERE name = $2',
+        [newName, oldName]
+      );
+      if (rowCount > 0) results.push(`${oldName} → ${newName}`);
+    }
+    res.json({ success: true, updated: results });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
