@@ -43,6 +43,8 @@ export const api = {
       headers: { 'x-admin-key': key },
       body: { name },
     }),
+  getAdminPrizePot: (key) =>
+    req('/admin/prize-pot', { headers: { 'x-admin-key': key } }),
   updatePrizePot: (key, total)   =>
     req('/admin/prize-pot', {
       method: 'PATCH',

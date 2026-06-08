@@ -1184,56 +1184,49 @@ function UserPredictionsPanel({ adminKey }) {
   );
 }
 
-function PrizePotCard({ adminKey, stats, onUpdated }) {
-  const pot = stats?.prize_pot;
-  const [value, setValue] = useState('');
+function PrizePotCard({ adminKey }) {
+  const [pot, setPot]       = useState(null);
+  const [value, setValue]   = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
+  const [open, setOpen]     = useState(false);
 
   useEffect(() => {
-    if (!pot) return;
-    setValue(String(pot.override_total ?? pot.total ?? 0));
-  }, [pot?.override_total, pot?.total]);
+    api.getAdminPrizePot(adminKey)
+      .then(p => { setPot(p); setValue(String(p.override_total ?? p.total ?? 0)); })
+      .catch(e => setError(e.message));
+  }, [adminKey]);
 
   async function saveOverride() {
-    setSaving(true);
-    setError('');
-    setMessage('');
+    setSaving(true); setError(''); setMessage('');
     try {
       const parsed = value.trim() === '' ? null : parseFloat(value);
-      if (parsed !== null && (!Number.isFinite(parsed) || parsed < 0)) {
+      if (parsed !== null && (!Number.isFinite(parsed) || parsed < 0))
         throw new Error('Enter a valid non-negative number');
-      }
       const res = await api.updatePrizePot(adminKey, parsed);
-      onUpdated?.(res.prize_pot);
+      setPot(res.prize_pot);
       setMessage(parsed === null ? 'Using auto-calculated pot.' : 'Prize pot updated.');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setSaving(false); }
   }
 
   async function resetOverride() {
-    setSaving(true);
-    setError('');
-    setMessage('');
+    setSaving(true); setError(''); setMessage('');
     try {
       const res = await api.updatePrizePot(adminKey, null);
-      onUpdated?.(res.prize_pot);
+      setPot(res.prize_pot);
       setValue(String(res.prize_pot.auto_total ?? 0));
       setMessage('Prize pot reset to auto-calculated total.');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setSaving(false); }
   }
 
-  const [open, setOpen] = useState(false);
-
-  if (!pot) return null;
+  if (!pot) return error ? (
+    <div className="card py-3 px-4 text-sm text-red-400">Prize pot unavailable: {error}</div>
+  ) : (
+    <div className="card py-3 px-4 text-sm text-gray-500">Loading prize pot…</div>
+  );
 
   return (
     <div className="card p-0 overflow-hidden">
@@ -1333,10 +1326,6 @@ export default function Admin() {
     ? matches.filter(m => m.status !== 'finished')
     : matches.filter(m => m.status === 'finished');
 
-  function handlePrizePotUpdated(prize_pot) {
-    setStats(prev => prev ? { ...prev, prize_pot } : prev);
-  }
-
   // ── Auth gate ──────────────────────────────────────────────────────────────
   if (!authed) {
     return (
@@ -1391,17 +1380,7 @@ export default function Admin() {
       </div>
 
       {/* Stats */}
-      {stats && (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatCard label="Players"         value={stats.total_users}   />
-            <StatCard label="Matches Total"   value={stats.total_matches} color="text-sky-400" />
-            <StatCard label="Results Entered" value={stats.finished}      color="text-emerald-400" />
-            <StatCard label="Predictions"     value={stats.total_preds}   color="text-purple-400" />
-          </div>
-          <PrizePotCard adminKey={key} stats={stats} onUpdated={handlePrizePotUpdated} />
-        </>
-      )}
+      <PrizePotCard adminKey={key} />
 
       {/* Match results entry */}
       <div className="card p-0 overflow-hidden">

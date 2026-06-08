@@ -138,6 +138,16 @@ router.get('/stats', adminAuth, async (req, res) => {
   }
 });
 
+router.get('/prize-pot', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    res.json(await getPrizePotSummary(db));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.patch('/prize-pot', adminAuth, async (req, res) => {
   try {
     const db = getDb();
