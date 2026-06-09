@@ -47,12 +47,16 @@ export default function Admin() {
     };
   }, [authed, resetTimer]);
 
-  // Log out when user switches tab or window
+  // Log out when user switches tab, minimizes, or switches to another app window
   useEffect(() => {
     if (!authed) return;
     const handleVisibility = () => { if (document.hidden) logout(); };
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', logout);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', logout);
+    };
   }, [authed, logout]);
 
   const load = useCallback(async (k) => {
