@@ -48,7 +48,7 @@ function PredictionRow({ pred, adminKey, matchFinished, onSaved, onDelete }) {
               value={ph}
               onChange={e => setPh(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
             />
-            <span className="text-gray-600 text-xs">–</span>
+            <span className="text-gray-400 text-xs">–</span>
             <input
               type="number" min="0" max="99"
               className="w-9 h-7 text-center font-bold rounded bg-brand-navy border border-brand-border
@@ -67,12 +67,12 @@ function PredictionRow({ pred, adminKey, matchFinished, onSaved, onDelete }) {
         <td className="px-3 py-2 text-xs text-center">
           {matchFinished
             ? <span className="text-gray-400">{pred.home_score}–{pred.away_score}</span>
-            : <span className="text-gray-600 italic">pending</span>}
+            : <span className="text-gray-400 italic">pending</span>}
         </td>
         <td className="px-3 py-2 text-xs text-center font-bold">
           {matchFinished
-            ? <span className={pred.points > 0 ? 'text-emerald-400' : 'text-gray-500'}>{pred.points} pts</span>
-            : <span className="text-gray-600">—</span>}
+            ? <span className={pred.points > 0 ? 'text-emerald-400' : 'text-gray-400'}>{pred.points} pts</span>
+            : <span className="text-gray-400">—</span>}
         </td>
         <td className="px-3 py-2">
           <div className="flex items-center gap-1">
@@ -207,7 +207,7 @@ function UserRow({ user, adminKey, onUserDeleted, onUserUpdated }) {
           onClick={toggle}
         >
           <div className="flex items-center gap-3 min-w-0">
-            <span className={`text-gray-500 transition-transform text-xs shrink-0 ${open ? 'rotate-90' : ''}`}>▶</span>
+            <span className={`text-gray-400 transition-transform text-xs shrink-0 ${open ? 'rotate-90' : ''}`}>▶</span>
             <input
               type="text"
               value={name}
@@ -217,7 +217,7 @@ function UserRow({ user, adminKey, onUserDeleted, onUserUpdated }) {
               className="font-bold text-sm bg-transparent border border-transparent rounded px-2 py-1 min-w-0 flex-1
                          focus:bg-brand-navy focus:border-brand-gold/40 focus:outline-none"
             />
-            <span className="text-xs text-gray-500 shrink-0">{user.predictions} preds</span>
+            <span className="text-xs text-gray-400 shrink-0">{user.predictions} preds</span>
           </div>
           <div className="flex items-center gap-2 flex-wrap ml-5 sm:ml-0">
             <button
@@ -233,7 +233,7 @@ function UserRow({ user, adminKey, onUserDeleted, onUserUpdated }) {
               className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border cursor-pointer transition-all select-none ${
                 paid
                   ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                  : 'bg-brand-border/60 text-gray-500 border-brand-border hover:border-gray-500'
+                  : 'bg-brand-border/60 text-gray-400 border-brand-border hover:border-gray-400'
               } ${paidSaving ? 'opacity-50' : ''}`}
               onClick={togglePaid}
             >
@@ -283,13 +283,13 @@ function UserRow({ user, adminKey, onUserDeleted, onUserUpdated }) {
         {open && (
           <div className="border-t border-brand-border/30 bg-brand-navy/30 overflow-x-auto">
             {loading ? (
-              <p className="text-center text-gray-500 text-sm py-4">Loading…</p>
+              <p className="text-center text-gray-400 text-sm py-4">Loading…</p>
             ) : preds.length === 0 ? (
-              <p className="text-center text-gray-500 text-sm py-4">No predictions.</p>
+              <p className="text-center text-gray-400 text-sm py-4">No predictions.</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-gray-500 text-[11px] uppercase tracking-wider border-b border-brand-border/30">
+                  <tr className="text-gray-400 text-[11px] uppercase tracking-wider border-b border-brand-border/30">
                     <th className="px-3 py-1.5 text-left">Grp</th>
                     <th className="px-3 py-1.5 text-right">Home</th>
                     <th className="px-3 py-1.5 text-center">Prediction</th>
@@ -389,14 +389,14 @@ export default function UserPredictionsPanel({ adminKey }) {
       >
         <h2 className="font-black text-lg">User Predictions</h2>
         <div className="flex items-center gap-2">
-          {users.length > 0 && <span className="text-xs text-gray-500">{users.length} players</span>}
-          <span className={`text-gray-500 text-xs transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+          {users.length > 0 && <span className="text-xs text-gray-400">{users.length} players</span>}
+          <span className={`text-gray-400 text-xs transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
         </div>
       </button>
 
       {open && (
         loading ? (
-          <p className="text-center text-gray-500 text-sm py-6">Loading…</p>
+          <p className="text-center text-gray-400 text-sm py-6">Loading…</p>
         ) : (
           <div>
             <form onSubmit={createUser} className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-brand-border/40 bg-brand-navy/20">
@@ -413,7 +413,7 @@ export default function UserPredictionsPanel({ adminKey }) {
               </button>
             </form>
             {users.length === 0 ? (
-              <p className="text-center text-gray-500 text-sm py-6">No users yet.</p>
+              <p className="text-center text-gray-400 text-sm py-6">No users yet.</p>
             ) : (
               <div>
                 {users.map(u => (

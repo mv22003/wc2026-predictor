@@ -49,7 +49,7 @@ export default function RecalculateButton({ adminKey, onDone }) {
         <span className="text-sm font-bold text-gray-300 whitespace-nowrap">
           {state === 'running' ? 'Recalculating…' : 'Recalculate User Scores'}
         </span>
-        <span className="text-[10px] text-gray-500 leading-tight">Recompute all player scores using the current scoring rules</span>
+        <span className="text-[10px] text-gray-400 leading-tight">Recompute all player scores using the current scoring rules</span>
       </button>
     </>
   );

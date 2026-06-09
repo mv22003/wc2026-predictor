@@ -42,7 +42,7 @@ export default function PrizePotCard({ adminKey }) {
   if (!pot) return error ? (
     <div className="card py-3 px-4 text-sm text-red-400">Prize pot unavailable: {error}</div>
   ) : (
-    <div className="card py-3 px-4 text-sm text-gray-500">Loading prize pot…</div>
+    <div className="card py-3 px-4 text-sm text-gray-400">Loading prize pot…</div>
   );
 
   return (
@@ -58,12 +58,12 @@ export default function PrizePotCard({ adminKey }) {
           </span>
           {pot.has_override && <span className="text-xs text-amber-400 font-semibold shrink-0">override</span>}
         </div>
-        <span className={`text-gray-500 text-xs transition-transform shrink-0 ${open ? 'rotate-90' : ''}`}>{'▶'}</span>
+        <span className={`text-gray-400 text-xs transition-transform shrink-0 ${open ? 'rotate-90' : ''}`}>{'▶'}</span>
       </button>
 
       {open && (
         <div className="border-t border-brand-border px-4 py-4 space-y-3">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-400">
             {pot.paid_count} paid player{pot.paid_count !== 1 ? 's' : ''} &middot;{' '}
             {pot.has_override ? 'Manual override active' : 'Auto-calculated'}
           </p>

@@ -107,7 +107,7 @@ export default function Admin() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black">Admin Panel</h1>
         <button
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+          className="btn-secondary text-sm"
           onClick={logout}
         >
           Log out
@@ -131,7 +131,7 @@ export default function Admin() {
           onClick={() => setResultsOpen(o => !o)}
         >
           <h2 className="font-black text-lg">Match Results</h2>
-          <span className={`text-gray-500 text-xs transition-transform ${resultsOpen ? 'rotate-90' : ''}`}>▶</span>
+          <span className={`text-gray-400 text-xs transition-transform ${resultsOpen ? 'rotate-90' : ''}`}>▶</span>
         </button>
 
         {resultsOpen && (
@@ -158,7 +158,7 @@ export default function Admin() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-brand-border text-gray-500 text-xs uppercase tracking-wider bg-brand-navy/50">
+                  <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider bg-brand-navy/50">
                     <th className="px-3 py-2 text-left">Grp</th>
                     <th className="px-3 py-2 text-left hidden md:table-cell">Date</th>
                     <th className="px-3 py-2 text-right">Home</th>
@@ -171,7 +171,7 @@ export default function Admin() {
                 <tbody>
                   {visibleMatches.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-8 text-gray-500">No matches to show.</td>
+                      <td colSpan={7} className="text-center py-8 text-gray-400">No matches to show.</td>
                     </tr>
                   ) : (
                     visibleMatches.map(m => (

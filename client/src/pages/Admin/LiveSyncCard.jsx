@@ -65,13 +65,13 @@ export default function LiveSyncCard({ adminKey, onDone }) {
                                 'rounded-sm bg-red-500'
             }`} />
             <h3 className="font-black text-base">Live Score Sync</h3>
-            <span className="text-xs text-gray-500">worldcup26.ir</span>
+            <span className="text-xs text-gray-400">worldcup26.ir</span>
           </div>
 
           {!configured ? (
             <div className="text-sm space-y-2 text-gray-400 mt-2">
               <p>Connect the live scores API to auto-update results:</p>
-              <ol className="list-decimal list-inside space-y-1 text-xs text-gray-500">
+              <ol className="list-decimal list-inside space-y-1 text-xs text-gray-400">
                 <li>Register at <a href="https://worldcup26.ir/api-docs/" target="_blank" rel="noreferrer" className="text-brand-gold hover:underline">worldcup26.ir/api-docs</a></li>
                 <li>Authenticate and copy your JWT token</li>
                 <li>Add to <code className="bg-black/30 px-1 rounded">.env</code>: <code className="bg-black/30 px-1 rounded">WORLDCUP_API_TOKEN=your_token</code></li>
@@ -86,16 +86,16 @@ export default function LiveSyncCard({ adminKey, onDone }) {
                     <span className="ml-2 text-xs">
                       {status.lastResult.updated > 0
                         ? <span className="text-emerald-400">↑ {status.lastResult.updated} updated</span>
-                        : <span className="text-gray-500">no changes</span>}
+                        : <span className="text-gray-400">no changes</span>}
                     </span>
                   )}
                 </p>
-              ) : <p className="text-gray-500">Never synced</p>}
+              ) : <p className="text-gray-400">Never synced</p>}
               {autoSyncRunning
                 ? <p className="text-xs text-sky-400">
                     ⏱ Auto-sync every {autoMin || 5} min
                     {status?.nextSyncAt && (
-                      <span className="ml-1 text-gray-500">
+                      <span className="ml-1 text-gray-400">
                         · next at {new Date(status.nextSyncAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}

@@ -13,7 +13,7 @@ const KO_ROUNDS = [
 ];
 
 function TeamChip({ team }) {
-  if (!team) return <span className="text-xs text-gray-600 italic">TBD</span>;
+  if (!team) return <span className="text-xs text-gray-400 italic">TBD</span>;
   return (
     <span className="flex items-center gap-1.5">
       <Flag code={team.code} name={team.name} className="w-4 h-4 shrink-0" />
@@ -96,7 +96,7 @@ export default function KOPanel({ matches, adminKey, onRefresh }) {
   return (
     <div className="space-y-3">
       <h2 className="text-lg font-black">Knockout Management</h2>
-      <p className="text-xs text-gray-500 -mt-1">
+      <p className="text-xs text-gray-400 -mt-1">
         Create match records for each KO round. Once created, enter scores in the Match Results table above.
       </p>
 
@@ -114,7 +114,7 @@ export default function KOPanel({ matches, adminKey, onRefresh }) {
             <div className="flex items-center justify-between gap-3 px-4 py-3 bg-brand-navy/40">
               <div className="flex items-center gap-3">
                 <span className="font-black text-sm">{round.label}</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-400">
                   {allCreated
                     ? `${finished.length}/${round.nums.length} finished`
                     : `${created.length}/${round.nums.length} created`}
@@ -123,7 +123,7 @@ export default function KOPanel({ matches, adminKey, onRefresh }) {
                   <span className="text-xs text-emerald-400 font-bold">✓ complete</span>
                 )}
                 {!prereqDone && (
-                  <span className="text-xs text-gray-600">locked — waiting for {round.prereq?.toUpperCase()} to finish</span>
+                  <span className="text-xs text-gray-400">locked — waiting for {round.prereq?.toUpperCase()} to finish</span>
                 )}
               </div>
 
@@ -151,9 +151,9 @@ export default function KOPanel({ matches, adminKey, onRefresh }) {
                   const { home, away } = projectedTeams(num);
                   return (
                     <div key={num} className="flex items-center gap-3 px-4 py-2 text-sm">
-                      <span className="text-[11px] text-gray-600 w-8 shrink-0">M{num}</span>
+                      <span className="text-[11px] text-gray-400 w-8 shrink-0">M{num}</span>
                       <TeamChip team={home} />
-                      <span className="text-gray-600 text-xs">vs</span>
+                      <span className="text-gray-400 text-xs">vs</span>
                       <TeamChip team={away} />
                     </div>
                   );

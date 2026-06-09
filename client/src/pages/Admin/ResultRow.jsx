@@ -4,7 +4,7 @@ import Flag from '../../components/Flag';
 import { scorersJsonToArray, arrayToScorersJson } from './scorerUtils';
 
 function ScorerInputs({ scorers, setScorers, count }) {
-  if (count === 0) return <p className="text-xs text-gray-600 italic">No goals</p>;
+  if (count === 0) return <p className="text-xs text-gray-400 italic">No goals</p>;
   return Array.from({ length: count }, (_, i) => (
     <div key={i} className="flex gap-1.5">
       <input
@@ -165,7 +165,7 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
               value={hs}
               onChange={e => setHs(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
             />
-            <span className="text-gray-600">–</span>
+            <span className="text-gray-400">–</span>
             <input
               type="number" min="0" max="99"
               className="w-10 h-9 text-center font-bold rounded bg-brand-navy border border-brand-border
@@ -234,11 +234,11 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
           <td colSpan={7} className="px-4 py-3">
             <div className="flex gap-6">
               <div className="flex-1 min-w-0 space-y-2">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{match.home_team}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{match.home_team}</p>
                 <ScorerInputs scorers={homeScorers} setScorers={setHomeScorers} count={homeCount} />
               </div>
               <div className="flex-1 min-w-0 space-y-2">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{match.away_team}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{match.away_team}</p>
                 <ScorerInputs scorers={awayScorers} setScorers={setAwayScorers} count={awayCount} />
               </div>
             </div>
