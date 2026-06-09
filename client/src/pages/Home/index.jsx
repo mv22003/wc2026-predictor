@@ -168,7 +168,7 @@ export default function Home() {
               </div>
               {hasMore && (
                 <div className="flex justify-center py-3">
-                  <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
+                  <span className="text-xs text-brand-gold font-semibold">{leaderboard.length - 6} more · View full leaderboard →</span>
                 </div>
               )}
             </>
