@@ -413,7 +413,7 @@ function CalendarTab({ matches, groups }) {
       .filter(d => d >= todayKey)
       .sort()[0];
     const target = liveDate || nearestUpcoming || todayKey;
-    document.querySelector(`[data-date="${target}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelector(`[data-date="${target}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setPendingScrollToToday(false);
   }, [pendingScrollToToday, filter]);
 
