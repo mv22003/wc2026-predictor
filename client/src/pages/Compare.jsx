@@ -78,7 +78,7 @@ function MatchRow({ predA, predB }) {
   return (
     <div className="grid grid-cols-3 items-stretch border-b border-brand-border/30 last:border-b-0">
       {/* A: badge on outer-left, score on inner-right */}
-      <div className={`flex items-center justify-end gap-1.5 px-2 sm:px-4 py-2.5 ${tintA}`}>
+      <div className={`flex items-center justify-end gap-3 px-2 sm:px-4 py-2.5 ${tintA}`}>
         {isFinished && predA && <PtsBadge pts={ptsA} />}
         <span className="font-mono text-xs sm:text-sm text-gray-200 tabular-nums">{predStrA}</span>
       </div>
@@ -100,7 +100,7 @@ function MatchRow({ predA, predB }) {
       </div>
 
       {/* B: score on inner-left, badge on outer-right */}
-      <div className={`flex items-center justify-start gap-1.5 px-2 sm:px-4 py-2.5 ${tintB}`}>
+      <div className={`flex items-center justify-start gap-3 px-2 sm:px-4 py-2.5 ${tintB}`}>
         <span className="font-mono text-xs sm:text-sm text-gray-200 tabular-nums">{predStrB}</span>
         {isFinished && predB && <PtsBadge pts={ptsB} />}
       </div>
