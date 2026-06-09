@@ -159,14 +159,19 @@ export default function Home() {
           {top5.length === 0 ? (
             <p className="text-gray-500 text-sm py-4 text-center">No predictions yet. Be the first!</p>
           ) : (
-            <div className="relative">
-              {topVisible.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)}
+            <>
+              <div className="relative">
+                {topVisible.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)}
+                {hasMore && (
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-brand-card to-transparent pointer-events-none" />
+                )}
+              </div>
               {hasMore && (
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-brand-card to-transparent flex items-end justify-center pb-2 pointer-events-none">
+                <div className="text-center pt-4 pb-1">
                   <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
