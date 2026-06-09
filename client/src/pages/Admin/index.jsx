@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../api';
 import KOPanel from './KOPanel';
 import LiveSyncCard from './LiveSyncCard';
@@ -8,6 +8,7 @@ import UserPredictionsPanel from './UserPredictionsPanel';
 import PrizePotCard from './PrizePotCard';
 
 const LS_KEY = 'wc2026_admin_key';
+const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 export default function Admin() {
   const [key,      setKey]      = useState(() => localStorage.getItem(LS_KEY) || '');
@@ -20,6 +21,39 @@ export default function Admin() {
   const [openScorerId,  setOpenScorerId]  = useState(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
+  const timeoutRef = useRef(null);
+
+  const logout = useCallback(() => {
+    clearTimeout(timeoutRef.current);
+    setAuthed(false);
+    setKey('');
+    localStorage.removeItem(LS_KEY);
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(logout, TIMEOUT_MS);
+  }, [logout]);
+
+  // Start/reset inactivity timer when authed
+  useEffect(() => {
+    if (!authed) return;
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      clearTimeout(timeoutRef.current);
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+    };
+  }, [authed, resetTimer]);
+
+  // Log out when user switches tab or window
+  useEffect(() => {
+    if (!authed) return;
+    const handleVisibility = () => { if (document.hidden) logout(); };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [authed, logout]);
 
   const load = useCallback(async (k) => {
     setLoading(true);
@@ -91,7 +125,7 @@ export default function Admin() {
         <h1 className="text-2xl font-black">Admin Panel</h1>
         <button
           className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
-          onClick={() => { setAuthed(false); setKey(''); localStorage.removeItem(LS_KEY); }}
+          onClick={logout}
         >
           Log out
         </button>
