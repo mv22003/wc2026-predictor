@@ -157,7 +157,7 @@ export default function Home() {
             <h2 className="font-black text-lg">Leaderboard</h2>
           </div>
           {top5.length === 0 ? (
-            <p className="text-gray-500 text-sm py-4 text-center">No predictions yet. Be the first!</p>
+            <p className="text-gray-400 text-sm py-4 text-center">No predictions yet. Be the first!</p>
           ) : (
             <>
               <div className="relative">
@@ -183,14 +183,14 @@ export default function Home() {
             </Link>
           </div>
           {recent.length === 0 && upcoming.length === 0 ? (
-            <p className="text-gray-500 text-sm py-4 text-center">
+            <p className="text-gray-400 text-sm py-4 text-center">
               No matches loaded yet.
             </p>
           ) : (
             <>
               {recent.length > 0 && (
                 <>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Recent Results</p>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Recent Results</p>
                   {recent.map(m => <MatchRow key={m.id} match={m} />)}
                 </>
               )}
@@ -199,7 +199,7 @@ export default function Home() {
               )}
               {upcoming.length > 0 && (
                 <>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Upcoming Matches</p>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Upcoming Matches</p>
                   {upcoming.map(m => <MatchRow key={m.id} match={m} />)}
                 </>
               )}

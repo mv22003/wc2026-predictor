@@ -92,7 +92,7 @@ function MatchRow({ predA, predB }) {
           <span className="w-10 sm:w-12 text-center shrink-0 text-xs sm:text-sm">
             {isFinished && src.home_score != null
               ? <span className="text-white font-bold tabular-nums">{src.home_score}–{src.away_score}</span>
-              : <span className="text-gray-500 font-semibold">vs</span>
+              : <span className="text-gray-400 font-semibold">vs</span>
             }
           </span>
           <Flag code={src.away_code} name={src.away_team} className="w-5 sm:w-6 h-5 sm:h-6 shrink-0" />
@@ -180,7 +180,7 @@ function PlayerCard({ name, stats, onInfoClick }) {
         <p className="font-black text-lg truncate">{name}</p>
         <div className="shrink-0 text-right">
           <span className="text-brand-gold font-black text-3xl">{stats.pts}</span>
-          <span className="text-gray-500 text-xs ml-1">pts</span>
+          <span className="text-gray-400 text-xs ml-1">pts</span>
         </div>
       </div>
       <div className="grid grid-cols-4 gap-1 text-center">
@@ -188,25 +188,25 @@ function PlayerCard({ name, stats, onInfoClick }) {
           <button className="sm:cursor-default w-full" onClick={onInfoClick}>
             <span className="tag pts-exact block w-full">{stats.exact}</span>
           </button>
-          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Exact</span>
+          <span className="hidden sm:block text-[10px] text-gray-400 mt-0.5">Exact</span>
         </div>
         <div>
           <button className="sm:cursor-default w-full" onClick={onInfoClick}>
             <span className="tag pts-correct block w-full">{stats.correct}</span>
           </button>
-          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Result+GD</span>
+          <span className="hidden sm:block text-[10px] text-gray-400 mt-0.5">Result+GD</span>
         </div>
         <div>
           <button className="sm:cursor-default w-full" onClick={onInfoClick}>
             <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 block w-full">{stats.partial}</span>
           </button>
-          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Result</span>
+          <span className="hidden sm:block text-[10px] text-gray-400 mt-0.5">Result</span>
         </div>
         <div>
           <button className="sm:cursor-default w-full" onClick={onInfoClick}>
             <span className="tag pts-zero block w-full">{stats.wrong}</span>
           </button>
-          <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Wrong</span>
+          <span className="hidden sm:block text-[10px] text-gray-400 mt-0.5">Wrong</span>
         </div>
       </div>
     </div>

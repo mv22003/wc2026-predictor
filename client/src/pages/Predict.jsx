@@ -56,7 +56,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
   return (
     <div className={`card !p-2.5 transition-all ${matchStarted ? 'opacity-60 border-brand-border/40' : filled ? 'border-brand-border' : 'border-yellow-600/30 bg-yellow-900/5'}`}>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] text-gray-500 truncate">
+        <span className="text-[11px] text-gray-400 truncate">
           {dateStr}{match.venue && ` · ${match.venue}`}
         </span>
         <div className="flex items-center gap-1 shrink-0 ml-1">
@@ -67,7 +67,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
             </span>
           )}
           {match.status === 'finished' && (
-            <span className="text-[11px] text-gray-500 font-semibold">FT · {match.home_score}–{match.away_score}</span>
+            <span className="text-[11px] text-gray-400 font-semibold">FT · {match.home_score}–{match.away_score}</span>
           )}
           {pts !== null && (
             <span className={`tag font-bold px-1.5 py-0.5 text-[11px] ${pts === 5 ? 'pts-exact' : pts === 3 ? 'pts-correct' : pts === 1 ? 'bg-amber-800/30 text-amber-500 border border-amber-700/30' : 'pts-zero'}`}>
@@ -92,7 +92,7 @@ function MatchCard({ match, predHome, predAway, onUpdate, locked }) {
             disabled={isLocked}
             className="w-8 h-7 text-center font-bold rounded bg-brand-navy border border-brand-border focus:border-brand-gold focus:outline-none text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
-          <span className="text-gray-500 text-xs font-bold">vs</span>
+          <span className="text-gray-400 text-xs font-bold">vs</span>
           <ScoreInput
             value={predAway}
             onChange={v => onUpdate(match.id, 'away', v)}
@@ -171,11 +171,11 @@ function PredictedStandingsTable({ groupName, groupMatches, preds, qualifying3rd
     <div className="card p-0 overflow-hidden flex flex-col flex-1">
       <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60 shrink-0">
         <h3 className="font-black text-base">Group {groupName}</h3>
-        <span className="text-xs text-gray-500">{filledCount}/{upcomingGroupMatches.length} predicted</span>
+        <span className="text-xs text-gray-400">{filledCount}/{upcomingGroupMatches.length} predicted</span>
       </div>
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-gray-500 border-b border-brand-border/50">
+          <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-brand-border/50">
             <th className="px-2 py-2 text-left w-5">#</th>
             <th className="px-2 py-2 text-left">Team</th>
             <th className="px-1.5 py-2 text-center w-6">P</th>
@@ -200,7 +200,7 @@ function PredictedStandingsTable({ groupName, groupMatches, preds, qualifying3rd
                 <span className={`text-[11px] font-bold
                   ${i < 2 ? 'text-emerald-400'
                     : i === 2 && qualifying3rd?.has(row.name) ? 'text-amber-400'
-                    : 'text-gray-600'}`}>
+                    : 'text-gray-400'}`}>
                   {i + 1}
                 </span>
               </td>
@@ -479,7 +479,7 @@ export default function Predict() {
               {checking ? 'Checking…' : 'Continue →'}
             </button>
           </form>
-          <p className="text-xs text-gray-500">Each name can only be used once. Please use your name and surname — predictions that can't be identified will be removed.</p>
+          <p className="text-xs text-gray-400">Each name can only be used once. Please use your name and surname — predictions that can't be identified will be removed.</p>
         </div>
       </div>
     );
@@ -501,7 +501,7 @@ export default function Predict() {
           </p>
         </div>
         <button
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+          className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
           onClick={() => { setName(''); setNameInput(''); setLocked(false); setPreds({}); setStatus(null); localStorage.removeItem(LS_NAME_KEY); }}
         >
           Switch name
@@ -520,7 +520,7 @@ export default function Predict() {
       )}
 
       {matches.length === 0 ? (
-        <div className="card text-center py-12 text-gray-500">
+        <div className="card text-center py-12 text-gray-400">
           No matches loaded yet. The admin needs to seed the database first.
         </div>
       ) : (

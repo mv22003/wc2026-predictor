@@ -85,7 +85,7 @@ function LiveMatchCard({ match }) {
 
       {venue && (
         <div className="mt-2 flex justify-center">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/5 border border-brand-border/60 text-xs text-gray-500 whitespace-nowrap">
+          <span className="inline-block px-3 py-1 rounded-full bg-white/5 border border-brand-border/60 text-xs text-gray-400 whitespace-nowrap">
             {venue}
           </span>
         </div>

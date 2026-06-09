@@ -41,7 +41,7 @@ export default function MatchRow({ match }) {
             ) : live ? (
               <span className="font-black text-white tabular-nums">{match.home_score} – {match.away_score}</span>
             ) : (
-              <span className="text-gray-500 text-xs">vs</span>
+              <span className="text-gray-400 text-xs">vs</span>
             )}
           </span>
           <span className={`flex-1 font-semibold text-sm flex items-center gap-1.5 min-w-0 ${live || finished ? 'text-white' : 'text-gray-300'}`}>
@@ -61,8 +61,8 @@ export default function MatchRow({ match }) {
             <span className="tag pts-exact text-xs inline-flex justify-center w-12">FT</span>
           ) : (
             <>
-              <span className="text-xs text-gray-500 whitespace-nowrap sm:hidden">{shortDate}</span>
-              <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">{dateStr}</span>
+              <span className="text-xs text-gray-400 whitespace-nowrap sm:hidden">{shortDate}</span>
+              <span className="text-xs text-gray-400 whitespace-nowrap hidden sm:block">{dateStr}</span>
             </>
           )}
         </span>

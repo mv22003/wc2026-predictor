@@ -10,7 +10,7 @@ function ordinal(n) {
 }
 
 function RankBadge({ rank, hasResults }) {
-  if (!hasResults) return <span className="text-gray-600 font-bold text-sm w-8 text-center">—</span>;
+  if (!hasResults) return <span className="text-gray-400 font-bold text-sm w-8 text-center">—</span>;
   if (rank === 1) return <span className="text-brand-gold font-black text-sm w-8 text-center">1st</span>;
   if (rank === 2) return <span className="text-gray-300 font-black text-sm w-8 text-center">2nd</span>;
   if (rank === 3) return <span className="text-amber-600 font-black text-sm w-8 text-center">3rd</span>;
@@ -20,7 +20,7 @@ function RankBadge({ rank, hasResults }) {
 
 function PtsBadge({ pts, pending }) {
   const base = 'tag font-bold text-center w-8 shrink-0';
-  if (pending) return <span className={`${base} bg-brand-border text-gray-600`}>–</span>;
+  if (pending) return <span className={`${base} bg-brand-border text-gray-400`}>–</span>;
   if (pts === 5) return <span className={`${base} pts-exact`}>+5</span>;
   if (pts === 3) return <span className={`${base} pts-correct`}>+3</span>;
   if (pts === 1) return <span className={`${base} bg-amber-800/30 text-amber-500 border border-amber-700/30`}>+1</span>;
@@ -37,7 +37,7 @@ function SortableCell({ children, col, sort, onSort }) {
       <div className="flex items-center justify-center">
         <span className="w-3 shrink-0" />
         {children}
-        <span className="w-3 shrink-0 text-gray-600 text-xs leading-none text-left ml-1">
+        <span className="w-3 shrink-0 text-gray-400 text-xs leading-none text-left ml-1">
           {state === 'desc' ? '▾' : state === 'asc' ? '▴' : '·'}
         </span>
       </div>
@@ -60,7 +60,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
   if (loading) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={9} className="px-6 py-3 text-xs text-gray-500">Loading…</td>
+        <td colSpan={9} className="px-6 py-3 text-xs text-gray-400">Loading…</td>
       </tr>
     );
   }
@@ -72,7 +72,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
   if (predictions.length === 0) {
     return (
       <tr className="bg-brand-surface/50">
-        <td colSpan={9} className="px-6 py-3 text-xs text-gray-500">No predictions yet.</td>
+        <td colSpan={9} className="px-6 py-3 text-xs text-gray-400">No predictions yet.</td>
       </tr>
     );
   }
@@ -94,15 +94,15 @@ function PredictionBreakdown({ name, cache, setCache }) {
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
                 <span className="font-semibold text-gray-300">{p.home_code}</span>
-                <span className="text-gray-600">vs</span>
+                <span className="text-gray-400">vs</span>
                 <span className="font-semibold text-gray-300">{p.away_code}</span>
                 <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
               </div>
-              <span className="font-mono text-gray-500 w-8 text-right tabular-nums shrink-0">{p.pred_home}–{p.pred_away}</span>
-              <span className="text-gray-600 w-3 text-center shrink-0">→</span>
+              <span className="font-mono text-gray-400 w-8 text-right tabular-nums shrink-0">{p.pred_home}–{p.pred_away}</span>
+              <span className="text-gray-400 w-3 text-center shrink-0">→</span>
               {p.status === 'finished'
-                ? <span className={`font-mono font-bold w-8 tabular-nums shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-600'}`}>{p.home_score}–{p.away_score}</span>
-                : <span className="text-gray-600 italic w-8 shrink-0">pend.</span>
+                ? <span className={`font-mono font-bold w-8 tabular-nums shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-400'}`}>{p.home_score}–{p.away_score}</span>
+                : <span className="text-gray-400 italic w-8 shrink-0">pend.</span>
               }
               <PtsBadge pts={p.points} pending={p.status !== 'finished'} />
             </div>
@@ -285,7 +285,7 @@ export default function Leaderboard() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
-              <th className="hidden px-3 py-3 w-8 text-center text-gray-600 text-xs uppercase tracking-wider">H2H</th>
+              <th className="hidden px-3 py-3 w-8 text-center text-gray-400 text-xs uppercase tracking-wider">H2H</th>
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
               <th className="px-4 py-3 text-center text-xs">Paid</th>
@@ -307,7 +307,7 @@ export default function Leaderboard() {
               >
                 <div className="flex items-center justify-end gap-1">
                   Points
-                  <span className="w-3 text-gray-600 text-xs leading-none ml-1">
+                  <span className="w-3 text-gray-400 text-xs leading-none ml-1">
                     {colSort('total_points') === 'desc' ? '▾' : colSort('total_points') === 'asc' ? '▴' : '·'}
                   </span>
                 </div>
@@ -317,7 +317,7 @@ export default function Leaderboard() {
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500">
+                <td colSpan={8} className="text-center py-10 text-gray-400">
                   {search ? 'No player found.' : 'No predictions submitted yet. Be the first!'}
                 </td>
               </tr>
@@ -351,7 +351,7 @@ export default function Leaderboard() {
                     <td className="px-4 py-3 font-semibold">
                       <span className="flex items-center gap-1.5">
                         {row.name}
-                        <span className={`text-gray-600 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
+                        <span className={`text-gray-400 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -394,7 +394,7 @@ export default function Leaderboard() {
 
 
       {board.length === 0 && (
-        <div className="card text-center py-10 text-gray-500">
+        <div className="card text-center py-10 text-gray-400">
           <p className="font-semibold">Leaderboard is empty</p>
           <p className="text-sm mt-1">Share the link with your group and start predicting!</p>
         </div>

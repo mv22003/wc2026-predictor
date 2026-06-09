@@ -68,11 +68,11 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
     <div className="card p-0 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60">
         <h3 className="font-black text-base">Group {groupName}</h3>
-        <span className="text-xs text-gray-500">{played}/6 played</span>
+        <span className="text-xs text-gray-400">{played}/6 played</span>
       </div>
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-[11px] uppercase tracking-wider text-gray-500 border-b border-brand-border/50">
+          <tr className="text-[11px] uppercase tracking-wider text-gray-400 border-b border-brand-border/50">
             <th className="px-3 py-2 text-left w-6">#</th>
             <th className="px-3 py-2 text-left">Team</th>
             <th className="px-2 py-2 text-center w-7">P</th>
@@ -99,7 +99,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                 <span className={`text-xs font-bold
                   ${i < 2 ? 'text-emerald-400'
                     : i === 2 && qualifying3rd?.has(row.name) ? 'text-amber-400'
-                    : 'text-gray-600'}`}>
+                    : 'text-gray-400'}`}>
                   {i + 1}
                 </span>
               </td>
@@ -113,8 +113,8 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               <td className="px-2 py-2.5 text-center text-gray-300">{row.won}</td>
               <td className="px-2 py-2.5 text-center text-gray-300">{row.drawn}</td>
               <td className="px-2 py-2.5 text-center text-gray-300">{row.lost}</td>
-              <td className="px-2 py-2.5 text-center text-gray-500 hidden sm:table-cell">{row.gf}</td>
-              <td className="px-2 py-2.5 text-center text-gray-500 hidden sm:table-cell">{row.ga}</td>
+              <td className="px-2 py-2.5 text-center text-gray-400 hidden sm:table-cell">{row.gf}</td>
+              <td className="px-2 py-2.5 text-center text-gray-400 hidden sm:table-cell">{row.ga}</td>
               <td className="px-2 py-2.5 text-center text-gray-400">
                 {row.gd > 0 ? `+${row.gd}` : row.gd}
               </td>
@@ -126,7 +126,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
       <div className="border-t border-brand-border/50 flex items-center justify-end px-3 py-2">
         <button
           onClick={() => setOpen(o => !o)}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
+          className="text-xs text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
         >
           Matches {open ? '▲' : '▼'}
         </button>
@@ -137,7 +137,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
             .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))
             .map(m => (
               <div key={m.id} className="flex items-center gap-2 px-4 py-2 border-b border-brand-border/30 last:border-0 hover:bg-white/3">
-                <span className="text-xs text-gray-600 w-28 shrink-0 hidden sm:block">
+                <span className="text-xs text-gray-400 w-28 shrink-0 hidden sm:block">
                   {m.match_date ? new Date(m.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
                 </span>
                 <div className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
@@ -150,7 +150,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   {m.status === 'finished' ? (
                     <span className="font-black text-brand-gold text-sm tabular-nums">{m.home_score} – {m.away_score}</span>
                   ) : (
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-400">
                       {m.match_date ? new Date(m.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'TBD'}
                     </span>
                   )}
@@ -238,7 +238,7 @@ function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
   return (
     <div className="mt-3 px-1 space-y-1">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-center text-xs text-gray-500 gap-1">
+        <div key={i} className="flex items-center text-xs text-gray-400 gap-1">
           <span className="flex-1 min-w-0 flex items-center justify-end whitespace-nowrap">
             {home[i] ? `${home[i].name}${home[i].minute != null ? ` ${home[i].minute}'` : ''}` : ''}
           </span>
@@ -304,7 +304,7 @@ function MatchRow({ match }) {
                   {match.home_score} – {match.away_score}
                 </span>
               ) : (
-                <span className={`text-sm font-bold tabular-nums ${isToday ? 'text-brand-gold' : 'text-gray-500'}`}>
+                <span className={`text-sm font-bold tabular-nums ${isToday ? 'text-brand-gold' : 'text-gray-400'}`}>
                   {timeStr}
                 </span>
               )}
@@ -326,7 +326,7 @@ function MatchRow({ match }) {
           )}
           {venue && (
             <div className="mt-3 flex justify-center">
-              <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-500 whitespace-nowrap">
+              <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-400 whitespace-nowrap">
                 {venue}
               </span>
             </div>
@@ -342,7 +342,7 @@ function MatchRow({ match }) {
           ) : isToday ? (
             <span className="tag bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-xs hidden sm:inline-flex">Today</span>
           ) : (
-            <span className="text-xs text-gray-600 hidden sm:block">
+            <span className="text-xs text-gray-400 hidden sm:block">
               {matchDate?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
             </span>
           )}
@@ -363,7 +363,7 @@ function DateGroup({ matches, dateKey }) {
       <div className={`px-4 py-2.5 flex items-center gap-2 border-b border-brand-border ${isToday ? 'bg-brand-gold/10' : 'bg-brand-navy/60'}`}>
         <h3 className={`font-bold text-sm ${isToday ? 'text-brand-gold' : 'text-gray-300'}`}>{label}</h3>
         {isToday && <span className="tag bg-brand-gold text-brand-navy text-xs font-bold">Today</span>}
-        <span className="ml-auto text-xs text-gray-600">{matches.length} match{matches.length !== 1 ? 'es' : ''}</span>
+        <span className="ml-auto text-xs text-gray-400">{matches.length} match{matches.length !== 1 ? 'es' : ''}</span>
       </div>
       {matches.map(m => <MatchRow key={m.id} match={m} />)}
     </div>
@@ -551,17 +551,17 @@ function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
         ) : slot ? (
           <div className={`flex flex-col justify-center flex-1 ${flip ? 'items-end' : 'items-start'}`}>
             <span className={`text-[11px] font-bold text-gray-400 leading-none`}>{slot.main}</span>
-            {slot.sub && <span className={`text-[8px] text-gray-600 leading-none mt-0.5`}>{slot.sub}</span>}
+            {slot.sub && <span className={`text-[8px] text-gray-400 leading-none mt-0.5`}>{slot.sub}</span>}
           </div>
         ) : (
           <>
             <span className="w-3.5 h-3.5 rounded-sm bg-brand-border/20 shrink-0" />
-            <span className={`text-[10px] text-gray-600 w-[26px] leading-none ${flip ? 'text-right' : ''}`}>TBD</span>
+            <span className={`text-[10px] text-gray-400 w-[26px] leading-none ${flip ? 'text-right' : ''}`}>TBD</span>
           </>
         )}
         {finished && (
           <span className={`text-[11px] font-black tabular-nums ${flip ? 'mr-auto' : 'ml-auto'}
-            ${won ? 'text-brand-gold' : 'text-gray-600'}`}>
+            ${won ? 'text-brand-gold' : 'text-gray-400'}`}>
             {score ?? '–'}
           </span>
         )}
@@ -690,19 +690,19 @@ function BracketTab({ allMatches }) {
           <span className="text-brand-gold text-base leading-none mt-0.5">ⓘ</span>
           <div>
             <p className="text-sm font-semibold text-gray-200">Positions update after every team plays once</p>
-            <p className="text-xs text-gray-500 mt-0.5">{teamsWithGame.size} of {allTeams.size} teams have played their first match</p>
+            <p className="text-xs text-gray-400 mt-0.5">{teamsWithGame.size} of {allTeams.size} teams have played their first match</p>
           </div>
         </div>
       )}
       {allTeamsPlayed && koFinished > 0 && (
-        <p className="text-gray-500 text-xs">{koFinished} of {koMatches.length} knockout matches played</p>
+        <p className="text-gray-400 text-xs">{koFinished} of {koMatches.length} knockout matches played</p>
       )}
       <div className="overflow-x-auto pb-4">
         <div style={{ width: TW, minWidth: TW }} className="mx-auto">
           <div className="relative mb-2" style={{ height: 18 }}>
             {BRACKET_LABELS.map(({ label, x }, i) => (
               <span key={i}
-                className="absolute flex justify-center text-[10px] font-bold text-gray-500 uppercase tracking-wider"
+                className="absolute flex justify-center text-[10px] font-bold text-gray-400 uppercase tracking-wider"
                 style={{ left: x, width: CW }}>
                 {label}
               </span>
@@ -731,7 +731,7 @@ function BracketTab({ allMatches }) {
           </div>
           <div className="flex justify-center mt-6">
             <div className="text-center">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">3rd Place</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">3rd Place</p>
               <BCard matchNum={103} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed} />
             </div>
           </div>
@@ -786,7 +786,7 @@ export default function LiveResults() {
           <p className="text-gray-400 text-sm mt-0.5">
             {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
           </p>
-          <p className={`text-gray-500 text-xs mt-0.5 ${tab !== 'bracket' ? 'invisible' : ''}`}>Projected from live standings</p>
+          <p className={`text-gray-400 text-xs mt-0.5 ${tab !== 'bracket' ? 'invisible' : ''}`}>Projected from live standings</p>
         </div>
         <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
           {TABS.map(t => (
