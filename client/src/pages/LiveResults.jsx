@@ -507,22 +507,35 @@ const BRACKET_LABELS = [
   { label: 'R16', x: R_R16 }, { label: 'R32', x: R_R32 },
 ];
 
-function BCard({ matchNum, dbByNum, projMap, flip = false }) {
+function slotLabel(slot) {
+  if (!slot) return null;
+  if (slot.type === 'group') return { main: `${slot.pos}${slot.group}`, sub: null };
+  if (slot.type === 'best3rd') return { main: `3${slot.groups.join('/')}`, sub: null };
+  return null;
+}
+
+function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
   const dbMatch  = dbByNum[matchNum];
   const finished = dbMatch?.status === 'finished';
   const homeWon  = finished && dbMatch.home_score > dbMatch.away_score;
   const awayWon  = finished && dbMatch.away_score > dbMatch.home_score;
 
+  const r32Slots = R32_SLOTS[matchNum];
+  const showLabels = r32Slots && !allTeamsPlayed;
+
   function getTeam(side) {
     if (dbMatch) return { code: dbMatch[`${side}_code`], name: dbMatch[`${side}_team`] };
+    if (showLabels) return null;
     return projMap?.[matchNum]?.[side] ?? null;
   }
 
   const home = getTeam('home');
   const away = getTeam('away');
+  const homeSlot = showLabels ? slotLabel(r32Slots.home) : null;
+  const awaySlot = showLabels ? slotLabel(r32Slots.away) : null;
   const rh   = CH / 2;
 
-  function Row({ team, score, won }) {
+  function Row({ team, score, won, slot }) {
     const codeText = team ? (team.code || team.name?.slice(0, 3).toUpperCase()) : null;
     return (
       <div className={`flex items-center gap-1 px-1.5 ${won ? 'bg-brand-gold/10' : ''} ${flip ? 'flex-row-reverse' : ''}`}
@@ -535,6 +548,11 @@ function BCard({ matchNum, dbByNum, projMap, flip = false }) {
               {codeText}
             </span>
           </>
+        ) : slot ? (
+          <div className={`flex flex-col justify-center flex-1 ${flip ? 'items-end' : 'items-start'}`}>
+            <span className={`text-[11px] font-bold text-gray-400 leading-none`}>{slot.main}</span>
+            {slot.sub && <span className={`text-[8px] text-gray-600 leading-none mt-0.5`}>{slot.sub}</span>}
+          </div>
         ) : (
           <>
             <span className="w-3.5 h-3.5 rounded-sm bg-brand-border/20 shrink-0" />
@@ -556,9 +574,9 @@ function BCard({ matchNum, dbByNum, projMap, flip = false }) {
         ? 'border-brand-border bg-brand-navy'
         : 'border-brand-border bg-brand-card'}`}
          style={{ width: CW, height: CH }}>
-      <Row team={home} score={dbMatch?.home_score} won={homeWon} />
+      <Row team={home} score={dbMatch?.home_score} won={homeWon} slot={homeSlot} />
       <div className="border-t border-brand-border/30" />
-      <Row team={away} score={dbMatch?.away_score} won={awayWon} />
+      <Row team={away} score={dbMatch?.away_score} won={awayWon} slot={awaySlot} />
     </div>
   );
 }
@@ -665,20 +683,18 @@ function BracketTab({ allMatches }) {
   addRound(RIGHT.r16, R_R16, yc.r16);
   addRound(RIGHT.r32, R_R32, yc.r32);
 
-  if (!allTeamsPlayed) {
-    return (
-      <div className="card text-center py-16">
-        <p className="font-semibold text-gray-300">Bracket unlocks after every team plays once</p>
-        <p className="text-sm text-gray-500 mt-1">
-          {teamsWithGame.size} / {allTeams.size} teams have played their first match
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-2">
-      {koFinished > 0 && (
+      {!allTeamsPlayed && (
+        <div className="card border-brand-gold/20 bg-brand-gold/5 py-3 px-4 flex items-start gap-3">
+          <span className="text-brand-gold text-base leading-none mt-0.5">ⓘ</span>
+          <div>
+            <p className="text-sm font-semibold text-gray-200">Positions update after every team plays once</p>
+            <p className="text-xs text-gray-500 mt-0.5">{teamsWithGame.size} of {allTeams.size} teams have played their first match</p>
+          </div>
+        </div>
+      )}
+      {allTeamsPlayed && koFinished > 0 && (
         <p className="text-gray-500 text-xs">{koFinished} of {koMatches.length} knockout matches played</p>
       )}
       <div className="overflow-x-auto pb-4">
@@ -696,7 +712,7 @@ function BracketTab({ allMatches }) {
             <BracketLines />
             {cards.map(({ num, x, y, flip }) => (
               <div key={num} style={{ position: 'absolute', left: x, top: y }}>
-                <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} flip={flip} />
+                <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed} flip={flip} />
               </div>
             ))}
             <img
@@ -716,7 +732,7 @@ function BracketTab({ allMatches }) {
           <div className="flex justify-center mt-6">
             <div className="text-center">
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">3rd Place</p>
-              <BCard matchNum={103} dbByNum={dbByNum} projMap={projMap} />
+              <BCard matchNum={103} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed} />
             </div>
           </div>
         </div>
