@@ -37,7 +37,7 @@ function SortableCell({ children, col, sort, onSort }) {
       <div className="flex items-center justify-center">
         <span className="w-3 shrink-0" />
         {children}
-        <span className="w-3 shrink-0 text-gray-400 text-xs leading-none text-left ml-1">
+        <span className="w-3 shrink-0 inline-flex justify-center text-gray-400 text-xs leading-none ml-1">
           {state === 'desc' ? '▾' : state === 'asc' ? '▴' : '·'}
         </span>
       </div>
@@ -302,12 +302,13 @@ export default function Leaderboard() {
                 <span className="tag pts-zero px-2">0</span>
               </SortableCell>
               <th
-                className="px-4 py-3 text-right font-bold text-brand-gold cursor-pointer select-none hover:opacity-80 transition-opacity"
+                className="px-4 py-3 text-center font-bold text-brand-gold cursor-pointer select-none hover:opacity-80 transition-opacity"
                 onClick={() => handleSort('total_points')}
               >
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-center">
+                  <span className="w-3 shrink-0" />
                   Points
-                  <span className="w-3 text-gray-400 text-xs leading-none ml-1">
+                  <span className="w-3 shrink-0 inline-flex justify-center text-gray-400 text-xs leading-none ml-1">
                     {colSort('total_points') === 'desc' ? '▾' : colSort('total_points') === 'asc' ? '▴' : '·'}
                   </span>
                 </div>
@@ -372,7 +373,7 @@ export default function Leaderboard() {
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
                       <span className="tag pts-zero">{row.pts_0 ?? 0}</span>
                     </td>
-                    <td className="px-4 py-3 text-right font-black text-brand-gold text-lg">
+                    <td className="px-4 py-3 text-center font-black text-brand-gold text-lg">
                       {row.total_points}
                     </td>
                   </tr>
