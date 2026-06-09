@@ -17,7 +17,7 @@ function parseMinute(m) {
   return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
 }
 
-function LiveMatchCard({ match, showMinute = false }) {
+function LiveMatchCard({ match }) {
   const venue = VENUE_BY_MATCH[match.match_number] || match.venue;
   const homeScorers = parseScorers(match.home_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   const awayScorers = parseScorers(match.away_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
@@ -27,11 +27,11 @@ function LiveMatchCard({ match, showMinute = false }) {
 
   return (
     <div className="py-2 px-1">
-      {showMinute && (
-        <div className="flex justify-center mb-1">
-          <span className="flex items-center gap-1 text-sm font-black text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+      {match.live_minute != null && (
+        <div className="flex justify-center mb-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-xs font-black text-red-400 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+            {match.live_minute}'
           </span>
         </div>
       )}
@@ -96,22 +96,14 @@ function LiveMatchCard({ match, showMinute = false }) {
 
 export default function LiveNowSection({ matches }) {
   if (matches.length === 0) return null;
-  const showMinuteInHeader = matches.length === 1;
   return (
     <div className="card border border-emerald-700/40 bg-emerald-900/10">
-      <div className="flex items-center justify-between mb-1">
-        <span className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
-        </span>
-        {showMinuteInHeader && (
-          <span className="text-xl font-black text-emerald-400">
-            {matches[0].live_minute != null ? `${matches[0].live_minute}'` : 'LIVE'}
-          </span>
-        )}
+      <div className="flex items-center gap-2 mb-1">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+        <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
       </div>
       <div className={matches.length > 1 ? 'grid grid-cols-2 divide-x divide-brand-border/40' : ''}>
-        {matches.map(m => <LiveMatchCard key={m.id} match={m} showMinute={!showMinuteInHeader} />)}
+        {matches.map(m => <LiveMatchCard key={m.id} match={m} />)}
       </div>
     </div>
   );

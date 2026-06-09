@@ -198,8 +198,8 @@ function GroupsTab({ matches, groups }) {
 // ─── Calendar tab ──────────────────────────────────────────────────────────────
 function LiveMinute({ minute }) {
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-[11px] font-black text-red-400 whitespace-nowrap">
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
       {minute != null ? `${minute}'` : 'LIVE'}
     </span>
   );
@@ -238,23 +238,20 @@ function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
   return (
     <div className="mt-3 px-1 space-y-1">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-center gap-3 text-xs text-gray-500">
-          <span className="flex-1 text-right leading-snug">
-            {home[i] ? (
-              <span className="inline-flex items-center justify-end gap-1">
-                {home[i].name}{home[i].minute != null ? ` ${home[i].minute}'` : ''}
-                <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] inline-block" />
-              </span>
-            ) : ''}
+        <div key={i} className="flex items-center text-xs text-gray-500 gap-1">
+          <span className="flex-1 min-w-0 flex items-center justify-end whitespace-nowrap">
+            {home[i] ? `${home[i].name}${home[i].minute != null ? ` ${home[i].minute}'` : ''}` : ''}
           </span>
-          <span className="w-20 shrink-0" />
-          <span className="flex-1 leading-snug">
-            {away[i] ? (
-              <span className="inline-flex items-center gap-1">
-                <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] inline-block" />
-                {away[i].name}{away[i].minute != null ? ` ${away[i].minute}'` : ''}
-              </span>
-            ) : ''}
+          <span className="w-16 sm:w-20 shrink-0 flex items-center justify-between">
+            {home[i]
+              ? <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] shrink-0" />
+              : <span className="w-[1em] shrink-0" />}
+            {away[i]
+              ? <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] shrink-0" />
+              : <span className="w-[1em] shrink-0" />}
+          </span>
+          <span className="flex-1 min-w-0 flex items-center whitespace-nowrap">
+            {away[i] ? `${away[i].name}${away[i].minute != null ? ` ${away[i].minute}'` : ''}` : ''}
           </span>
         </div>
       ))}
@@ -277,11 +274,11 @@ function MatchRow({ match }) {
   return (
     <div className={`pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors
-      ${live ? 'bg-emerald-900/10' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
+      ${live ? 'bg-emerald-900/20 border-l-2 border-l-emerald-500/60' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
       <div className="flex items-stretch gap-3">
-        {/* group · match# pill — desktop only */}
-        <div className="hidden sm:flex shrink-0 w-20 items-center justify-center">
-          <span className="tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
+        {/* group · match# pill — desktop only; invisible spacer on mobile to balance right pill */}
+        <div className="w-14 sm:w-20 shrink-0 flex items-center justify-center">
+          <span className="hidden sm:block tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
             {match.group_name} · M{match.match_number}
           </span>
         </div>
@@ -335,15 +332,15 @@ function MatchRow({ match }) {
         </div>
 
         {/* FT / LIVE / Today / date — spans full height */}
-        <div className="w-16 shrink-0 hidden sm:flex items-center justify-end">
+        <div className="w-14 sm:w-16 shrink-0 flex items-center justify-end">
           {finished ? (
             <span className="tag pts-exact text-xs">FT</span>
           ) : live ? (
             <LiveMinute minute={match.live_minute} />
           ) : isToday ? (
-            <span className="tag bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-xs">Today</span>
+            <span className="tag bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-xs hidden sm:inline-flex">Today</span>
           ) : (
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-gray-600 hidden sm:block">
               {matchDate?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
             </span>
           )}
@@ -390,6 +387,9 @@ function FilterBtn({ value, active, onChange, children }) {
 
 function CalendarTab({ matches, groups }) {
   const [filter, setFilter] = useState('all');
+  const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
+
+  const todayKey = new Date().toISOString().slice(0, 10);
 
   const koPhases = KO_PHASES.filter(p => matches.some(m => m.group_name === p));
 
@@ -403,6 +403,24 @@ function CalendarTab({ matches, groups }) {
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(m);
   }
+
+  useEffect(() => {
+    if (!pendingScrollToToday) return;
+    const liveDate = matches.find(m => m.status === 'live')?.match_date?.slice(0, 10);
+    const nearestUpcoming = matches
+      .filter(m => m.status === 'upcoming' && m.match_date)
+      .map(m => m.match_date.slice(0, 10))
+      .filter(d => d >= todayKey)
+      .sort()[0];
+    const target = liveDate || nearestUpcoming || todayKey;
+    document.querySelector(`[data-date="${target}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setPendingScrollToToday(false);
+  }, [pendingScrollToToday, filter]);
+
+  const handleScrollToToday = () => {
+    if (filter !== 'all') setFilter('all');
+    setPendingScrollToToday(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -418,9 +436,17 @@ function CalendarTab({ matches, groups }) {
           <FilterBtn key={p} value={p} active={filter} onChange={setFilter}>{p}</FilterBtn>
         ))}
       </div>
+      <div className="flex justify-end">
+        <button
+          onClick={handleScrollToToday}
+          className="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10"
+        >
+          ↓ Today
+        </button>
+      </div>
 
       {Object.entries(byDate).map(([dateStr, dayMatches]) => (
-        <div key={dateStr}>
+        <div key={dateStr} data-date={dateStr}>
           <DateGroup matches={dayMatches} dateKey={dateStr} />
         </div>
       ))}
