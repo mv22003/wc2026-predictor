@@ -372,11 +372,11 @@ function DateGroup({ matches, dateKey }) {
 
 const KO_PHASES = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
 
-function FilterBtn({ value, active, onChange, compact, children }) {
+function FilterBtn({ value, active, onChange, compact, stretch, children }) {
   return (
     <button
       onClick={() => onChange(value)}
-      className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} rounded-lg font-bold transition-all ${
+      className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} ${stretch ? 'flex-1' : ''} rounded-lg font-bold transition-all ${
         active === value
           ? 'bg-brand-gold text-brand-navy'
           : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
@@ -427,28 +427,28 @@ function CalendarTab({ matches, groups }) {
   return (
     <div className="space-y-4">
       <div className="sm:hidden space-y-1.5">
-        <div className="flex gap-1.5 justify-center">
-          <FilterBtn value="all" active={filter} onChange={setFilter} compact>All</FilterBtn>
+        <div className="flex gap-1.5">
+          <FilterBtn value="all" active={filter} onChange={setFilter} compact stretch>All</FilterBtn>
           {groups.slice(0, 6).map(g => (
-            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact>{g}</FilterBtn>
+            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact stretch>{g}</FilterBtn>
           ))}
         </div>
-        <div className="flex gap-1.5 justify-center">
+        <div className="flex gap-1.5">
           {groups.slice(6).map(g => (
-            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact>{g}</FilterBtn>
+            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact stretch>{g}</FilterBtn>
           ))}
         </div>
       </div>
-      <div className="hidden sm:flex flex-wrap gap-1.5 justify-center">
-        <FilterBtn value="all" active={filter} onChange={setFilter}>All</FilterBtn>
+      <div className="hidden sm:flex flex-wrap gap-1.5">
+        <FilterBtn value="all" active={filter} onChange={setFilter} stretch>All</FilterBtn>
         {groups.map(g => (
-          <FilterBtn key={g} value={g} active={filter} onChange={setFilter}>{g}</FilterBtn>
+          <FilterBtn key={g} value={g} active={filter} onChange={setFilter} stretch>{g}</FilterBtn>
         ))}
         {koPhases.length > 0 && (
           <span className="w-px bg-brand-border self-stretch mx-1" />
         )}
         {koPhases.map(p => (
-          <FilterBtn key={p} value={p} active={filter} onChange={setFilter}>{p}</FilterBtn>
+          <FilterBtn key={p} value={p} active={filter} onChange={setFilter} stretch>{p}</FilterBtn>
         ))}
       </div>
       <div className="flex justify-end">
@@ -678,11 +678,9 @@ function BracketTab({ allMatches }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-gray-500 text-xs">
-        {koFinished > 0
-          ? `${koFinished} of ${koMatches.length} knockout matches played`
-          : 'Projected from live standings'}
-      </p>
+      {koFinished > 0 && (
+        <p className="text-gray-500 text-xs">{koFinished} of {koMatches.length} knockout matches played</p>
+      )}
       <div className="overflow-x-auto pb-4">
         <div style={{ width: TW, minWidth: TW }} className="mx-auto">
           <div className="relative mb-2" style={{ height: 18 }}>
@@ -770,8 +768,11 @@ export default function LiveResults() {
         <div>
           <h1 className="text-2xl font-black">Live Results</h1>
           <p className="text-gray-400 text-sm mt-0.5">
-            {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30 s
+            {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
           </p>
+          {tab === 'bracket' && (
+            <p className="text-gray-500 text-xs mt-0.5">Projected from live standings</p>
+          )}
         </div>
         <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
           {TABS.map(t => (
