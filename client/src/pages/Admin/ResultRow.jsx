@@ -3,6 +3,38 @@ import { api } from '../../api';
 import Flag from '../../components/Flag';
 import { scorersJsonToArray, arrayToScorersJson } from './scorerUtils';
 
+function ScorerInputs({ scorers, setScorers, count }) {
+  if (count === 0) return <p className="text-xs text-gray-600 italic">No goals</p>;
+  return Array.from({ length: count }, (_, i) => (
+    <div key={i} className="flex gap-1.5">
+      <input
+        type="text"
+        className="flex-1 min-w-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                   focus:border-brand-gold focus:outline-none"
+        value={scorers[i]?.name ?? ''}
+        onChange={e => setScorers(prev => {
+          const next = [...prev];
+          while (next.length <= i) next.push({ name: '', minute: '' });
+          next[i] = { ...next[i], name: e.target.value };
+          return next;
+        })}
+      />
+      <input
+        type="text"
+        className="w-16 shrink-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
+                   focus:border-brand-gold focus:outline-none text-center"
+        value={scorers[i]?.minute ?? ''}
+        onChange={e => setScorers(prev => {
+          const next = [...prev];
+          while (next.length <= i) next.push({ name: '', minute: '' });
+          next[i] = { ...next[i], minute: e.target.value };
+          return next;
+        })}
+      />
+    </div>
+  ));
+}
+
 export default function ResultRow({ match, adminKey, onSaved, openScorerId, setOpenScorerId }) {
   const [hs,  setHs]  = useState(match.home_score ?? '');
   const [as_, setAs]  = useState(match.away_score ?? '');
@@ -108,38 +140,6 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
   const dateStr = d
     ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
     : 'TBD';
-
-  function ScorerInputs({ scorers, setScorers, count }) {
-    if (count === 0) return <p className="text-xs text-gray-600 italic">No goals</p>;
-    return Array.from({ length: count }, (_, i) => (
-      <div key={i} className="flex gap-1.5">
-        <input
-          type="text"
-          className="flex-1 min-w-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
-                     focus:border-brand-gold focus:outline-none"
-          value={scorers[i]?.name ?? ''}
-          onChange={e => setScorers(prev => {
-            const next = [...prev];
-            while (next.length <= i) next.push({ name: '', minute: '' });
-            next[i] = { ...next[i], name: e.target.value };
-            return next;
-          })}
-        />
-        <input
-          type="text"
-          className="w-16 shrink-0 bg-brand-navy border border-brand-border rounded px-2 py-1.5 text-xs text-gray-300
-                     focus:border-brand-gold focus:outline-none text-center"
-          value={scorers[i]?.minute ?? ''}
-          onChange={e => setScorers(prev => {
-            const next = [...prev];
-            while (next.length <= i) next.push({ name: '', minute: '' });
-            next[i] = { ...next[i], minute: e.target.value };
-            return next;
-          })}
-        />
-      </div>
-    ));
-  }
 
   return (
     <>
