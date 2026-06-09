@@ -160,7 +160,7 @@ export default function Home() {
           {top5.length === 0 ? (
             <p className="text-gray-500 text-sm py-4 text-center">No predictions yet. Be the first!</p>
           ) : (
-            top5.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={recent.length > 0} />)
+            top5.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)
           )}
         </div>
 
