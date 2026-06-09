@@ -276,6 +276,8 @@ function MatchRow({ match }) {
       hover:bg-white/5 transition-colors
       ${live ? 'bg-emerald-900/20 border-l-2 border-l-emerald-500/60' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
       <div className="flex items-stretch gap-3">
+        {/* mirror spacer on mobile — matches the FT/LIVE pill width so the score stays centered */}
+        {(finished || live) && <div className="sm:hidden w-12 shrink-0" />}
         {/* group · match# pill — desktop only */}
         <div className="hidden sm:flex sm:w-20 shrink-0 items-center justify-center">
           <span className="tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
