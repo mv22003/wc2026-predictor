@@ -7,34 +7,53 @@ import ResultRow from './ResultRow';
 import UserPredictionsPanel from './UserPredictionsPanel';
 import PrizePotCard from './PrizePotCard';
 
-const LS_KEY = 'wc2026_admin_key';
-const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const LS_KEY        = 'wc2026_admin_key';
+const TIMEOUT_MS    = 15 * 60 * 1000; // 15 minutes
+const WARN_BEFORE_MS = 60 * 1000;     // warn 60 s before logout
 
 export default function Admin() {
-  const [key,      setKey]      = useState(() => localStorage.getItem(LS_KEY) || '');
-  const [keyInput, setKeyInput] = useState('');
-  const [authed,   setAuthed]   = useState(false);
-  const [matches,  setMatches]  = useState([]);
-  const [stats,    setStats]    = useState(null);
-  const [filter,   setFilter]   = useState('all');
-  const [resultsOpen,   setResultsOpen]   = useState(false);
-  const [openScorerId,  setOpenScorerId]  = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
-  const [showKey,  setShowKey]  = useState(false);
-  const timeoutRef = useRef(null);
+  const [key,         setKey]         = useState(() => localStorage.getItem(LS_KEY) || '');
+  const [keyInput,    setKeyInput]    = useState('');
+  const [authed,      setAuthed]      = useState(false);
+  const [matches,     setMatches]     = useState([]);
+  const [stats,       setStats]       = useState(null);
+  const [filter,      setFilter]      = useState('all');
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const [openScorerId,setOpenScorerId]= useState(null);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState('');
+  const [showKey,     setShowKey]     = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+  const [countdown,   setCountdown]   = useState(60);
+  const timeoutRef   = useRef(null);
+  const warnRef      = useRef(null);
+  const countdownRef = useRef(null);
+
+  const clearWarning = useCallback(() => {
+    clearTimeout(warnRef.current);
+    clearInterval(countdownRef.current);
+    setShowWarning(false);
+    setCountdown(WARN_BEFORE_MS / 1000);
+  }, []);
 
   const logout = useCallback(() => {
     clearTimeout(timeoutRef.current);
+    clearWarning();
     setAuthed(false);
     setKey('');
     localStorage.removeItem(LS_KEY);
-  }, []);
+  }, [clearWarning]);
 
   const resetTimer = useCallback(() => {
     clearTimeout(timeoutRef.current);
+    clearWarning();
+    warnRef.current = setTimeout(() => {
+      setShowWarning(true);
+      setCountdown(WARN_BEFORE_MS / 1000);
+      countdownRef.current = setInterval(() => setCountdown(c => c - 1), 1000);
+    }, TIMEOUT_MS - WARN_BEFORE_MS);
     timeoutRef.current = setTimeout(logout, TIMEOUT_MS);
-  }, [logout]);
+  }, [logout, clearWarning]);
 
   // Start/reset inactivity timer when authed
   useEffect(() => {
@@ -44,9 +63,10 @@ export default function Admin() {
     resetTimer();
     return () => {
       clearTimeout(timeoutRef.current);
+      clearWarning();
       events.forEach(e => window.removeEventListener(e, resetTimer));
     };
-  }, [authed, resetTimer]);
+  }, [authed, resetTimer, clearWarning]);
 
   // Log out when user switches tab, minimizes, or switches to another app window
   useEffect(() => {
@@ -134,6 +154,21 @@ export default function Admin() {
   }
 
   return (
+    <>
+    {showWarning && (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4
+                      bg-red-950/95 border border-red-500 text-white px-5 py-3 rounded-xl
+                      shadow-2xl text-sm whitespace-nowrap">
+        <span>⚠️ Session expires in <strong>{countdown}s</strong></span>
+        <button
+          onClick={resetTimer}
+          className="bg-brand-gold text-black font-bold px-3 py-1 rounded-lg text-xs
+                     hover:opacity-90 transition-opacity"
+        >
+          Stay logged in
+        </button>
+      </div>
+    )}
     <div className="space-y-6">
 
       <div className="flex items-center justify-between">
@@ -229,5 +264,6 @@ export default function Admin() {
       <UserPredictionsPanel adminKey={key} />
 
     </div>
+    </>
   );
 }
