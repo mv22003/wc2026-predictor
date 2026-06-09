@@ -56,6 +56,8 @@ export default function Home() {
   const recent      = matches.filter(m => m.status === 'finished').slice(-3).reverse();
   const upcoming    = matches.filter(m => m.status === 'upcoming').slice(0, 6 - recent.length);
   const top5        = leaderboard.slice(0, 10);
+  const topVisible  = top5.slice(0, 6);
+  const hasMore     = top5.length > 6;
 
   if (loading) {
     return (
@@ -151,16 +153,20 @@ export default function Home() {
       <div className="grid sm:grid-cols-5 gap-6">
 
         <div className="card sm:col-span-2 cursor-pointer" onClick={() => navigate('/leaderboard')}>
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3">
             <h2 className="font-black text-lg">Leaderboard</h2>
-            <Link to="/leaderboard" className="text-brand-gold text-xs font-semibold hover:underline">
-              Full table →
-            </Link>
           </div>
           {top5.length === 0 ? (
             <p className="text-gray-500 text-sm py-4 text-center">No predictions yet. Be the first!</p>
           ) : (
-            top5.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)
+            <div className="relative">
+              {topVisible.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)}
+              {hasMore && (
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-brand-card to-transparent flex items-end justify-center pb-2 pointer-events-none">
+                  <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
