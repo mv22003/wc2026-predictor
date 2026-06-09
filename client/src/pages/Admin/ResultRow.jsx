@@ -41,8 +41,9 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [homeScorers, setHomeScorers]   = useState(() => scorersJsonToArray(match.home_scorers));
-  const [awayScorers, setAwayScorers]   = useState(() => scorersJsonToArray(match.away_scorers));
+  const hasScore = match.status === 'finished' || match.status === 'live';
+  const [homeScorers, setHomeScorers]   = useState(() => hasScore ? scorersJsonToArray(match.home_scorers) : []);
+  const [awayScorers, setAwayScorers]   = useState(() => hasScore ? scorersJsonToArray(match.away_scorers) : []);
   const [scorerSaving, setScorerSaving] = useState(false);
   const [scorerSaved,  setScorerSaved]  = useState(false);
 

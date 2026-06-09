@@ -407,7 +407,7 @@ router.delete('/matches/:id/result', adminAuth, async (req, res) => {
     const matchId = parseInt(req.params.id, 10);
 
     await db.query(
-      "UPDATE matches SET home_score = NULL, away_score = NULL, status = 'upcoming' WHERE id = $1",
+      "UPDATE matches SET home_score = NULL, away_score = NULL, home_scorers = NULL, away_scorers = NULL, status = 'upcoming' WHERE id = $1",
       [matchId]
     );
     await db.query('UPDATE predictions SET points = 0 WHERE match_id = $1', [matchId]);
