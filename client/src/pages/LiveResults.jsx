@@ -688,8 +688,8 @@ function BracketTab({ allMatches }) {
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'groups',   label: 'Groups' },
   { id: 'calendar', label: 'Calendar' },
+  { id: 'groups',   label: 'Groups' },
   { id: 'bracket',  label: 'Bracket' },
 ];
 
@@ -697,7 +697,7 @@ export default function LiveResults() {
   const [matches, setMatches] = useState([]);
   const [groups,  setGroups]  = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState('groups');
+  const [tab,     setTab]     = useState('calendar');
 
   function load() {
     Promise.all([api.getMatches(), api.getGroups()])
