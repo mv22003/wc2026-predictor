@@ -770,9 +770,7 @@ export default function LiveResults() {
           <p className="text-gray-400 text-sm mt-0.5">
             {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
           </p>
-          {tab === 'bracket' && (
-            <p className="text-gray-500 text-xs mt-0.5">Projected from live standings</p>
-          )}
+          <p className={`text-gray-500 text-xs mt-0.5 ${tab !== 'bracket' ? 'invisible' : ''}`}>Projected from live standings</p>
         </div>
         <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
           {TABS.map(t => (
