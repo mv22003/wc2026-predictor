@@ -377,7 +377,7 @@ function FilterBtn({ value, active, onChange, children }) {
   return (
     <button
       onClick={() => onChange(value)}
-      className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+      className={`px-5 py-1.5 rounded-lg text-sm font-bold transition-all ${
         active === value
           ? 'bg-brand-gold text-brand-navy'
           : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
@@ -406,7 +406,7 @@ function CalendarTab({ matches, groups }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5 justify-center">
         <FilterBtn value="all" active={filter} onChange={setFilter}>All</FilterBtn>
         {groups.map(g => (
           <FilterBtn key={g} value={g} active={filter} onChange={setFilter}>{g}</FilterBtn>
