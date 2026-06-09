@@ -456,7 +456,7 @@ export default function Predict() {
       <div className="max-w-md mx-auto mt-12">
         <div className="card text-center space-y-6">
           <div>
-            <h1 className="text-2xl font-black">Enter Your Name</h1>
+            <h1 className="text-2xl font-black">Enter Your Name & Surname</h1>
             <p className="text-gray-400 text-sm mt-2">
               This identifies your predictions. You can only submit once — choose wisely!
             </p>
@@ -466,7 +466,7 @@ export default function Predict() {
               type="text"
               className="w-full bg-brand-navy border-2 border-brand-border rounded-lg px-4 py-3
                          text-lg font-semibold text-center focus:border-brand-gold focus:outline-none transition-colors"
-              placeholder="Your name…"
+              placeholder="E.g.: John Doe"
               value={nameInput}
               onChange={e => { setNameInput(e.target.value); setStatus(null); }}
               maxLength={50}
@@ -479,7 +479,7 @@ export default function Predict() {
               {checking ? 'Checking…' : 'Continue →'}
             </button>
           </form>
-          <p className="text-xs text-gray-600">Each name can only be used once.</p>
+          <p className="text-xs text-gray-500">Each name can only be used once. Please use your name and surname — predictions that can't be identified will be removed.</p>
         </div>
       </div>
     );
