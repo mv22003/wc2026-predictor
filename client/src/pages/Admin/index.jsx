@@ -21,6 +21,7 @@ export default function Admin() {
   const [openScorerId,  setOpenScorerId]  = useState(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
+  const [showKey,  setShowKey]  = useState(false);
   const timeoutRef = useRef(null);
 
   const logout = useCallback(() => {
@@ -103,15 +104,25 @@ export default function Admin() {
             <p className="text-gray-400 text-sm mt-1">Enter your admin key to continue</p>
           </div>
           <form onSubmit={handleKeySubmit} className="space-y-3">
-            <input
-              type="password"
-              placeholder="Admin key…"
-              className="w-full bg-brand-navy border-2 border-brand-border rounded-lg px-4 py-3
-                         text-center text-lg focus:border-brand-gold focus:outline-none transition-colors"
-              value={keyInput}
-              onChange={e => setKeyInput(e.target.value)}
-              autoFocus
-            />
+            <div className="relative">
+              <input
+                type={showKey ? 'text' : 'password'}
+                placeholder="Admin key…"
+                className="w-full bg-brand-navy border-2 border-brand-border rounded-lg px-4 py-3 pr-12
+                           text-center text-lg focus:border-brand-gold focus:outline-none transition-colors"
+                value={keyInput}
+                onChange={e => setKeyInput(e.target.value)}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors text-sm"
+                tabIndex={-1}
+              >
+                {showKey ? 'Hide' : 'Show'}
+              </button>
+            </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" className="btn-primary w-full" disabled={loading || !keyInput.trim()}>
               {loading ? 'Checking…' : 'Unlock →'}
