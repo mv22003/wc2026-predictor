@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
@@ -133,7 +134,46 @@ function GroupCard({ groupName, predsA, predsB }) {
   );
 }
 
-function PlayerCard({ name, stats }) {
+function ScoringModal({ onClose }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
+      <div
+        className="relative w-full mx-4 max-w-sm bg-brand-card border border-brand-border rounded-2xl p-6 space-y-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="font-black text-base">How scoring works</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="space-y-3">
+          {[
+            { cls: 'pts-exact', label: '+5 pts', desc: 'Exact scoreline' },
+            { cls: 'pts-correct', label: '+3 pts', desc: 'Correct result + goal difference' },
+            { cls: 'bg-amber-800/30 text-amber-500 border border-amber-700/30', label: '+1 pt', desc: 'Correct result (W/D/L) only' },
+            { cls: 'pts-zero', label: '0 pts', desc: 'Wrong prediction' },
+          ].map(({ cls, label, desc }) => (
+            <div key={label} className="flex items-center gap-3">
+              <span className={`tag font-bold shrink-0 w-16 text-center whitespace-nowrap ${cls}`}>{label}</span>
+              <span className="text-sm text-gray-300">{desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function PlayerCard({ name, stats, onInfoClick }) {
   return (
     <div className="card flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
@@ -145,19 +185,27 @@ function PlayerCard({ name, stats }) {
       </div>
       <div className="grid grid-cols-4 gap-1 text-center">
         <div>
-          <span className="tag pts-exact block w-full">{stats.exact}</span>
+          <button className="sm:cursor-default w-full" onClick={onInfoClick}>
+            <span className="tag pts-exact block w-full">{stats.exact}</span>
+          </button>
           <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Exact</span>
         </div>
         <div>
-          <span className="tag pts-correct block w-full">{stats.correct}</span>
+          <button className="sm:cursor-default w-full" onClick={onInfoClick}>
+            <span className="tag pts-correct block w-full">{stats.correct}</span>
+          </button>
           <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Result+GD</span>
         </div>
         <div>
-          <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 block w-full">{stats.partial}</span>
+          <button className="sm:cursor-default w-full" onClick={onInfoClick}>
+            <span className="tag bg-amber-800/30 text-amber-500 border border-amber-700/30 block w-full">{stats.partial}</span>
+          </button>
           <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Result</span>
         </div>
         <div>
-          <span className="tag pts-zero block w-full">{stats.wrong}</span>
+          <button className="sm:cursor-default w-full" onClick={onInfoClick}>
+            <span className="tag pts-zero block w-full">{stats.wrong}</span>
+          </button>
           <span className="hidden sm:block text-[10px] text-gray-600 mt-0.5">Wrong</span>
         </div>
       </div>
@@ -166,11 +214,15 @@ function PlayerCard({ name, stats }) {
 }
 
 function StatsHeader({ nameA, statsA, nameB, statsB }) {
+  const [showScoring, setShowScoring] = useState(false);
   return (
-    <div className="grid grid-cols-2 gap-4 items-stretch">
-      <PlayerCard name={nameA} stats={statsA} />
-      <PlayerCard name={nameB} stats={statsB} />
-    </div>
+    <>
+      {showScoring && <ScoringModal onClose={() => setShowScoring(false)} />}
+      <div className="grid grid-cols-2 gap-4 items-stretch">
+        <PlayerCard name={nameA} stats={statsA} onInfoClick={() => setShowScoring(true)} />
+        <PlayerCard name={nameB} stats={statsB} onInfoClick={() => setShowScoring(true)} />
+      </div>
+    </>
   );
 }
 
