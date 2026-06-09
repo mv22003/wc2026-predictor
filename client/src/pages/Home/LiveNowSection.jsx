@@ -100,7 +100,7 @@ export default function LiveNowSection({ matches }) {
     <div className="card border border-emerald-700/40 bg-emerald-900/10">
       <div className="flex items-center gap-2 mb-1">
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-        <h2 className="font-black text-lg text-emerald-400">Live Now</h2>
+        <h2 className="font-black text-lg text-emerald-400">LIVE</h2>
       </div>
       <div className={matches.length > 1 ? 'grid grid-cols-2 divide-x divide-brand-border/40' : ''}>
         {matches.map(m => <LiveMatchCard key={m.id} match={m} />)}

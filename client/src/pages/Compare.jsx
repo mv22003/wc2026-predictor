@@ -218,14 +218,25 @@ export default function Compare() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link to="/leaderboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Leaderboard</Link>
-          <h1 className="text-xl sm:text-2xl font-black mt-1">H2H Comparison</h1>
+          <h1 className="text-xl sm:text-2xl font-black">H2H Comparison</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Head-to-head prediction breakdown</p>
         </div>
+        {/* Desktop: full button */}
         <button
-          className="btn-primary text-sm shrink-0"
+          className="hidden sm:block btn-primary text-sm shrink-0"
           onClick={() => navigate('/leaderboard')}
         >
-          New comparison
+          Back to Leaderboard
+        </button>
+        {/* Mobile: icon-only back button */}
+        <button
+          className="sm:hidden btn-secondary flex items-center gap-1.5"
+          onClick={() => navigate('/leaderboard')}
+          aria-label="Back to Leaderboard"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
       </div>
 

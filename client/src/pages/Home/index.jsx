@@ -152,7 +152,7 @@ export default function Home() {
 
       <div className="grid sm:grid-cols-5 gap-6">
 
-        <div className="card sm:col-span-2 cursor-pointer relative" onClick={() => navigate('/leaderboard')}>
+        <div className="card sm:col-span-2 cursor-pointer" onClick={() => navigate('/leaderboard')}>
           <div className="mb-3">
             <h2 className="font-black text-lg">Leaderboard</h2>
           </div>
@@ -167,16 +167,9 @@ export default function Home() {
                 )}
               </div>
               {hasMore && (
-                <>
-                  {/* mobile: text flows below rows */}
-                  <div className="flex sm:hidden justify-center pt-2">
-                    <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
-                  </div>
-                  {/* desktop: text overlays gradient at card bottom */}
-                  <div className="hidden sm:flex absolute bottom-2 left-0 right-0 justify-center pb-4 pointer-events-none">
-                    <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
-                  </div>
-                </>
+                <div className="flex justify-center py-3">
+                  <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
+                </div>
               )}
             </>
           )}

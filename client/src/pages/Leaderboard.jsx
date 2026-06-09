@@ -126,6 +126,8 @@ export default function Leaderboard() {
   const [predCache, setPredCache] = useState({});
   const [sort, setSort] = useState({ key: null, dir: null });
   const [selected, setSelected] = useState(new Set());
+  const [compareMode, setCompareMode] = useState(false);
+  const [comparing, setComparing] = useState(false);
   const [flashIds, setFlashIds] = useState(new Set());
   const [lastUpdated, setLastUpdated] = useState(null);
   const prevBoardRef = useRef(null);
@@ -208,6 +210,36 @@ export default function Leaderboard() {
     navigate(`/leaderboard/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
   };
 
+  const enterCompareMode = () => {
+    setCompareMode(true);
+    setSelected(new Set());
+    setExpanded(null);
+  };
+
+  const exitCompareMode = () => {
+    setCompareMode(false);
+    setComparing(false);
+    setSelected(new Set());
+  };
+
+  useEffect(() => {
+    if (!compareMode) return;
+    const onKey = (e) => { if (e.key === 'Escape') exitCompareMode(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [compareMode]);
+
+  useEffect(() => {
+    if (compareMode && selected.size === 2) {
+      setComparing(true);
+      const [a, b] = [...selected];
+      const t = setTimeout(() => {
+        navigate(`/leaderboard/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [selected, compareMode]);
+
   const colSort = (col) => sort.key === col ? sort.dir : null;
 
   if (loading) {
@@ -218,45 +250,42 @@ export default function Leaderboard() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-row items-center sm:items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black">Leaderboard</h1>
-          <p className="text-gray-400 text-sm">
-            {board.length} players
-            {lastUpdated && (
-              <span className="text-gray-600"> · Updated at {formatTime(lastUpdated)}</span>
-            )}
+          <p className="text-sm text-gray-400 mt-0.5 leading-snug">
+            {board.length} players{lastUpdated && <><br className="sm:hidden" /><span className="hidden sm:inline"> · </span>Updated at {formatTime(lastUpdated)}</>}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {selected.size === 2 && (
-            <button
-              onClick={handleCompare}
-              className="inline-flex items-center px-3 py-2 rounded-lg bg-brand-gold text-black text-sm font-bold hover:bg-brand-gold/80 transition-colors whitespace-nowrap"
-            >
-              Compare {[...selected].join(' vs ')} →
+        <div className="flex items-center gap-3 ml-auto">
+          {comparing ? (
+            <svg className="w-5 h-5 animate-spin text-brand-gold" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : compareMode ? (
+            <>
+              <span className="text-sm text-gray-400 leading-snug text-right">
+                {selected.size === 0 ? <>Click a player<br className="sm:hidden" />to select</> : <>Click one<br className="sm:hidden" />more player</>}
+              </span>
+              <button onClick={exitCompareMode} className="btn-secondary text-sm py-2 px-4 whitespace-nowrap">
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button onClick={enterCompareMode} className="btn-primary text-sm py-2 px-4 whitespace-nowrap">
+              Compare
             </button>
           )}
-          {selected.size === 1 && (
-            <span className="text-xs text-gray-400 whitespace-nowrap">Pick one more to compare</span>
-          )}
-          <input
-            type="text"
-            placeholder="Search player…"
-            className="bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-sm
-                       focus:border-brand-gold focus:outline-none w-full sm:w-48 transition-colors"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
         </div>
       </div>
 
       {/* Full table */}
-      <div className="card overflow-x-auto p-0">
+      <div className="card overflow-x-auto overflow-y-auto p-0 max-h-[calc(100svh-230px)] sm:max-h-none">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
-              <th className="px-3 py-3 w-8" />
+              <th className="hidden px-3 py-3 w-8 text-center text-gray-600 text-xs uppercase tracking-wider">H2H</th>
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
               <th className="px-4 py-3 text-center text-xs">Paid</th>
@@ -296,15 +325,17 @@ export default function Leaderboard() {
               sorted.map((row, idx) => (
                 <React.Fragment key={row.id}>
                   <tr
-                    onClick={() => toggle(row.id)}
-                    className={`border-b border-brand-border/50 cursor-pointer transition-colors duration-700 hover:bg-white/5 ${
-                      flashIds.has(row.id)    ? 'bg-emerald-900/25' :
-                      expanded === row.id     ? 'bg-white/5 border-brand-border' :
-                      selected.has(row.name)  ? 'bg-brand-gold/5' :
-                      idx < 3 && !search      ? 'bg-brand-gold/3' : ''
+                    onClick={() => compareMode ? toggleSelect(row.name, { stopPropagation: () => {} }) : toggle(row.id)}
+                    className={`border-b border-brand-border/50 cursor-pointer transition-colors duration-700 ${
+                      flashIds.has(row.id)                          ? 'bg-emerald-900/25' :
+                      compareMode && selected.has(row.name)         ? 'bg-brand-gold/15 border-brand-gold/30' :
+                      compareMode                                   ? 'hover:bg-brand-gold/5' :
+                      expanded === row.id                           ? 'bg-white/5 border-brand-border' :
+                      selected.has(row.name)                        ? 'bg-brand-gold/5' :
+                      idx < 3 && !search                            ? 'bg-brand-gold/3 hover:bg-white/5' : 'hover:bg-white/5'
                     }`}
                   >
-                    <td className="px-3 py-3">
+                    <td className="hidden px-3 py-3">
                       <input
                         type="checkbox"
                         checked={selected.has(row.name)}
@@ -359,6 +390,8 @@ export default function Leaderboard() {
           </tbody>
         </table>
       </div>
+
+
 
       {board.length === 0 && (
         <div className="card text-center py-10 text-gray-500">
