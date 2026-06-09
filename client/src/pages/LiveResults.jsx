@@ -198,9 +198,9 @@ function GroupsTab({ matches, groups }) {
 // ─── Calendar tab ──────────────────────────────────────────────────────────────
 function LiveMinute({ minute }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-[11px] font-black text-red-400 whitespace-nowrap">
+    <span className="inline-flex items-center justify-center gap-1 w-12 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-xs font-semibold text-red-400 whitespace-nowrap">
       <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-      {minute != null ? `${minute}'` : 'LIVE'}
+      {minute != null ? (minute === 'HT' ? 'HT' : `${minute}'`) : 'LIVE'}
     </span>
   );
 }
@@ -334,7 +334,7 @@ function MatchRow({ match }) {
         {/* FT / LIVE / Today / date — spans full height */}
         <div className="w-14 sm:w-16 shrink-0 flex items-center justify-end">
           {finished ? (
-            <span className="tag pts-exact text-xs">FT</span>
+            <span className="tag pts-exact text-xs inline-flex justify-center w-12">FT</span>
           ) : live ? (
             <LiveMinute minute={match.live_minute} />
           ) : isToday ? (
