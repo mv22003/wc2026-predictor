@@ -159,17 +159,26 @@ export default function Home() {
           {top5.length === 0 ? (
             <p className="text-gray-500 text-sm py-4 text-center">No predictions yet. Be the first!</p>
           ) : (
-            <div className="relative">
-              {topVisible.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)}
+            <>
+              <div className="relative">
+                {topVisible.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)}
+                {hasMore && (
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-brand-card to-transparent pointer-events-none" />
+                )}
+              </div>
               {hasMore && (
-                <div className="absolute bottom-2 left-0 right-0 h-16 bg-gradient-to-t from-brand-card to-transparent pointer-events-none" />
+                <>
+                  {/* mobile: text flows below rows */}
+                  <div className="flex sm:hidden justify-center pt-2">
+                    <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
+                  </div>
+                  {/* desktop: text overlays gradient at card bottom */}
+                  <div className="hidden sm:flex absolute bottom-2 left-0 right-0 justify-center pb-4 pointer-events-none">
+                    <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
+                  </div>
+                </>
               )}
-            </div>
-          )}
-          {hasMore && (
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center pb-4 pointer-events-none">
-              <span className="text-xs text-brand-gold font-semibold">{top5.length - 6} more · View full table →</span>
-            </div>
+            </>
           )}
         </div>
 
