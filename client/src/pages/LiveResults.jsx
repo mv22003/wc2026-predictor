@@ -276,9 +276,9 @@ function MatchRow({ match }) {
       hover:bg-white/5 transition-colors
       ${live ? 'bg-emerald-900/20 border-l-2 border-l-emerald-500/60' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
       <div className="flex items-stretch gap-3">
-        {/* group · match# pill — desktop only; invisible spacer on mobile to balance right pill */}
-        <div className="w-14 sm:w-20 shrink-0 flex items-center justify-center">
-          <span className="hidden sm:block tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
+        {/* group · match# pill — desktop only */}
+        <div className="hidden sm:flex sm:w-20 shrink-0 items-center justify-center">
+          <span className="tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
             {match.group_name} · M{match.match_number}
           </span>
         </div>
@@ -370,11 +370,11 @@ function DateGroup({ matches, dateKey }) {
 
 const KO_PHASES = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
 
-function FilterBtn({ value, active, onChange, children }) {
+function FilterBtn({ value, active, onChange, compact, children }) {
   return (
     <button
       onClick={() => onChange(value)}
-      className={`px-5 py-1.5 rounded-lg text-sm font-bold transition-all ${
+      className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} rounded-lg font-bold transition-all ${
         active === value
           ? 'bg-brand-gold text-brand-navy'
           : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
@@ -424,7 +424,20 @@ function CalendarTab({ matches, groups }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1.5 justify-center">
+      <div className="sm:hidden space-y-1.5">
+        <div className="flex gap-1.5 justify-center">
+          <FilterBtn value="all" active={filter} onChange={setFilter} compact>All</FilterBtn>
+          {groups.slice(0, 6).map(g => (
+            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact>{g}</FilterBtn>
+          ))}
+        </div>
+        <div className="flex gap-1.5 justify-center">
+          {groups.slice(6).map(g => (
+            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact>{g}</FilterBtn>
+          ))}
+        </div>
+      </div>
+      <div className="hidden sm:flex flex-wrap gap-1.5 justify-center">
         <FilterBtn value="all" active={filter} onChange={setFilter}>All</FilterBtn>
         {groups.map(g => (
           <FilterBtn key={g} value={g} active={filter} onChange={setFilter}>{g}</FilterBtn>
@@ -441,7 +454,7 @@ function CalendarTab({ matches, groups }) {
           onClick={handleScrollToToday}
           className="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10"
         >
-          ↓ Today
+          ↓ Latest
         </button>
       </div>
 
