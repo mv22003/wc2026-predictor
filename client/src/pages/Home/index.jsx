@@ -155,6 +155,9 @@ export default function Home() {
         <div className="card sm:col-span-2 cursor-pointer" onClick={() => navigate('/leaderboard')}>
           <div className="mb-3">
             <h2 className="font-black text-lg">Leaderboard</h2>
+            {leaderboard.length > 0 && (
+              <p className="text-xs text-gray-400 whitespace-nowrap">{leaderboard.length} participant{leaderboard.length !== 1 ? 's' : ''}</p>
+            )}
           </div>
           {top5.length === 0 ? (
             <p className="text-gray-400 text-sm py-4 text-center">No predictions yet. Be the first!</p>
