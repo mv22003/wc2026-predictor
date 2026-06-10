@@ -387,13 +387,8 @@ function FilterBtn({ value, active, onChange, compact, stretch, children }) {
   );
 }
 
-function CalendarTab({ matches, groups }) {
-  const [filter, setFilter] = useState('all');
-  const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
-
+function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollToToday }) {
   const todayKey = new Date().toISOString().slice(0, 10);
-
-  const koPhases = KO_PHASES.filter(p => matches.some(m => m.group_name === p));
 
   const calFiltered = filter === 'all'
     ? matches
@@ -419,47 +414,8 @@ function CalendarTab({ matches, groups }) {
     setPendingScrollToToday(false);
   }, [pendingScrollToToday, filter]);
 
-  const handleScrollToToday = () => {
-    if (filter !== 'all') setFilter('all');
-    setPendingScrollToToday(true);
-  };
-
   return (
     <div className="space-y-4">
-      <div className="sm:hidden space-y-1.5">
-        <div className="flex gap-1.5">
-          <FilterBtn value="all" active={filter} onChange={setFilter} compact stretch>All</FilterBtn>
-          {groups.slice(0, 6).map(g => (
-            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact stretch>{g}</FilterBtn>
-          ))}
-        </div>
-        <div className="flex gap-1.5">
-          {groups.slice(6).map(g => (
-            <FilterBtn key={g} value={g} active={filter} onChange={setFilter} compact stretch>{g}</FilterBtn>
-          ))}
-        </div>
-      </div>
-      <div className="hidden sm:flex flex-wrap gap-1.5">
-        <FilterBtn value="all" active={filter} onChange={setFilter} stretch>All</FilterBtn>
-        {groups.map(g => (
-          <FilterBtn key={g} value={g} active={filter} onChange={setFilter} stretch>{g}</FilterBtn>
-        ))}
-        {koPhases.length > 0 && (
-          <span className="w-px bg-brand-border self-stretch mx-1" />
-        )}
-        {koPhases.map(p => (
-          <FilterBtn key={p} value={p} active={filter} onChange={setFilter} stretch>{p}</FilterBtn>
-        ))}
-      </div>
-      <div className="flex justify-end">
-        <button
-          onClick={handleScrollToToday}
-          className="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10"
-        >
-          ↓ Latest
-        </button>
-      </div>
-
       {Object.entries(byDate).map(([dateStr, dayMatches]) => (
         <div key={dateStr} data-date={dateStr}>
           <DateGroup matches={dayMatches} dateKey={dateStr} />
@@ -753,6 +709,8 @@ export default function LiveResults() {
   const [groups,  setGroups]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab,     setTab]     = useState('calendar');
+  const [filter,  setFilter]  = useState('all');
+  const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
 
   function load() {
     Promise.all([api.getMatches(), api.getGroups()])
@@ -773,6 +731,20 @@ export default function LiveResults() {
   const played = matches.filter(m => m.status === 'finished').length;
   const liveNow = matches.filter(m => m.status === 'live').length;
   const total  = matches.length;
+  const koPhases = KO_PHASES.filter(p => matches.some(m => m.group_name === p));
+
+  // Reset filter when switching tabs
+  useEffect(() => { setFilter('all'); }, [tab]);
+
+  const handleFilterChange = (value) => {
+    setFilter(value);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleScrollToToday = () => {
+    if (filter !== 'all') handleFilterChange('all');
+    setPendingScrollToToday(true);
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-48 text-gray-400">Loading…</div>
@@ -780,31 +752,76 @@ export default function LiveResults() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-black">Live Results</h1>
-          <p className="text-gray-400 text-sm mt-0.5">
-            {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
-          </p>
-          <p className={`text-gray-400 text-xs mt-0.5 ${tab !== 'bracket' ? 'invisible' : ''}`}>Projected from live standings</p>
+      <div className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-8 pt-6 sm:pt-8 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-black">Live Results</h1>
+            <p className="text-gray-400 text-sm mt-0.5">
+              {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
+            </p>
+            <p className={`text-gray-400 text-xs mt-0.5 ${tab !== 'bracket' ? 'invisible' : ''}`}>Projected from live standings</p>
+          </div>
+          <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => { setTab(t.id); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                className={`flex-1 sm:flex-none px-4 py-2 text-sm font-bold transition-all ${
+                  tab === t.id ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-bold transition-all ${
-                tab === t.id ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+
+        {tab === 'calendar' && (
+          <div className="mt-3 space-y-2">
+            <div className="sm:hidden space-y-1.5">
+              <div className="flex gap-1.5">
+                <FilterBtn value="all" active={filter} onChange={handleFilterChange} compact stretch>All</FilterBtn>
+                {groups.slice(0, 6).map(g => (
+                  <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} compact stretch>{g}</FilterBtn>
+                ))}
+              </div>
+              <div className="flex gap-1.5">
+                {groups.slice(6).map(g => (
+                  <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} compact stretch>{g}</FilterBtn>
+                ))}
+              </div>
+            </div>
+            <div className="hidden sm:flex flex-wrap gap-1.5">
+              <FilterBtn value="all" active={filter} onChange={handleFilterChange} stretch>All</FilterBtn>
+              {groups.map(g => (
+                <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} stretch>{g}</FilterBtn>
+              ))}
+              {koPhases.length > 0 && (
+                <span className="w-px bg-brand-border self-stretch mx-1" />
+              )}
+              {koPhases.map(p => (
+                <FilterBtn key={p} value={p} active={filter} onChange={handleFilterChange} stretch>{p}</FilterBtn>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={handleScrollToToday}
+                className="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10"
+              >
+                ↓ Latest
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {tab === 'groups'   && <GroupsTab   matches={matches} groups={groups} />}
-      {tab === 'calendar' && <CalendarTab matches={matches} groups={groups} />}
+      {tab === 'calendar' && <CalendarTab
+        matches={matches}
+        filter={filter}
+        pendingScrollToToday={pendingScrollToToday}
+        setPendingScrollToToday={setPendingScrollToToday}
+      />}
       {tab === 'bracket'  && <BracketTab  allMatches={matches} />}
     </div>
   );
