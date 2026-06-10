@@ -154,10 +154,21 @@ export default function Home() {
       <div className="grid sm:grid-cols-5 gap-6">
 
         <div className="card sm:col-span-2 cursor-pointer flex flex-col" onClick={() => navigate('/leaderboard')}>
-          <div className="mb-3">
-            <h2 className="font-black text-lg">Leaderboard</h2>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 className="font-black text-lg">Leaderboard</h2>
+              {leaderboard.length > 0 && (
+                <p className="text-xs text-gray-400 whitespace-nowrap">{leaderboard.length} participant{leaderboard.length !== 1 ? 's' : ''}</p>
+              )}
+            </div>
             {leaderboard.length > 0 && (
-              <p className="text-xs text-gray-400 whitespace-nowrap">{leaderboard.length} participant{leaderboard.length !== 1 ? 's' : ''}</p>
+              <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full border ${
+                prizePot.paid_count === leaderboard.length
+                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
+                  : 'bg-amber-500/15 text-amber-400 border-amber-500/25'
+              }`}>
+                {prizePot.paid_count}/{leaderboard.length} paid
+              </span>
             )}
           </div>
           {top5.length === 0 ? (
