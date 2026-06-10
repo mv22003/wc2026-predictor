@@ -266,7 +266,7 @@ export default function Leaderboard() {
           ) : compareMode ? (
             <>
               <span className="text-sm text-gray-400 leading-snug text-right">
-                {selected.size === 0 ? <>Click a player<br className="sm:hidden" />to select</> : <>Click one<br className="sm:hidden" />more player</>}
+                {selected.size === 0 ? <>Click a player<br className="sm:hidden" />{' '}to select</> : <>Click one<br className="sm:hidden" />{' '}more player</>}
               </span>
               <button onClick={exitCompareMode} className="btn-secondary text-sm py-2 px-4 whitespace-nowrap">
                 Cancel
