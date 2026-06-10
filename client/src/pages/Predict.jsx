@@ -488,24 +488,44 @@ export default function Predict() {
   return (
     <div className="space-y-6">
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black">
-            {locked ? 'Your Predictions' : 'Make Your Predictions'}
-          </h1>
-          <p className="text-gray-400 text-sm mt-0.5">
-            Playing as: <span className="text-brand-gold font-bold">{name}</span>
-            {' '}· {filledCount}/{predictableMatches.length} predictions
-            {locked && <span className="ml-2 tag pts-exact px-2 py-0.5">Submitted</span>}
-          </p>
+      {/* ── Header + group tabs (sticky on mobile) ──────────────────────────── */}
+      <div className="sticky sm:static top-14 z-20 bg-brand-navy -mx-3 px-3 sm:mx-0 sm:px-0 -mt-6 pt-6 sm:mt-0 sm:pt-0 pb-3 sm:pb-0 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black">
+              {locked ? 'Your Predictions' : 'Make Your Predictions'}
+            </h1>
+            <p className="text-gray-400 text-sm mt-0.5">
+              Playing as: <span className="text-brand-gold font-bold">{name}</span>
+              {' '}· {filledCount}/{predictableMatches.length} predictions
+              {locked && <span className="ml-2 tag pts-exact px-2 py-0.5">Submitted</span>}
+            </p>
+          </div>
+          <button
+            className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
+            onClick={() => { setName(''); setNameInput(''); setLocked(false); setPreds({}); setStatus(null); localStorage.removeItem(LS_NAME_KEY); }}
+          >
+            Switch name
+          </button>
         </div>
-        <button
-          className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
-          onClick={() => { setName(''); setNameInput(''); setLocked(false); setPreds({}); setStatus(null); localStorage.removeItem(LS_NAME_KEY); }}
-        >
-          Switch name
-        </button>
+
+        {matches.length > 0 && (
+          <div className="grid grid-cols-6 gap-1.5">
+            {groups.map(g => (
+              <button
+                key={g}
+                onClick={() => setActiveGroup(g)}
+                className={`py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
+                  activeGroup === g
+                    ? 'bg-brand-gold text-brand-navy'
+                    : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Status banner ───────────────────────────────────────────────────── */}
@@ -525,23 +545,6 @@ export default function Predict() {
         </div>
       ) : (
         <>
-          {/* ── Group tabs ──────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-6 gap-1.5">
-            {groups.map(g => (
-              <button
-                key={g}
-                onClick={() => setActiveGroup(g)}
-                className={`py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
-                  activeGroup === g
-                    ? 'bg-brand-gold text-brand-navy'
-                    : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
-                }`}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-
           {/* ── Cards + standings side by side ──────────────────────────────── */}
           <div className="flex flex-col lg:flex-row gap-4 items-stretch">
             <div className="flex-1 grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5 content-start">
@@ -571,7 +574,7 @@ export default function Predict() {
             <div className="flex justify-end">
               <button
                 className="btn-primary"
-                onClick={() => setActiveGroup(nextGroup)}
+                onClick={() => { setActiveGroup(nextGroup); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               >
                 Next: Group {nextGroup} →
               </button>
@@ -579,22 +582,14 @@ export default function Predict() {
           )}
 
           {/* ── Submit ──────────────────────────────────────────────────────── */}
-          {!locked && (
-            <div className="card flex flex-col sm:flex-row items-center gap-4">
-              <div className="flex-1">
-                <p className="font-semibold">Ready to submit?</p>
-                <p className="text-sm text-gray-400">
-                  {filledCount < predictableMatches.length
-                    ? `${predictableMatches.length - filledCount} prediction${predictableMatches.length - filledCount !== 1 ? 's' : ''} missing — fill all ${predictableMatches.length} available matches to submit.`
-                    : 'All predictions filled! Submit to lock them in.'}
-                </p>
-              </div>
+          {!locked && predictableMatches.length > 0 && filledCount >= predictableMatches.length && (
+            <div className="flex justify-end">
               <button
-                className="btn-primary whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-primary"
                 onClick={() => setShowConfirm(true)}
-                disabled={loading || predictableMatches.length === 0 || filledCount < predictableMatches.length}
+                disabled={loading}
               >
-                {loading ? 'Submitting…' : `Submit All ${predictableMatches.length} Predictions`}
+                {loading ? 'Submitting…' : 'Submit Predictions →'}
               </button>
             </div>
           )}
