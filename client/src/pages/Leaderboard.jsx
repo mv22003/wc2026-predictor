@@ -281,9 +281,9 @@ export default function Leaderboard() {
       </div>
 
       {/* Full table */}
-      <div className="card overflow-x-auto overflow-y-auto p-0 max-h-[calc(100svh-230px)] sm:max-h-none">
+      <div className="card overflow-x-auto overflow-y-auto p-0 max-h-[calc(100svh-230px)] sm:max-h-[calc(100svh-220px)]">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-brand-card">
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
               <th className="hidden px-3 py-3 w-8 text-center text-gray-400 text-xs uppercase tracking-wider">H2H</th>
               <th className="px-4 py-3 text-left w-12">#</th>
