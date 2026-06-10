@@ -173,11 +173,17 @@ function ScoringModal({ onClose }) {
   );
 }
 
-function PlayerCard({ name, stats, onInfoClick }) {
+function PlayerCard({ name, paid, stats, onInfoClick }) {
   return (
     <div className="card flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-black text-lg truncate">{name}</p>
+        <div className="min-w-0">
+          <p className="font-black text-lg truncate">{name}</p>
+          {paid
+            ? <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">Paid</span>
+            : <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/25">Not paid</span>
+          }
+        </div>
         <div className="shrink-0 text-right">
           <span className="text-brand-gold font-black text-3xl">{stats.pts}</span>
           <span className="text-gray-400 text-xs ml-1">pts</span>
@@ -213,14 +219,14 @@ function PlayerCard({ name, stats, onInfoClick }) {
   );
 }
 
-function StatsHeader({ nameA, statsA, nameB, statsB }) {
+function StatsHeader({ nameA, paidA, statsA, nameB, paidB, statsB }) {
   const [showScoring, setShowScoring] = useState(false);
   return (
     <>
       {showScoring && <ScoringModal onClose={() => setShowScoring(false)} />}
       <div className="grid grid-cols-2 gap-4 items-stretch">
-        <PlayerCard name={nameA} stats={statsA} onInfoClick={() => setShowScoring(true)} />
-        <PlayerCard name={nameB} stats={statsB} onInfoClick={() => setShowScoring(true)} />
+        <PlayerCard name={nameA} paid={paidA} stats={statsA} onInfoClick={() => setShowScoring(true)} />
+        <PlayerCard name={nameB} paid={paidB} stats={statsB} onInfoClick={() => setShowScoring(true)} />
       </div>
     </>
   );
@@ -306,8 +312,10 @@ export default function Compare() {
         <>
           <StatsHeader
             nameA={dataA.user.name}
+            paidA={!!dataA.user.paid}
             statsA={statsA}
             nameB={dataB.user.name}
+            paidB={!!dataB.user.paid}
             statsB={statsB}
           />
 
