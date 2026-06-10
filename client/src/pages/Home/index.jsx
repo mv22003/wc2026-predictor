@@ -56,8 +56,9 @@ export default function Home() {
   const recent      = matches.filter(m => m.status === 'finished').slice(-3).reverse();
   const upcoming    = matches.filter(m => m.status === 'upcoming').slice(0, 6 - recent.length);
   const top5        = leaderboard.slice(0, 10);
-  const topVisible  = top5.slice(0, 6);
-  const hasMore     = top5.length > 6;
+  const topVisible     = top5.slice(0, 6);
+  const hasMore        = top5.length > 6;
+  const hasMobileMore  = top5.length > 5;
 
   if (loading) {
     return (
@@ -152,7 +153,7 @@ export default function Home() {
 
       <div className="grid sm:grid-cols-5 gap-6">
 
-        <div className="card sm:col-span-2 cursor-pointer" onClick={() => navigate('/leaderboard')}>
+        <div className="card sm:col-span-2 cursor-pointer flex flex-col" onClick={() => navigate('/leaderboard')}>
           <div className="mb-3">
             <h2 className="font-black text-lg">Leaderboard</h2>
             {leaderboard.length > 0 && (
@@ -163,15 +164,18 @@ export default function Home() {
             <p className="text-gray-400 text-sm py-4 text-center">No predictions yet. Be the first!</p>
           ) : (
             <>
-              <div className="relative">
-                {topVisible.map(row => <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} />)}
-                {hasMore && (
+              <div className="relative flex-1">
+                {topVisible.map((row, i) => (
+                  <MiniLeaderRow key={row.id} row={row} hasResults={top5.some(r => Number(r.total_points) > 0)} className={i === 5 ? 'hidden sm:flex' : ''} />
+                ))}
+                {hasMobileMore && (
                   <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-brand-card to-transparent pointer-events-none" />
                 )}
               </div>
-              {hasMore && (
+              {(hasMore || hasMobileMore) && (
                 <div className="flex justify-center py-3">
-                  <span className="text-xs text-brand-gold font-semibold">{leaderboard.length - 6} more · View full leaderboard →</span>
+                  {hasMobileMore && <span className="sm:hidden text-xs text-brand-gold font-semibold">{leaderboard.length - 5} more · View full leaderboard →</span>}
+                  {hasMore && <span className="hidden sm:inline text-xs text-brand-gold font-semibold">{leaderboard.length - 6} more · View full leaderboard →</span>}
                 </div>
               )}
             </>
