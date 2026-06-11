@@ -310,14 +310,16 @@ export default function Compare() {
 
       {!comparing && dataA && dataB && (
         <>
-          <StatsHeader
-            nameA={dataA.user.name}
-            paidA={!!dataA.user.paid}
-            statsA={statsA}
-            nameB={dataB.user.name}
-            paidB={!!dataB.user.paid}
-            statsB={statsB}
-          />
+          <div className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 pb-3">
+            <StatsHeader
+              nameA={dataA.user.name}
+              paidA={!!dataA.user.paid}
+              statsA={statsA}
+              nameB={dataB.user.name}
+              paidB={!!dataB.user.paid}
+              statsB={statsB}
+            />
+          </div>
 
           <div className="space-y-4">
             {allGroups.map(g => (
