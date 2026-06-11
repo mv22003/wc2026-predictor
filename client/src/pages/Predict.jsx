@@ -514,7 +514,7 @@ export default function Predict() {
             {groups.map(g => (
               <button
                 key={g}
-                onClick={() => setActiveGroup(g)}
+                onClick={() => { setActiveGroup(g); if (window.innerWidth < 640) window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={`py-1.5 rounded-lg text-sm font-bold transition-all w-full ${
                   activeGroup === g
                     ? 'bg-brand-gold text-brand-navy'
