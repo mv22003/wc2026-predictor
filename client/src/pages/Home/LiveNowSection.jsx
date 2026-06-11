@@ -3,15 +3,11 @@ import { VENUE_BY_MATCH } from '../../venueData';
 import { TeamName } from './MatchRow';
 
 function parsePgArray(str) {
-  const inner = str.slice(1, -1);
-  const items = [];
-  const re = /"((?:[^"\\]|\\.)*)"|([^,]+)/g;
-  let m;
-  while ((m = re.exec(inner)) !== null) {
-    const val = (m[1] ?? m[2]).trim();
-    if (val) items.push(val);
-  }
-  return items;
+  const inner = str.slice(1, -1).trim();
+  if (!inner) return [];
+  if (inner.startsWith('"'))
+    return inner.split(/",\s*"/).map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
+  return inner.split(',').map(s => s.trim()).filter(Boolean);
 }
 
 // Extracts one or more "Name Minute'" entries from a string.
