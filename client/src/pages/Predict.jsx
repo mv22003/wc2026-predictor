@@ -274,9 +274,16 @@ export default function Predict() {
     p => p && p.home !== '' && p.home != null && p.away !== '' && p.away != null
   );
 
-  // Scroll to top on mobile when active group changes
+  // Scroll to top on mobile when active group changes, and reset iOS zoom
   useEffect(() => {
-    if (window.innerWidth < 640) window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.innerWidth >= 640) return;
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+      meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
+      setTimeout(() => meta.setAttribute('content', 'width=device-width, initial-scale=1.0'), 300);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeGroup]);
 
   // Warn on tab close / refresh
