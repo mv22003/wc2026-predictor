@@ -2,32 +2,21 @@ import Flag from '../../components/Flag';
 import { VENUE_BY_MATCH } from '../../venueData';
 import { TeamName } from './MatchRow';
 
-function parsePgArray(str) {
-  const inner = str.slice(1, -1).trim();
-  if (!inner) return [];
-  if (inner.startsWith('"'))
-    return inner.split(/",\s*"/).map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
-  return inner.split(',').map(s => s.trim()).filter(Boolean);
-}
-
-// Extracts one or more "Name Minute'" entries from a string.
-// Handles both single ("J. Quiñones 9'") and multiple scorers in one string
-// ("J. Quiñones 9', C. Another 35'") which the API sometimes returns.
-function extractScorers(str) {
-  const matches = [...str.matchAll(/([^,]+?)\s+(\d+(?:\+\d+)?)'(?:,\s*|$)/g)];
-  if (matches.length > 0) return matches.map(m => ({ name: m[1].trim(), minute: m[2] }));
-  return [{ name: str.trim(), minute: null }];
-}
-
 function parseScorers(raw) {
   if (!raw || raw === 'null') return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed.map(s => ({ name: s.name ?? String(s), minute: s.minute ?? null }));
-    if (typeof parsed === 'string') return extractScorers(parsed);
+    if (typeof parsed === 'string') raw = parsed;
   } catch {}
-  if (raw.startsWith('{') && raw.endsWith('}')) return parsePgArray(raw).flatMap(extractScorers);
-  return extractScorers(raw);
+  const quoted = [...raw.matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  const parts  = quoted.length > 0 ? quoted : [raw.replace(/[{}]/g, '').trim()];
+  return parts.flatMap(part => {
+    const multi = [...part.matchAll(/([^,]+?)\s+(\d+(?:\+\d+)?)'(?:,\s*|$)/g)];
+    if (multi.length > 0) return multi.map(m => ({ name: m[1].trim(), minute: m[2] }));
+    const m = part.match(/^(.*?)\s+(\d+(?:\+\d+)?)'$/);
+    return m ? [{ name: m[1].trim(), minute: m[2] }] : [{ name: part.trim(), minute: null }];
+  }).filter(s => s.name);
 }
 
 function parseMinute(m) {

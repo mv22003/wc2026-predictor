@@ -1,32 +1,21 @@
-function parsePgArray(str) {
-  const inner = str.slice(1, -1).trim();
-  if (!inner) return [];
-  if (inner.startsWith('"'))
-    return inner.split(/",\s*"/).map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
-  return inner.split(',').map(s => s.trim()).filter(Boolean);
-}
-
-function extractScorers(str) {
-  const matches = [...str.matchAll(/([^,]+?)\s+(\d+(?:\+\d+)?)'(?:,\s*|$)/g)];
-  if (matches.length > 0) return matches.map(m => ({ name: m[1].trim(), minute: m[2] }));
-  return [{ name: str.trim(), minute: '' }];
-}
-
 export function scorersJsonToArray(raw) {
   if (!raw || raw === 'null') return [];
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed.map(s => ({
-        name:   String(s.name ?? s.player ?? s.scorer ?? s),
-        minute: s.minute != null ? String(s.minute) : '',
-      }));
-    }
-    if (typeof parsed === 'string') return extractScorers(parsed).map(s => ({ ...s, minute: s.minute ?? '' }));
+    if (Array.isArray(parsed)) return parsed.map(s => ({
+      name:   String(s.name ?? s.player ?? s.scorer ?? s),
+      minute: s.minute != null ? String(s.minute) : '',
+    }));
+    if (typeof parsed === 'string') raw = parsed;
   } catch {}
-  if (raw.startsWith('{') && raw.endsWith('}'))
-    return parsePgArray(raw).flatMap(extractScorers).map(s => ({ ...s, minute: s.minute ?? '' }));
-  return extractScorers(raw).map(s => ({ ...s, minute: s.minute ?? '' }));
+  const quoted = [...raw.matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  const parts  = quoted.length > 0 ? quoted : [raw.replace(/[{}]/g, '').trim()];
+  return parts.flatMap(part => {
+    const multi = [...part.matchAll(/([^,]+?)\s+(\d+(?:\+\d+)?)'(?:,\s*|$)/g)];
+    if (multi.length > 0) return multi.map(m => ({ name: m[1].trim(), minute: m[2] }));
+    const m = part.match(/^(.*?)\s+(\d+(?:\+\d+)?)'$/);
+    return m ? [{ name: m[1].trim(), minute: m[2] }] : [{ name: part.trim(), minute: '' }];
+  }).filter(s => s.name);
 }
 
 export function arrayToScorersJson(arr) {
