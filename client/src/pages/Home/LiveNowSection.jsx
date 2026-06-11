@@ -24,9 +24,10 @@ function parseScorers(raw) {
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed.map(s => ({ name: s.name ?? String(s), minute: s.minute ?? null }));
+    if (typeof parsed === 'string') return [parseNameMinute(parsed)];
   } catch {}
   if (raw.startsWith('{') && raw.endsWith('}')) return parsePgArray(raw).map(parseNameMinute);
-  return [{ name: raw, minute: null }];
+  return [parseNameMinute(raw)];
 }
 
 function parseMinute(m) {

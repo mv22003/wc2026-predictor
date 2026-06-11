@@ -249,9 +249,10 @@ function parseScorers(raw) {
         minute: s.minute ?? s.min     ?? s.time   ?? null,
       }));
     }
+    if (typeof parsed === 'string') return [parseNameMinute(parsed)];
   } catch {}
   if (raw.startsWith('{') && raw.endsWith('}')) return parsePgArray(raw).map(parseNameMinute);
-  return [{ name: raw, minute: null }];
+  return [parseNameMinute(raw)];
 }
 
 function parseMinute(m) {

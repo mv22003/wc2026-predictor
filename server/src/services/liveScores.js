@@ -58,15 +58,6 @@ async function fetchGames(token) {
   return Array.isArray(data) ? data : (data.games || data.data || []);
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function maxScorerMinute(raw) {
-  if (!raw || raw === 'null') return null;
-  // Collect all minute strings like "9'" or "45+2'" from the raw scorer value
-  const mins = [...String(raw).matchAll(/(\d+)(?:\+\d+)?'/g)].map(m => parseInt(m[1], 10));
-  return mins.length ? Math.max(...mins) : null;
-}
-
 // ─── Sync ─────────────────────────────────────────────────────────────────────
 
 const syncState = {
@@ -110,9 +101,7 @@ async function syncScores() {
       if (isNaN(hs) || isNaN(as_)) { errors.push(`Match ${matchNum}: invalid scores`); continue; }
 
       // Parse elapsed minute — handle "45+2" style strings too
-      const parsedMinute = rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null) : null;
-      // Fallback: derive minute from max scorer minute when the API doesn't provide a time field
-      const liveMinute = parsedMinute ?? maxScorerMinute(game.home_scorers) ?? maxScorerMinute(game.away_scorers);
+      const liveMinute = rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null) : null;
 
       // Capture scorer strings — stored as-is; frontend parses defensively
       const homeScorers = (game.home_scorers && game.home_scorers !== 'null') ? game.home_scorers : null;
