@@ -274,6 +274,11 @@ export default function Predict() {
     p => p && p.home !== '' && p.home != null && p.away !== '' && p.away != null
   );
 
+  // Scroll to top on mobile on initial mount
+  useEffect(() => {
+    if (window.innerWidth < 640) window.scrollTo({ top: 0 });
+  }, []);
+
   // Scroll to top on mobile when active group changes
   useEffect(() => {
     if (window.innerWidth >= 640) return;
