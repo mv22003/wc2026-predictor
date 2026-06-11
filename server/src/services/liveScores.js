@@ -144,7 +144,8 @@ async function syncScores() {
         updated++;
       } else {
         // Live game — update score + minute + recalc points against current score
-        if (our.status === 'live' && our.home_score === hs && our.away_score === as_ && our.live_minute === liveMinute) {
+        if (our.status === 'live' && our.home_score === hs && our.away_score === as_ && our.live_minute === liveMinute
+            && our.home_scorers === homeScorers && our.away_scorers === awayScorers) {
           skipped++;
           continue;
         }

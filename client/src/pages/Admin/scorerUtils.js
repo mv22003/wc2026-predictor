@@ -1,3 +1,21 @@
+function parsePgArray(str) {
+  const inner = str.slice(1, -1);
+  const items = [];
+  const re = /"((?:[^"\\]|\\.)*)"|([^,]+)/g;
+  let m;
+  while ((m = re.exec(inner)) !== null) {
+    const val = (m[1] ?? m[2]).trim();
+    if (val) items.push(val);
+  }
+  return items;
+}
+
+function extractScorers(str) {
+  const matches = [...str.matchAll(/([^,]+?)\s+(\d+(?:\+\d+)?)'(?:,\s*|$)/g)];
+  if (matches.length > 0) return matches.map(m => ({ name: m[1].trim(), minute: m[2] }));
+  return [{ name: str.trim(), minute: '' }];
+}
+
 export function scorersJsonToArray(raw) {
   if (!raw || raw === 'null') return [];
   try {
@@ -8,8 +26,11 @@ export function scorersJsonToArray(raw) {
         minute: s.minute != null ? String(s.minute) : '',
       }));
     }
+    if (typeof parsed === 'string') return extractScorers(parsed).map(s => ({ ...s, minute: s.minute ?? '' }));
   } catch {}
-  return raw ? [{ name: raw, minute: '' }] : [];
+  if (raw.startsWith('{') && raw.endsWith('}'))
+    return parsePgArray(raw).flatMap(extractScorers).map(s => ({ ...s, minute: s.minute ?? '' }));
+  return extractScorers(raw).map(s => ({ ...s, minute: s.minute ?? '' }));
 }
 
 export function arrayToScorersJson(arr) {
