@@ -232,8 +232,8 @@ function parseScorers(raw) {
     }));
     if (typeof parsed === 'string') raw = parsed;
   } catch {}
-  return raw.replace(/[{}"]/g, '').split(',').map(s => s.trim()).filter(Boolean).map(part => {
-    const m = part.match(/^(.*?)\s+(\d+(?:\+\d+)?)'?$/);
+  return raw.replace(/[{}"""'']/g, '').split(',').map(s => s.trim()).filter(Boolean).map(part => {
+    const m = part.match(/^(.*?)\s+(\d+(?:\+\d+)?)['']?["""]?$/);
     return m ? { name: m[1].trim(), minute: m[2] } : { name: part, minute: null };
   });
 }

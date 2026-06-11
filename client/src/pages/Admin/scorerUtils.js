@@ -1,6 +1,6 @@
 function parseScorer(str) {
   const s = str.trim();
-  const m = s.match(/^(.*?)\s+(\d+(?:\+\d+)?)'?$/);
+  const m = s.match(/^(.*?)\s+(\d+(?:\+\d+)?)['']?["""]?$/);
   return m ? { name: m[1].trim(), minute: m[2] } : { name: s, minute: '' };
 }
 
@@ -15,7 +15,7 @@ export function scorersJsonToArray(raw) {
     if (typeof parsed === 'string') raw = parsed;
   } catch {}
   // Strip all PG array / quote wrapper chars, split by comma, parse each
-  return raw.replace(/[{}"]/g, '').split(',').map(s => s.trim()).filter(Boolean).map(parseScorer);
+  return raw.replace(/[{}"""'']/g, '').split(',').map(s => s.trim()).filter(Boolean).map(parseScorer);
 }
 
 export function arrayToScorersJson(arr) {
