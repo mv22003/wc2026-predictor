@@ -234,9 +234,10 @@ function parsePgArray(str) {
   return items;
 }
 
-function parseNameMinute(s) {
-  const m = s.match(/^(.*?)\s+(\d+(?:\+\d+)?)'$/);
-  return m ? { name: m[1].trim(), minute: m[2] } : { name: s, minute: null };
+function extractScorers(str) {
+  const matches = [...str.matchAll(/([^,]+?)\s+(\d+(?:\+\d+)?)'(?:,\s*|$)/g)];
+  if (matches.length > 0) return matches.map(m => ({ name: m[1].trim(), minute: m[2] }));
+  return [{ name: str.trim(), minute: null }];
 }
 
 function parseScorers(raw) {
@@ -249,10 +250,10 @@ function parseScorers(raw) {
         minute: s.minute ?? s.min     ?? s.time   ?? null,
       }));
     }
-    if (typeof parsed === 'string') return [parseNameMinute(parsed)];
+    if (typeof parsed === 'string') return extractScorers(parsed);
   } catch {}
-  if (raw.startsWith('{') && raw.endsWith('}')) return parsePgArray(raw).map(parseNameMinute);
-  return [parseNameMinute(raw)];
+  if (raw.startsWith('{') && raw.endsWith('}')) return parsePgArray(raw).flatMap(extractScorers);
+  return extractScorers(raw);
 }
 
 function parseMinute(m) {
