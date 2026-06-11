@@ -274,7 +274,7 @@ function MatchRow({ match }) {
   return (
     <div className={`pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors
-      ${live ? 'bg-emerald-900/20 border-l-2 border-l-emerald-500/60' : isToday && !finished ? 'bg-brand-gold/5' : ''}`}>
+      ${live ? 'bg-emerald-900/20 border-l-2 border-l-emerald-500/60' : ''}`}>
       <div className="flex items-stretch gap-3">
         {/* mirror spacer on mobile — matches the FT/LIVE pill width so the score stays centered */}
         {(finished || live) && <div className="sm:hidden w-12 shrink-0" />}
@@ -339,8 +339,6 @@ function MatchRow({ match }) {
             <span className="tag pts-exact text-xs inline-flex justify-center w-12">FT</span>
           ) : live ? (
             <LiveMinute minute={match.live_minute} />
-          ) : isToday ? (
-            <span className="tag bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-xs hidden sm:inline-flex">Today</span>
           ) : (
             <span className="text-xs text-gray-400 hidden sm:block">
               {matchDate?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
@@ -359,10 +357,11 @@ function DateGroup({ matches, dateKey }) {
   const isToday  = dateKey === todayKey;
   const label    = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   return (
-    <div className="card p-0 overflow-hidden">
-      <div className={`px-4 py-2.5 flex items-center gap-2 border-b border-brand-border ${isToday ? 'bg-brand-gold/10' : 'bg-brand-navy/60'}`}>
+    <div className={`card p-0 overflow-hidden ${isToday ? 'border border-brand-gold/50' : ''}`}>
+      <div className={`px-4 py-2.5 flex items-center gap-2 border-b border-brand-border ${isToday ? 'bg-brand-gold/20' : 'bg-brand-navy/60'}`}>
         <h3 className={`font-bold text-sm ${isToday ? 'text-brand-gold' : 'text-gray-300'}`}>{label}</h3>
-        {isToday && <span className="tag bg-brand-gold text-brand-navy text-xs font-bold">Today</span>}
+        {isToday && <span className="hidden sm:inline text-brand-gold/50 text-sm">·</span>}
+        {isToday && <span className="hidden sm:inline-flex tag bg-brand-gold text-brand-navy text-sm font-bold">Today</span>}
         <span className="ml-auto text-xs text-gray-400">{matches.length} match{matches.length !== 1 ? 'es' : ''}</span>
       </div>
       {matches.map(m => <MatchRow key={m.id} match={m} />)}
