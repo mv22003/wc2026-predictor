@@ -557,10 +557,10 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:-mt-5">
 
       {/* Header — sticky below navbar */}
-      <div className="sticky top-14 sm:top-16 z-20 -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 pb-3 sm:pt-0 bg-brand-navy border-b border-brand-border flex flex-row items-center sm:items-end justify-between gap-3">
+      <div className="sticky top-14 sm:top-16 z-20 -mx-3 sm:-mx-6 px-3 sm:px-6 pb-3 bg-brand-navy border-b border-brand-border flex flex-row items-center sm:items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black">Leaderboard</h1>
             <p className="text-sm text-gray-400 mt-0.5 leading-snug">
@@ -591,7 +591,7 @@ export default function Leaderboard() {
       </div>
 
       {/* Full table */}
-      <div className="card overflow-x-auto overflow-y-auto p-0 max-h-[calc(100svh-225px)] sm:max-h-[calc(100svh-300px)]">
+      <div className="card overflow-x-auto overflow-y-auto p-0 max-h-[calc(100svh-225px)] sm:max-h-[calc(100svh-220px)]">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-brand-card">
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">

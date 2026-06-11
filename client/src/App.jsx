@@ -158,6 +158,9 @@ function Navbar({ onMenuOpen }) {
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const isLeaderboard = location.pathname === '/leaderboard';
+  const isHome = location.pathname === '/';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -176,7 +179,7 @@ export default function App() {
           <Route path="/admin"       element={<Admin />} />
         </Routes>
       </main>
-      <footer className="hidden sm:block border-t border-brand-border text-center text-xs text-gray-600 py-5 space-y-1.5">
+      <footer className={`${isLeaderboard ? 'hidden' : isHome ? 'block' : 'hidden sm:block'} border-t border-brand-border text-center text-xs text-gray-600 py-5 space-y-1.5`}>
         <p>Not affiliated with or endorsed by FIFA. Made for fun only.</p>
         <p>
           Built by{' '}
