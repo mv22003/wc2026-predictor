@@ -474,7 +474,7 @@ export default function Leaderboard() {
 
     const t = setInterval(() => {
       api.getLeaderboard().then(applyUpdate).catch(() => {});
-    }, 60_000);
+    }, 15_000);
 
     return () => {
       clearInterval(t);

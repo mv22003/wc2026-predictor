@@ -139,15 +139,31 @@ async function syncScores() {
         }
         updated++;
       } else {
-        // Live game — update score + minute, no point recalc yet
+        // Live game — update score + minute + recalc points against current score
         if (our.status === 'live' && our.home_score === hs && our.away_score === as_ && our.live_minute === liveMinute) {
           skipped++;
           continue;
         }
-        await db.query(
-          "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3, home_scorers = $5, away_scorers = $6 WHERE id = $4",
-          [hs, as_, liveMinute, our.id, homeScorers, awayScorers]
-        );
+        const { rows: livePreds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [our.id]);
+        const liveClient = await db.connect();
+        try {
+          await liveClient.query('BEGIN');
+          await liveClient.query(
+            "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3, home_scorers = $5, away_scorers = $6 WHERE id = $4",
+            [hs, as_, liveMinute, our.id, homeScorers, awayScorers]
+          );
+          for (const p of livePreds) {
+            await liveClient.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+              calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+            ]);
+          }
+          await liveClient.query('COMMIT');
+        } catch (err) {
+          await liveClient.query('ROLLBACK');
+          throw err;
+        } finally {
+          liveClient.release();
+        }
         updated++;
       }
     }

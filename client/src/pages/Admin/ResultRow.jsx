@@ -146,7 +146,7 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
     <>
       <tr className="border-b border-brand-border/50 last:border-0 hover:bg-white/3 transition-colors">
         <td className="px-3 py-3">
-          <span className="tag bg-brand-border text-gray-300 text-xs">{match.group_name}</span>
+          <span className="tag bg-brand-border text-gray-300 text-xs whitespace-nowrap">{match.group_name} · M{match.match_number}</span>
         </td>
         <td className="px-3 py-3 text-sm hidden md:table-cell text-gray-400">{dateStr}</td>
         <td className="px-3 py-3">

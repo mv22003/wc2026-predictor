@@ -46,11 +46,13 @@ export default function Home() {
       .finally(() => setLoading(false));
   }
 
+  useEffect(() => { load(); }, []);
+
+  const hasLive = matches.some(m => m.status === 'live');
   useEffect(() => {
-    load();
-    const t = setInterval(load, 30_000);
+    const t = setInterval(load, hasLive ? 10_000 : 30_000);
     return () => clearInterval(t);
-  }, []);
+  }, [hasLive]);
 
   const liveMatches = matches.filter(m => m.status === 'live');
   const recent      = matches.filter(m => m.status === 'finished').slice(-3).reverse();

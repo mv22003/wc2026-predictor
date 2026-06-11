@@ -23,7 +23,7 @@ function calcGroupStandings(groupMatches) {
     }
   }
   for (const m of groupMatches) {
-    if (m.status !== 'finished') continue;
+    if (m.status !== 'finished' && m.status !== 'live') continue;
     const hs = m.home_score, as_ = m.away_score;
     const h = table[m.home_team], a = table[m.away_team];
     h.played++; h.gf += hs; h.ga += as_; h.gd = h.gf - h.ga;
@@ -63,11 +63,20 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
   const standings    = calcGroupStandings(groupMatches);
   const played       = groupMatches.filter(m => m.status === 'finished').length;
+  const hasLive      = groupMatches.some(m => m.status === 'live');
 
   return (
     <div className="card p-0 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60">
-        <h3 className="font-black text-base">Group {groupName}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-black text-base">Group {groupName}</h3>
+          {hasLive && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-[10px] font-black text-red-400 leading-none">
+              <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse shrink-0" />
+              LIVE
+            </span>
+          )}
+        </div>
         <span className="text-xs text-gray-400">{played}/6 played</span>
       </div>
       <table className="w-full text-sm">
@@ -274,7 +283,7 @@ function MatchRow({ match }) {
   return (
     <div className={`pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors
-      ${live ? 'bg-emerald-900/20 border-l-2 border-l-emerald-500/60' : ''}`}>
+      ${live ? 'bg-emerald-900/20 border-l-4 border-l-emerald-400' : ''}`}>
       <div className="flex items-stretch gap-3">
         {/* mirror spacer on mobile — matches the FT/LIVE pill width so the score stays centered */}
         {(finished || live) && <div className="sm:hidden w-12 shrink-0" />}
@@ -402,21 +411,32 @@ function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollTo
 
   useEffect(() => {
     if (!pendingScrollToToday) return;
-    const liveDate = matches.find(m => m.status === 'live')?.match_date?.slice(0, 10);
-    const nearestUpcoming = matches
-      .filter(m => m.status === 'upcoming' && m.match_date)
-      .map(m => m.match_date.slice(0, 10))
-      .filter(d => d >= todayKey)
-      .sort()[0];
-    const target = liveDate || nearestUpcoming || todayKey;
-    document.querySelector(`[data-date="${target}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    function scrollToEl(el) {
+      if (!el) return;
+      const stickyHeight = Array.from(document.querySelectorAll('.sticky'))
+        .reduce((sum, s) => sum + s.offsetHeight, 0);
+      const top = el.getBoundingClientRect().top + window.scrollY - stickyHeight - 12;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+    const liveEl = document.querySelector('[data-has-live="true"]');
+    if (liveEl) {
+      scrollToEl(liveEl);
+    } else {
+      const nearestUpcoming = matches
+        .filter(m => m.status === 'upcoming' && m.match_date)
+        .map(m => m.match_date.slice(0, 10))
+        .filter(d => d >= todayKey)
+        .sort()[0];
+      const target = nearestUpcoming || todayKey;
+      scrollToEl(document.querySelector(`[data-date="${target}"]`));
+    }
     setPendingScrollToToday(false);
   }, [pendingScrollToToday, filter]);
 
   return (
     <div className="space-y-4">
       {Object.entries(byDate).map(([dateStr, dayMatches]) => (
-        <div key={dateStr} data-date={dateStr}>
+        <div key={dateStr} data-date={dateStr} data-has-live={dayMatches.some(m => m.status === 'live') ? 'true' : undefined}>
           <DateGroup matches={dayMatches} dateKey={dateStr} />
         </div>
       ))}
@@ -721,11 +741,13 @@ export default function LiveResults() {
       .finally(() => setLoading(false));
   }
 
+  useEffect(() => { load(); }, []);
+
+  const hasLive = matches.some(m => m.status === 'live');
   useEffect(() => {
-    load();
-    const t = setInterval(load, 30_000);
+    const t = setInterval(load, hasLive ? 10_000 : 30_000);
     return () => clearInterval(t);
-  }, []);
+  }, [hasLive]);
 
   const played = matches.filter(m => m.status === 'finished').length;
   const liveNow = matches.filter(m => m.status === 'live').length;
