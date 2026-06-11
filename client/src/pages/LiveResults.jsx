@@ -222,6 +222,23 @@ function LiveMinute({ minute }) {
   );
 }
 
+function parsePgArray(str) {
+  const inner = str.slice(1, -1);
+  const items = [];
+  const re = /"((?:[^"\\]|\\.)*)"|([^,]+)/g;
+  let m;
+  while ((m = re.exec(inner)) !== null) {
+    const val = (m[1] ?? m[2]).trim();
+    if (val) items.push(val);
+  }
+  return items;
+}
+
+function parseNameMinute(s) {
+  const m = s.match(/^(.*?)\s+(\d+(?:\+\d+)?)'$/);
+  return m ? { name: m[1].trim(), minute: m[2] } : { name: s, minute: null };
+}
+
 function parseScorers(raw) {
   if (!raw || raw === 'null') return [];
   try {
@@ -233,7 +250,7 @@ function parseScorers(raw) {
       }));
     }
   } catch {}
-  // Fallback: treat as plain string
+  if (raw.startsWith('{') && raw.endsWith('}')) return parsePgArray(raw).map(parseNameMinute);
   return [{ name: raw, minute: null }];
 }
 
