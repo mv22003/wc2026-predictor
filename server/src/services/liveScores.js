@@ -58,6 +58,15 @@ async function fetchGames(token) {
   return Array.isArray(data) ? data : (data.games || data.data || []);
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function maxScorerMinute(raw) {
+  if (!raw || raw === 'null') return null;
+  // Collect all minute strings like "9'" or "45+2'" from the raw scorer value
+  const mins = [...String(raw).matchAll(/(\d+)(?:\+\d+)?'/g)].map(m => parseInt(m[1], 10));
+  return mins.length ? Math.max(...mins) : null;
+}
+
 // ─── Sync ─────────────────────────────────────────────────────────────────────
 
 const syncState = {
@@ -83,14 +92,14 @@ async function syncScores() {
     for (const game of games) {
       const isFinished = game.finished === 'TRUE' || game.finished === true || game.finished === 1;
       // worldcup26.ir uses time_elapsed: "notstarted" for upcoming, a minute string for live
-      const rawTimeElapsed = game.time_elapsed ?? game.minute ?? game.elapsed ?? null;
+      const rawTimeElapsed = game.time_elapsed ?? game.time ?? game.match_time ?? game.timer ?? game.minute ?? game.elapsed ?? null;
       const isLive = !isFinished && (
         game.live === true || game.live === 1 || game.live === 'TRUE' ||
         game.status === 'live' || game.status === 'in_progress' ||
         game.status === '1H'   || game.status === '2H' || game.status === 'HT' ||
         game.status === 'ET'   || game.status === 'PEN' ||
         game.started === true  || game.started === 'TRUE' || game.started === 1 ||
-        (rawTimeElapsed != null && rawTimeElapsed !== '' && rawTimeElapsed !== 'notstarted')
+        (rawTimeElapsed != null && rawTimeElapsed !== '' && rawTimeElapsed !== 'notstarted' && rawTimeElapsed !== 'not started')
       );
 
       if (!isFinished && !isLive) continue;
@@ -101,7 +110,9 @@ async function syncScores() {
       if (isNaN(hs) || isNaN(as_)) { errors.push(`Match ${matchNum}: invalid scores`); continue; }
 
       // Parse elapsed minute — handle "45+2" style strings too
-      const liveMinute = rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null) : null;
+      const parsedMinute = rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null) : null;
+      // Fallback: derive minute from max scorer minute when the API doesn't provide a time field
+      const liveMinute = parsedMinute ?? maxScorerMinute(game.home_scorers) ?? maxScorerMinute(game.away_scorers);
 
       // Capture scorer strings — stored as-is; frontend parses defensively
       const homeScorers = (game.home_scorers && game.home_scorers !== 'null') ? game.home_scorers : null;
