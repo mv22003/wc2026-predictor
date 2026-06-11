@@ -114,6 +114,17 @@ router.post('/sync/stop', adminAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// Returns the raw API response so we can inspect field names during a live game
+router.get('/sync/raw', adminAuth, async (req, res) => {
+  try {
+    const token = await liveScores.getToken();
+    const games = await liveScores.fetchGames(token);
+    res.json({ total: games.length, games });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Stats ─────────────────────────────────────────────────────────────────────
 router.get('/stats', adminAuth, async (req, res) => {
   try {

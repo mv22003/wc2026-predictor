@@ -232,4 +232,4 @@ function isAutoSyncRunning() {
   return _autoInterval !== null || _autoTimeout !== null;
 }
 
-module.exports = { syncScores, startAutoSync, stopAutoSync, syncState, isConfigured, isAutoSyncRunning };
+module.exports = { syncScores, startAutoSync, stopAutoSync, syncState, isConfigured, isAutoSyncRunning, getToken, fetchGames };
