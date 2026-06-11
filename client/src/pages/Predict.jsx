@@ -267,6 +267,7 @@ export default function Predict() {
   const [checking, setChecking] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingNav, setPendingNav] = useState(null);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
   const navigate = useNavigate();
 
   const hasUnsaved = !locked && name && Object.values(preds).some(
@@ -508,7 +509,10 @@ export default function Predict() {
           </div>
           <button
             className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
-            onClick={() => { setName(''); setNameInput(''); setLocked(false); setPreds({}); setStatus(null); localStorage.removeItem(LS_NAME_KEY); }}
+            onClick={() => {
+              if (hasUnsaved) { setShowSwitchConfirm(true); return; }
+              setName(''); setNameInput(''); setLocked(false); setPreds({}); setStatus(null); localStorage.removeItem(LS_NAME_KEY);
+            }}
           >
             Switch name
           </button>
@@ -618,6 +622,16 @@ export default function Predict() {
           confirmLabel="Leave"
           onConfirm={() => { setPendingNav(null); navigate(pendingNav); }}
           onCancel={() => setPendingNav(null)}
+        />
+      )}
+
+      {showSwitchConfirm && (
+        <ConfirmModal
+          title="Leave page?"
+          message="You have unsaved predictions. If you leave now your progress will be lost."
+          confirmLabel="Leave"
+          onConfirm={() => { setShowSwitchConfirm(false); setName(''); setNameInput(''); setLocked(false); setPreds({}); setStatus(null); localStorage.removeItem(LS_NAME_KEY); }}
+          onCancel={() => setShowSwitchConfirm(false)}
         />
       )}
     </div>
