@@ -273,6 +273,11 @@ export default function Predict() {
     p => p && p.home !== '' && p.home != null && p.away !== '' && p.away != null
   );
 
+  // Scroll to top on mobile when active group changes
+  useEffect(() => {
+    if (window.innerWidth < 640) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeGroup]);
+
   // Warn on tab close / refresh
   useEffect(() => {
     if (!hasUnsaved) return;
