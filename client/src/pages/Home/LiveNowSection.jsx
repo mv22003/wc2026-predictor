@@ -46,12 +46,14 @@ function LiveMatchCard({ match }) {
 
   return (
     <div className="py-2 px-1">
-      <div className="flex justify-center mb-2">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-xs font-black text-red-400 whitespace-nowrap">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-          {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
-        </span>
-      </div>
+      {match.live_minute != null && (
+        <div className="flex justify-center mb-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-xs font-black text-red-400 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+            {match.live_minute}'
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           <span className="text-lg font-black text-white text-right leading-tight truncate">
@@ -114,7 +116,7 @@ function LiveMatchCard({ match }) {
 export default function LiveNowSection({ matches }) {
   if (matches.length === 0) return null;
   return (
-    <div className="card relative border border-emerald-500/70 bg-emerald-900/10">
+    <div className="card relative border border-emerald-500/70 bg-emerald-900/10 pt-8 pb-4">
       <div className="absolute top-3 left-4 flex items-center gap-1.5">
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
         <h2 className="font-black text-sm text-emerald-400 tracking-wide">LIVE</h2>
