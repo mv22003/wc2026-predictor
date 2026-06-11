@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'dues_modal_dismissed';
+const STORAGE_KEY = 'dues_modal_dismissed_v2';
 
 export default function DuesModal() {
   const [visible, setVisible] = useState(false);
@@ -36,10 +36,10 @@ export default function DuesModal() {
 
           <div>
             <h2 className="text-lg font-black text-white tracking-tight">
-              Don't forget your £5 entry fee
+              Last chance — £5 entry fee due today
             </h2>
             <p className="mt-1.5 text-sm text-gray-400">
-              Please make sure you've paid your £5 to be eligible for the prize. If you already have, you're all sorted!
+              Today is the last day to pay your £5 entry fee. If you haven't paid yet, please do so now to keep your predictions in the running. Already paid? You're all set!
             </p>
           </div>
 
