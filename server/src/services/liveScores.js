@@ -82,7 +82,7 @@ async function syncScores() {
 
     for (const game of games) {
       const isFinished = game.finished === 'TRUE' || game.finished === true || game.finished === 1;
-      // worldcup26.ir uses time_elapsed: "notstarted" for upcoming, a minute string for live
+      // worldcup26.ir: time_elapsed is "notstarted", a minute string like "45", "HT", or "FT"
       const rawTimeElapsed = game.time_elapsed ?? game.time ?? game.match_time ?? game.timer ?? game.minute ?? game.elapsed ?? null;
       const isLive = !isFinished && (
         game.live === true || game.live === 1 || game.live === 'TRUE' ||
@@ -100,8 +100,10 @@ async function syncScores() {
       const as_      = parseInt(game.away_score, 10);
       if (isNaN(hs) || isNaN(as_)) { errors.push(`Match ${matchNum}: invalid scores`); continue; }
 
-      // Parse elapsed minute — handle "45+2" style strings too
-      const liveMinute = rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null) : null;
+      // Parse elapsed minute — handles "45", "45+2", "HT", "FT" from the API
+      const liveMinute = rawTimeElapsed === 'HT' ? 45
+        : rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null)
+        : null;
 
       // Capture scorer strings — stored as-is; frontend parses defensively
       const homeScorers = (game.home_scorers && game.home_scorers !== 'null') ? game.home_scorers : null;
