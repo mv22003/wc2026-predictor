@@ -150,7 +150,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   {m.match_date ? new Date(m.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
                 </span>
                 <div className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
-                  <span className={`text-xs font-semibold truncate text-right ${m.status === 'finished' ? 'text-white' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-semibold truncate text-right ${m.status === 'finished' || m.status === 'live' ? 'text-white' : 'text-gray-400'}`}>
                     <TeamName name={m.home_team} code={m.home_code} />
                   </span>
                   <Flag code={m.home_code} name={m.home_team} className="w-5 h-5 shrink-0" />
@@ -158,6 +158,8 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                 <div className="w-16 shrink-0 flex items-center justify-center">
                   {m.status === 'finished' ? (
                     <span className="font-black text-brand-gold text-sm tabular-nums">{m.home_score} – {m.away_score}</span>
+                  ) : m.status === 'live' ? (
+                    <span className="font-black text-white text-sm tabular-nums">{m.home_score} – {m.away_score}</span>
                   ) : (
                     <span className="text-xs text-gray-400">
                       {m.match_date ? new Date(m.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'TBD'}
@@ -166,12 +168,18 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                 </div>
                 <div className="flex-1 flex items-center gap-1.5 min-w-0">
                   <Flag code={m.away_code} name={m.away_team} className="w-5 h-5 shrink-0" />
-                  <span className={`text-xs font-semibold truncate ${m.status === 'finished' ? 'text-white' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-semibold truncate ${m.status === 'finished' || m.status === 'live' ? 'text-white' : 'text-gray-400'}`}>
                     <TeamName name={m.away_team} code={m.away_code} />
                   </span>
                 </div>
                 <div className="w-28 shrink-0 hidden sm:flex items-center justify-end">
                   {m.status === 'finished' && <span className="tag pts-exact text-xs">FT</span>}
+                  {m.status === 'live' && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-[10px] font-black text-red-400 leading-none">
+                      <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse shrink-0" />
+                      {m.live_minute != null ? `${m.live_minute}'` : 'LIVE'}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
