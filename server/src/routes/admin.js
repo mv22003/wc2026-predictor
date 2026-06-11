@@ -230,12 +230,6 @@ router.post('/teams/bulk', adminAuth, async (req, res) => {
 router.get('/matches', adminAuth, async (req, res) => {
   try {
     const db = getDb();
-    // Temporary: log raw scorer bytes for match 1 to diagnose parsing
-    const { rows: dbg } = await db.query(`SELECT id, home_scorers FROM matches WHERE match_number = 1`);
-    if (dbg[0]) {
-      const v = dbg[0].home_scorers;
-      console.log('[DBG scorers] type:', typeof v, 'value:', JSON.stringify(v), 'charCodes:', v ? [...v].slice(0,5).map(c=>c.charCodeAt(0)) : []);
-    }
     const { rows } = await db.query(`
       SELECT m.*,
         ht.name as home_team, ht.code as home_code, ht.flag_emoji as home_flag,

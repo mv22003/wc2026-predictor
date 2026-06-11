@@ -9,14 +9,10 @@ function parseScorers(raw) {
     if (Array.isArray(parsed)) return parsed.map(s => ({ name: s.name ?? String(s), minute: s.minute ?? null }));
     if (typeof parsed === 'string') raw = parsed;
   } catch {}
-  const quoted = [...raw.matchAll(/"([^"]+)"/g)].map(m => m[1]);
-  const parts  = quoted.length > 0 ? quoted : [raw.replace(/[{}]/g, '').trim()];
-  return parts.flatMap(part => {
-    const multi = [...part.matchAll(/([^,]+?)\s+(\d+(?:\+\d+)?)'(?:,\s*|$)/g)];
-    if (multi.length > 0) return multi.map(m => ({ name: m[1].trim(), minute: m[2] }));
-    const m = part.match(/^(.*?)\s+(\d+(?:\+\d+)?)'$/);
-    return m ? [{ name: m[1].trim(), minute: m[2] }] : [{ name: part.trim(), minute: null }];
-  }).filter(s => s.name);
+  return raw.replace(/[{}"]/g, '').split(',').map(s => s.trim()).filter(Boolean).map(part => {
+    const m = part.match(/^(.*?)\s+(\d+(?:\+\d+)?)'?$/);
+    return m ? { name: m[1].trim(), minute: m[2] } : { name: part, minute: null };
+  });
 }
 
 function parseMinute(m) {
