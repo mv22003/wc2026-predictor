@@ -176,7 +176,7 @@ export default function App() {
           <Route path="/admin"       element={<Admin />} />
         </Routes>
       </main>
-      <footer className="border-t border-brand-border text-center text-xs text-gray-600 py-5 space-y-1.5">
+      <footer className="hidden sm:block border-t border-brand-border text-center text-xs text-gray-600 py-5 space-y-1.5">
         <p>Not affiliated with or endorsed by FIFA. Made for fun only.</p>
         <p>
           Built by{' '}

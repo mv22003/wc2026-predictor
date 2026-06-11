@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
+import { R32_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
 
 function ordinal(n) {
   const v = n % 100;
@@ -16,7 +17,6 @@ function RankBadge({ rank, hasResults }) {
   if (rank === 3) return <span className="text-amber-600 font-black text-sm w-8 text-center">3rd</span>;
   return <span className="text-gray-400 font-bold text-sm w-8 text-center">{ordinal(rank)}</span>;
 }
-
 
 function PtsBadge({ pts, pending }) {
   const base = 'tag font-bold text-center w-8 shrink-0';
@@ -45,8 +45,293 @@ function SortableCell({ children, col, sort, onSort }) {
   );
 }
 
-function PredictionBreakdown({ name, cache, setCache }) {
+// ── Bracket layout constants (compact — no scores, flags+code only) ───────────
+const B_CW = 76, B_CH = 36, B_GAP = 24, B_COL = B_CW + B_GAP, B_SH = 50, B_H = 8 * B_SH;
+const B_L_R32 = 0;
+const B_L_R16 = B_L_R32 + B_COL;
+const B_L_QF  = B_L_R16 + B_COL;
+const B_L_SF  = B_L_QF  + B_COL;
+const B_MG    = 30;
+const B_FINAL = B_L_SF  + B_CW + B_MG;
+const B_R_SF  = B_FINAL + B_CW + B_MG;
+const B_R_QF  = B_R_SF  + B_COL;
+const B_R_R16 = B_R_QF  + B_COL;
+const B_R_R32 = B_R_R16 + B_COL;
+const B_TW    = B_R_R32 + B_CW;
+
+const B_yc = {
+  r32: i => (i + 0.5) * B_SH,
+  r16: i => (2 * i + 1) * B_SH,
+  qf:  i => (4 * i + 2) * B_SH,
+  sf:  ()  => B_H / 2,
+};
+
+const B_LEFT  = { r32: [74,77,73,75,83,84,81,82], r16: [89,90,93,94], qf: [97,98], sf: [101] };
+const B_RIGHT = { r32: [76,78,79,80,86,88,85,87], r16: [91,92,95,96], qf: [99,100], sf: [102] };
+
+const B_LABELS = [
+  { label: 'R32', x: B_L_R32 }, { label: 'R16', x: B_L_R16 },
+  { label: 'QF',  x: B_L_QF  }, { label: 'SF',  x: B_L_SF  },
+  { label: 'FINAL', x: B_FINAL },
+  { label: 'SF',  x: B_R_SF  }, { label: 'QF',  x: B_R_QF  },
+  { label: 'R16', x: B_R_R16 }, { label: 'R32', x: B_R_R32 },
+];
+
+function BCardPred({ matchNum, projMap, flip = false }) {
+  const home = projMap?.[matchNum]?.home ?? null;
+  const away = projMap?.[matchNum]?.away ?? null;
+  const rh   = B_CH / 2;
+
+  function TeamRow({ team }) {
+    const code = team ? (team.code || team.name?.slice(0, 3).toUpperCase()) : null;
+    return (
+      <div className={`flex items-center gap-1 px-1.5 ${flip ? 'flex-row-reverse' : ''}`}
+           style={{ height: rh }}>
+        {team ? (
+          <>
+            <Flag code={team.code} name={team.name} className="w-3 h-3 shrink-0" />
+            <span className={`text-[10px] font-bold shrink-0 leading-none uppercase ${flip ? 'text-right' : ''} text-gray-300`}>
+              {code}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="w-3 h-3 rounded-sm bg-brand-border/20 shrink-0" />
+            <span className={`text-[9px] text-gray-600 w-[22px] leading-none ${flip ? 'text-right' : ''}`}>TBD</span>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded border border-brand-border/40 bg-brand-navy/60"
+         style={{ width: B_CW, height: B_CH }}>
+      <TeamRow team={home} />
+      <div className="border-t border-brand-border/30" />
+      <TeamRow team={away} />
+    </div>
+  );
+}
+
+function BracketLinesPred() {
+  const segs = [];
+  const L = (x1, y1, x2, y2) => segs.push([x1, y1, x2, y2]);
+
+  function connectL(xOut, xIn, ysOut, ysIn) {
+    const sx = xOut + B_CW + B_GAP / 2;
+    for (let i = 0; i < ysIn.length; i++) {
+      const yT = ysOut[2*i], yB = ysOut[2*i+1], yM = ysIn[i];
+      L(xOut+B_CW, yT, sx, yT); L(xOut+B_CW, yB, sx, yB);
+      L(sx, yT, sx, yB); L(sx, yM, xIn, yM);
+    }
+  }
+
+  function connectR(xOut, xIn, ysOut, ysIn) {
+    const sx = xOut - B_GAP / 2;
+    for (let i = 0; i < ysIn.length; i++) {
+      const yT = ysOut[2*i], yB = ysOut[2*i+1], yM = ysIn[i];
+      L(xOut, yT, sx, yT); L(xOut, yB, sx, yB);
+      L(sx, yT, sx, yB); L(sx, yM, xIn+B_CW, yM);
+    }
+  }
+
+  const ysr32 = Array.from({ length: 8 }, (_, i) => B_yc.r32(i));
+  const ysr16 = Array.from({ length: 4 }, (_, i) => B_yc.r16(i));
+  const ysqf  = Array.from({ length: 2 }, (_, i) => B_yc.qf(i));
+  const yssf  = [B_yc.sf()];
+
+  connectL(B_L_R32, B_L_R16, ysr32, ysr16);
+  connectL(B_L_R16, B_L_QF,  ysr16, ysqf);
+  connectL(B_L_QF,  B_L_SF,  ysqf,  yssf);
+  L(B_L_SF+B_CW, B_yc.sf(), B_FINAL, B_yc.sf());
+
+  connectR(B_R_R32, B_R_R16, ysr32, ysr16);
+  connectR(B_R_R16, B_R_QF,  ysr16, ysqf);
+  connectR(B_R_QF,  B_R_SF,  ysqf,  yssf);
+  L(B_FINAL+B_CW, B_yc.sf(), B_R_SF, B_yc.sf());
+
+  return (
+    <svg width={B_TW} height={B_H} className="absolute inset-0 pointer-events-none">
+      {segs.map(([x1,y1,x2,y2], i) => (
+        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#374151" strokeWidth={1.5} />
+      ))}
+    </svg>
+  );
+}
+
+function MobileBracketPair({ topNum, bottomNum, projMap, flip = false }) {
+  const cardH = B_CH;
+  const pairGap = 4;
+  const totalH = cardH * 2 + pairGap;
+  const connW = 14;
+
+  const cardStack = (
+    <div className="flex flex-col shrink-0" style={{ gap: pairGap }}>
+      <BCardPred matchNum={topNum} projMap={projMap} flip={flip} />
+      <BCardPred matchNum={bottomNum} projMap={projMap} flip={flip} />
+    </div>
+  );
+
+  const r16Label = (
+    <span className="text-[8px] font-bold text-gray-600 uppercase leading-none shrink-0"
+          style={{ marginTop: totalH / 2 - 4 }}>R16</span>
+  );
+
+  if (flip) {
+    // Right column: R16 ─┤ [Cards]
+    return (
+      <div className="flex items-start">
+        {r16Label}
+        <svg width={connW} height={totalH} className="shrink-0">
+          <line x1={connW} y1={cardH / 2}          x2={2} y2={cardH / 2}          stroke="#374151" strokeWidth={1.5} />
+          <line x1={connW} y1={totalH - cardH / 2} x2={2} y2={totalH - cardH / 2} stroke="#374151" strokeWidth={1.5} />
+          <line x1={2}     y1={cardH / 2}           x2={2} y2={totalH - cardH / 2} stroke="#374151" strokeWidth={1.5} />
+          <line x1={2}     y1={totalH / 2}          x2={0} y2={totalH / 2}         stroke="#374151" strokeWidth={1.5} />
+        </svg>
+        {cardStack}
+      </div>
+    );
+  }
+
+  // Left column: [Cards] ─┤ R16
+  return (
+    <div className="flex items-start">
+      {cardStack}
+      <svg width={connW} height={totalH} className="shrink-0">
+        <line x1={0} y1={cardH / 2}           x2={connW - 2} y2={cardH / 2}           stroke="#374151" strokeWidth={1.5} />
+        <line x1={0} y1={totalH - cardH / 2}  x2={connW - 2} y2={totalH - cardH / 2}  stroke="#374151" strokeWidth={1.5} />
+        <line x1={connW - 2} y1={cardH / 2}   x2={connW - 2} y2={totalH - cardH / 2}  stroke="#374151" strokeWidth={1.5} />
+        <line x1={connW - 2} y1={totalH / 2}  x2={connW}     y2={totalH / 2}           stroke="#374151" strokeWidth={1.5} />
+      </svg>
+      {r16Label}
+    </div>
+  );
+}
+
+function PredBracketView({ predictions }) {
+  const groupPreds = predictions.filter(p => p.phase === 'group');
+
+  if (groupPreds.length === 0) {
+    return <div className="px-4 py-3 text-xs text-gray-400">No group predictions to build bracket from.</div>;
+  }
+
+  const synthMatches = groupPreds.map(p => ({
+    phase: 'group', group_name: p.group_name, status: 'finished',
+    home_score: p.pred_home, away_score: p.pred_away,
+    home_team: p.home_team, home_code: p.home_code,
+    away_team: p.away_team, away_code: p.away_code,
+  }));
+
+  const groups = [...new Set(synthMatches.map(m => m.group_name).filter(Boolean))].sort();
+  const byGroup = {};
+  for (const g of groups) byGroup[g] = calcStandings(synthMatches.filter(m => m.group_name === g));
+
+  const dbByNum    = {};
+  const best3rdMap = resolveBest3rdSlots(byGroup) || {};
+  const projMap    = {};
+
+  for (const num of Object.keys(R32_SLOTS).map(Number).sort()) {
+    const slots = R32_SLOTS[num];
+    projMap[num] = {};
+    for (const side of ['home', 'away']) {
+      const slot = slots[side];
+      projMap[num][side] = slot.type === 'group'
+        ? resolveTeam(slot, byGroup, dbByNum)
+        : best3rdMap[num]?.[side] ?? null;
+    }
+  }
+
+  const cards = [];
+  function addRound(matchNums, xCol, ycFn, flip = false) {
+    matchNums.forEach((num, i) => cards.push({ num, x: xCol, y: ycFn(i) - B_CH / 2, flip }));
+  }
+
+  addRound(B_LEFT.r32,  B_L_R32, B_yc.r32, true);
+  addRound(B_LEFT.r16,  B_L_R16, B_yc.r16, true);
+  addRound(B_LEFT.qf,   B_L_QF,  B_yc.qf,  true);
+  addRound(B_LEFT.sf,   B_L_SF,  B_yc.sf,  true);
+  cards.push({ num: 104, x: B_FINAL, y: B_yc.sf() - B_CH / 2, flip: false });
+  addRound(B_RIGHT.sf,  B_R_SF,  B_yc.sf);
+  addRound(B_RIGHT.qf,  B_R_QF,  B_yc.qf);
+  addRound(B_RIGHT.r16, B_R_R16, B_yc.r16);
+  addRound(B_RIGHT.r32, B_R_R32, B_yc.r32);
+
+  return (
+    <div className="overflow-y-auto max-h-[28rem] sm:max-h-none scrollbar-thin px-4 py-3">
+      <p className="text-xs text-gray-500 italic mb-3">R32 projected from your group predictions</p>
+
+      {/* Mobile: paired R32 matchups with bracket connector lines */}
+      <div className="sm:hidden relative flex justify-between">
+        <img
+          src="/wc-logos/world-cup-trophy.png"
+          alt="World Cup Trophy"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 72,
+            height: 'auto',
+            opacity: 0.85,
+            pointerEvents: 'none',
+          }}
+        />
+        <div className="flex flex-col gap-4">
+          {[0, 2, 4, 6].map(i => (
+            <MobileBracketPair key={i} topNum={B_LEFT.r32[i]} bottomNum={B_LEFT.r32[i + 1]} projMap={projMap} />
+          ))}
+        </div>
+        <div className="flex flex-col gap-4">
+          {[0, 2, 4, 6].map(i => (
+            <MobileBracketPair key={i} topNum={B_RIGHT.r32[i]} bottomNum={B_RIGHT.r32[i + 1]} projMap={projMap} flip />
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: full symmetric bracket */}
+      <div className="hidden sm:block overflow-x-auto w-full">
+        <div style={{ width: B_TW, minWidth: B_TW }} className="mx-auto">
+          <div className="relative mb-2" style={{ height: 18 }}>
+            {B_LABELS.map(({ label, x }, i) => (
+              <span key={i}
+                className="absolute text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center"
+                style={{ left: x, width: B_CW }}>
+                {label}
+              </span>
+            ))}
+          </div>
+          <div className="relative" style={{ width: B_TW, height: B_H }}>
+            <BracketLinesPred />
+            {cards.map(({ num, x, y, flip }) => (
+              <div key={num} style={{ position: 'absolute', left: x, top: y }}>
+                <BCardPred matchNum={num} projMap={projMap} flip={flip} />
+              </div>
+            ))}
+            <img
+              src="/wc-logos/world-cup-trophy.png"
+              alt="World Cup Trophy"
+              style={{
+                position: 'absolute',
+                left: B_FINAL + B_CW / 2,
+                top: B_yc.sf() + B_CH / 2 + 20,
+                transform: 'translateX(-50%)',
+                width: 90,
+                height: 'auto',
+                opacity: 0.9,
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PredictionExpanded({ name, cache, setCache }) {
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState('list');
 
   useEffect(() => {
     if (cache[name]) return;
@@ -65,17 +350,7 @@ function PredictionBreakdown({ name, cache, setCache }) {
     );
   }
 
-  const finished = (cache[name] ?? []).filter(p => p.status === 'finished').sort((a, b) => b.points - a.points);
-  const pending  = (cache[name] ?? []).filter(p => p.status !== 'finished').sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
-  const predictions = [...finished, ...pending];
-
-  if (predictions.length === 0) {
-    return (
-      <tr className="bg-brand-surface/50">
-        <td colSpan={9} className="px-6 py-3 text-xs text-gray-400">No predictions yet.</td>
-      </tr>
-    );
-  }
+  const predictions = cache[name] ?? [];
 
   const rowTint = (pts, status) => {
     if (status !== 'finished') return 'border-b border-brand-border/30 last:border-b-0';
@@ -85,29 +360,63 @@ function PredictionBreakdown({ name, cache, setCache }) {
     return 'bg-red-900/10 border-l-2 border-l-red-600 border-b border-b-brand-border/30 last:border-b-0';
   };
 
+  const finished = predictions.filter(p => p.status === 'finished').sort((a, b) => b.points - a.points);
+  const pending  = predictions.filter(p => p.status !== 'finished').sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+  const sorted   = [...finished, ...pending];
+
   return (
     <tr className="bg-brand-surface/50">
       <td colSpan={9} className="p-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 overflow-y-auto max-h-96 scrollbar-thin divide-y divide-brand-border/30 sm:divide-y-0">
-          {predictions.map(p => (
-            <div key={p.id} className={`flex items-center gap-2 px-4 py-2 text-xs ${rowTint(p.points, p.status)}`}>
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
-                <span className="font-semibold text-gray-300">{p.home_code}</span>
-                <span className="text-gray-400">vs</span>
-                <span className="font-semibold text-gray-300">{p.away_code}</span>
-                <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
-              </div>
-              <span className="font-mono text-gray-400 w-8 text-right tabular-nums shrink-0">{p.pred_home}–{p.pred_away}</span>
-              <span className="text-gray-400 w-3 text-center shrink-0">→</span>
-              {p.status === 'finished'
-                ? <span className={`font-mono font-bold w-8 tabular-nums shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-400'}`}>{p.home_score}–{p.away_score}</span>
-                : <span className="text-gray-400 italic w-8 shrink-0">pend.</span>
-              }
-              <PtsBadge pts={p.points} pending={p.status !== 'finished'} />
-            </div>
-          ))}
+        {/* View toggle */}
+        <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 border-b border-brand-border/30">
+          <button
+            onClick={() => setView('list')}
+            className={`text-xs font-semibold px-3 py-1 rounded transition-colors ${
+              view === 'list'
+                ? 'bg-brand-gold/20 text-brand-gold border border-brand-gold/40'
+                : 'text-gray-400 hover:text-gray-200 border border-transparent'
+            }`}
+          >
+            Predictions
+          </button>
+          <button
+            onClick={() => setView('bracket')}
+            className={`text-xs font-semibold px-3 py-1 rounded transition-colors ${
+              view === 'bracket'
+                ? 'bg-brand-gold/20 text-brand-gold border border-brand-gold/40'
+                : 'text-gray-400 hover:text-gray-200 border border-transparent'
+            }`}
+          >
+            Bracket
+          </button>
         </div>
+
+        {view === 'bracket' ? (
+          <PredBracketView predictions={predictions} />
+        ) : sorted.length === 0 ? (
+          <div className="px-6 py-3 text-xs text-gray-400">No predictions yet.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 overflow-y-auto max-h-[28rem] sm:max-h-96 scrollbar-thin divide-y divide-brand-border/30 sm:divide-y-0">
+            {sorted.map(p => (
+              <div key={p.id} className={`flex items-center gap-2 px-4 py-2 text-xs ${rowTint(p.points, p.status)}`}>
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
+                  <span className="font-semibold text-gray-300">{p.home_code}</span>
+                  <span className="text-gray-400">vs</span>
+                  <span className="font-semibold text-gray-300">{p.away_code}</span>
+                  <Flag code={p.away_code} name={p.away_team} className="w-4 h-4 shrink-0" />
+                </div>
+                <span className="font-mono text-gray-400 w-8 text-right tabular-nums shrink-0">{p.pred_home}–{p.pred_away}</span>
+                <span className="text-gray-400 w-3 text-center shrink-0">→</span>
+                {p.status === 'finished'
+                  ? <span className={`font-mono font-bold w-8 tabular-nums shrink-0 ${p.points > 0 ? 'text-white' : 'text-gray-400'}`}>{p.home_score}–{p.away_score}</span>
+                  : <span className="text-gray-400 italic w-8 shrink-0">pend.</span>
+                }
+                <PtsBadge pts={p.points} pending={p.status !== 'finished'} />
+              </div>
+            ))}
+          </div>
+        )}
       </td>
     </tr>
   );
@@ -240,6 +549,7 @@ export default function Leaderboard() {
     }
   }, [selected, compareMode]);
 
+
   const colSort = (col) => sort.key === col ? sort.dir : null;
 
   if (loading) {
@@ -249,39 +559,39 @@ export default function Leaderboard() {
   return (
     <div className="space-y-6">
 
-      {/* Header */}
-      <div className="flex flex-row items-center sm:items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-black">Leaderboard</h1>
-          <p className="text-sm text-gray-400 mt-0.5 leading-snug">
-            {board.length} players{lastUpdated && <><br className="sm:hidden" /><span className="hidden sm:inline"> · </span>Updated at {formatTime(lastUpdated)}</>}
-          </p>
-        </div>
-        <div className="flex items-center gap-3 ml-auto">
-          {comparing ? (
-            <svg className="w-8 h-8 animate-spin text-brand-gold" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-          ) : compareMode ? (
-            <>
-              <span className="text-sm text-gray-400 leading-snug text-right">
-                {selected.size === 0 ? <>Click a player<br className="sm:hidden" />{' '}to select</> : <>Click one<br className="sm:hidden" />{' '}more player</>}
-              </span>
-              <button onClick={exitCompareMode} className="btn-secondary text-sm py-2 px-4 whitespace-nowrap">
-                Cancel
+      {/* Header — sticky below navbar */}
+      <div className="sticky top-14 sm:top-16 z-20 -mx-3 sm:-mx-6 px-3 sm:px-6 pt-3 pb-3 sm:pt-0 bg-brand-navy border-b border-brand-border flex flex-row items-center sm:items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-black">Leaderboard</h1>
+            <p className="text-sm text-gray-400 mt-0.5 leading-snug">
+              {board.length} players{lastUpdated && <><br className="sm:hidden" /><span className="hidden sm:inline"> · </span>Updated at {formatTime(lastUpdated)}</>}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            {comparing ? (
+              <svg className="w-8 h-8 animate-spin text-brand-gold" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : compareMode ? (
+              <>
+                <span className="text-sm text-gray-400 leading-snug text-right">
+                  {selected.size === 0 ? <>Click a player<br className="sm:hidden" />{' '}to select</> : <>Click one<br className="sm:hidden" />{' '}more player</>}
+                </span>
+                <button onClick={exitCompareMode} className="btn-secondary text-sm py-2 px-4 whitespace-nowrap">
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={enterCompareMode} className="btn-primary text-sm py-2 px-4 whitespace-nowrap">
+                Compare
               </button>
-            </>
-          ) : (
-            <button onClick={enterCompareMode} className="btn-primary text-sm py-2 px-4 whitespace-nowrap">
-              Compare
-            </button>
-          )}
-        </div>
+            )}
+          </div>
       </div>
 
       {/* Full table */}
-      <div className="card overflow-x-auto overflow-y-auto p-0 max-h-[calc(100svh-230px)] sm:max-h-[calc(100svh-220px)]">
+      <div className="card overflow-x-auto overflow-y-auto p-0 max-h-[calc(100svh-225px)] sm:max-h-[calc(100svh-300px)]">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-brand-card">
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
@@ -378,8 +688,8 @@ export default function Leaderboard() {
                     </td>
                   </tr>
                   {expanded === row.id && (
-                    <PredictionBreakdown
-                      key={`${row.id}-breakdown`}
+                    <PredictionExpanded
+                      key={`${row.id}-expanded`}
                       name={row.name}
                       cache={predCache}
                       setCache={setPredCache}
@@ -391,8 +701,6 @@ export default function Leaderboard() {
           </tbody>
         </table>
       </div>
-
-
 
       {board.length === 0 && (
         <div className="card text-center py-10 text-gray-400">
