@@ -78,8 +78,8 @@ function MatchRow({ match }) {
       </div>
       <div className="w-20 shrink-0 text-center">
         {finished ? (
-          <span className="font-black text-brand-gold text-lg tabular-nums">
-            {match.home_score} – {match.away_score}
+          <span className="font-black text-brand-gold text-xl tabular-nums">
+            {match.home_score}–{match.away_score}
           </span>
         ) : (
           <span className={`text-sm font-bold tabular-nums ${isToday ? 'text-brand-gold' : 'text-gray-500'}`}>
@@ -225,7 +225,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               </div>
               <div className="w-16 text-center shrink-0">
                 {m.status === 'finished' ? (
-                  <span className="font-black text-brand-gold text-sm tabular-nums">{m.home_score}–{m.away_score}</span>
+                  <span className="font-black text-brand-gold text-base tabular-nums">{m.home_score}–{m.away_score}</span>
                 ) : (
                   <span className="text-xs text-gray-600">
                     {m.match_date ? new Date(m.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'TBD'}

@@ -47,8 +47,8 @@ function LiveMatchCard({ match }) {
           <Flag code={match.home_code} name={match.home_team} className="w-12 h-12 shrink-0" />
         </div>
         <div className="shrink-0 px-2">
-          <span className="text-4xl font-black text-white tabular-nums">
-            {match.home_score} – {match.away_score}
+          <span className="font-black text-4xl text-white tabular-nums">
+            {match.home_score}–{match.away_score}
           </span>
         </div>
         <div className="flex-1 flex items-center gap-2 min-w-0">
