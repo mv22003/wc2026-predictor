@@ -9,6 +9,40 @@ const { calculatePoints } = require('../scoring');
 
 const API_BASE = process.env.WORLDCUP_API_URL || 'https://worldcup26.ir';
 
+// ─── Scorer normalisation ──────────────────────────────────────────────────────
+
+// Strips all quote variants (straight + curly) and PG array braces from a string.
+const STRIP_RE = /[{}""“”''‘’]/g;
+
+function parseOneScorer(str) {
+  const s = str.trim().replace(/^["“”']+|["“”']+$/g, '').trim();
+  const m = s.match(/^(.*?)\s+(\d+(?:\+\d+)?)$/);
+  return m ? { name: m[1].trim(), minute: m[2] } : { name: s, minute: '' };
+}
+
+// Converts any raw API scorer value into canonical JSON string or null.
+function normalizeScorers(raw) {
+  if (!raw || raw === 'null') return null;
+  // Already proper JSON array of objects?
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      const entries = parsed.map(s =>
+        typeof s === 'string'
+          ? parseOneScorer(s.replace(STRIP_RE, ''))
+          : { name: String(s.name ?? s.player ?? s.scorer ?? s), minute: s.minute != null ? String(s.minute) : '' }
+      ).filter(e => e.name);
+      return entries.length ? JSON.stringify(entries) : null;
+    }
+  } catch {}
+  // PG array / comma-separated string fallback
+  const entries = raw.replace(STRIP_RE, '').split(',')
+    .map(s => s.trim()).filter(Boolean)
+    .map(parseOneScorer)
+    .filter(e => e.name);
+  return entries.length ? JSON.stringify(entries) : null;
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 let _cachedToken = null;
@@ -105,9 +139,9 @@ async function syncScores() {
         : rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null)
         : null;
 
-      // Capture scorer strings — stored as-is; frontend parses defensively
-      const homeScorers = (game.home_scorers && game.home_scorers !== 'null') ? game.home_scorers : null;
-      const awayScorers = (game.away_scorers && game.away_scorers !== 'null') ? game.away_scorers : null;
+      // Normalize scorer strings to [{name, minute}] JSON before storing
+      const homeScorers = normalizeScorers(game.home_scorers);
+      const awayScorers = normalizeScorers(game.away_scorers);
 
       const { rows: matchRows } = await db.query('SELECT * FROM matches WHERE match_number = $1', [matchNum]);
       const our = matchRows[0];
