@@ -264,8 +264,8 @@ const teams = Object.entries(teamGroupMap)
     try {
       await matchClient.query('BEGIN');
       for (const m of groupMatches) {
-        const homeId = teamId[m.team_a];
-        const awayId = teamId[m.team_b];
+        const homeId = teamId[normName(m.team_a)];
+        const awayId = teamId[normName(m.team_b)];
         if (!homeId || !awayId) {
           warnings.push(`Unknown team in match ${m.match_number}: "${m.team_a}" vs "${m.team_b}"`);
           continue;
