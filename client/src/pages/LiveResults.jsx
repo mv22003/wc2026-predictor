@@ -213,6 +213,15 @@ function GroupsTab({ matches, groups }) {
 }
 
 // ─── Calendar tab ──────────────────────────────────────────────────────────────
+const DATE_FMT = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+function localDateKey(matchDate) {
+  return new Date(matchDate).toLocaleDateString('en-GB', DATE_FMT);
+}
+function localDateISO(d) {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
 function LiveMinute({ minute }) {
   return (
     <span className="inline-flex items-center justify-center gap-1 w-12 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-xs font-semibold text-red-400 whitespace-nowrap">
@@ -369,11 +378,9 @@ function MatchRow({ match }) {
 }
 
 function DateGroup({ matches, dateKey }) {
-  // Parse at noon UTC so the label stays on the correct calendar day in all timezones
-  const date    = dateKey ? new Date(dateKey + 'T12:00:00Z') : new Date(matches[0].match_date);
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = new Date().toLocaleDateString('en-GB', DATE_FMT);
   const isToday  = dateKey === todayKey;
-  const label    = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const label    = dateKey ? dateKey.replace(/\s\d{4}$/, '') : '';
   return (
     <div className={`card p-0 overflow-hidden ${isToday ? 'border border-brand-gold/50' : ''}`}>
       <div className={`px-4 py-2.5 flex items-center gap-2 border-b border-brand-border ${isToday ? 'bg-brand-gold/20' : 'bg-brand-navy/60'}`}>
@@ -405,15 +412,13 @@ function FilterBtn({ value, active, onChange, compact, stretch, children }) {
 }
 
 function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollToToday }) {
-  const todayKey = new Date().toISOString().slice(0, 10);
-
   const calFiltered = filter === 'all'
     ? matches
     : matches.filter(m => m.group_name === filter);
 
   const byDate = {};
   for (const m of calFiltered) {
-    const key = m.match_date ? m.match_date.slice(0, 10) : 'TBD';
+    const key = m.match_date ? localDateKey(m.match_date) : 'TBD';
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(m);
   }
@@ -431,12 +436,14 @@ function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollTo
     if (liveEl) {
       scrollToEl(liveEl);
     } else {
+      const todayISO = localDateISO(new Date());
       const nearestUpcoming = matches
         .filter(m => m.status === 'upcoming' && m.match_date)
-        .map(m => m.match_date.slice(0, 10))
-        .filter(d => d >= todayKey)
-        .sort()[0];
-      const target = nearestUpcoming || todayKey;
+        .filter(m => localDateISO(m.match_date) >= todayISO)
+        .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))[0];
+      const target = nearestUpcoming
+        ? localDateKey(nearestUpcoming.match_date)
+        : new Date().toLocaleDateString('en-GB', DATE_FMT);
       scrollToEl(document.querySelector(`[data-date="${target}"]`));
     }
     setPendingScrollToToday(false);

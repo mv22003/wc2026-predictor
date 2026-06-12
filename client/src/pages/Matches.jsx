@@ -106,11 +106,16 @@ function MatchRow({ match }) {
   );
 }
 
+const DATE_FMT = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+const todayKey  = new Date().toLocaleDateString('en-GB', DATE_FMT);
+
+function localDateKey(matchDate) {
+  return new Date(matchDate).toLocaleDateString('en-GB', DATE_FMT);
+}
+
 function DateGroup({ dateStr, matches }) {
-  const date    = new Date(matches[0].match_date);
-  const today   = new Date().toDateString();
-  const isToday = date.toDateString() === today;
-  const label   = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const isToday = dateStr === todayKey;
+  const label   = dateStr.replace(/\s\d{4}$/, ''); // strip year for display
   return (
     <div className={`card p-0 overflow-hidden ${isToday ? 'border border-brand-gold/50' : ''}`}>
       <div className={`px-4 py-2.5 flex items-center gap-2 border-b border-brand-border ${isToday ? 'bg-brand-gold/20' : 'bg-brand-navy/60'}`}>
@@ -321,11 +326,12 @@ export default function Matches() {
   const played = matches.filter(m => m.status === 'finished').length;
   const total  = matches.length;
 
-  // Calendar view data
+  // Calendar view — group by local display date so the box header always matches
+  // the date shown on each row (a 9pm ET match is "Saturday" for BST viewers).
   const calFiltered = filter === 'all' ? matches : matches.filter(m => m.group_name === filter);
   const byDate = {};
   for (const m of calFiltered) {
-    const key = m.match_date ? new Date(m.match_date).toDateString() : 'TBD';
+    const key = m.match_date ? localDateKey(m.match_date) : 'TBD';
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(m);
   }
