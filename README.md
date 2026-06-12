@@ -26,7 +26,7 @@ A full-stack World Cup 2026 prediction game for friend groups. Predict every sco
 |---|---|
 | Frontend | React 18 + Vite + Tailwind CSS |
 | Backend | Node.js + Express |
-| Database | SQLite via Node's built-in `node:sqlite` (v22.5+, no native compilation) |
+| Database | PostgreSQL (local: Docker · prod: Render Postgres) |
 | Routing | React Router v6 |
 
 ---
@@ -48,21 +48,55 @@ Tiebreaks (in order): total points → exact scorelines → correct result+GD �
 
 ### Prerequisites
 
-- **Node.js v22.5+** (required for `node:sqlite`)
+- **Node.js v22.5+**
+- **Docker** — for the local PostgreSQL database
 
-### Install
+### 1. Create the local database container
+
+Run this once on any new machine. It creates a named container that persists across reboots:
+
+```bash
+docker run -d \
+  --name wc2026-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=wc2026 \
+  -p 5432:5432 \
+  postgres:16
+```
+
+After the first time, `npm run dev` starts the container automatically via `docker start wc2026-db`.
+
+### 2. Configure environment variables
+
+Copy `.env.example` to `.env` in the project root:
+
+```bash
+cp .env.example .env
+```
+
+The default values in `.env.example` match the Docker container above — no edits needed for local dev.
+
+### 3. Install dependencies
 
 ```bash
 npm run install:all
 ```
 
-### Seed the database
+### 4. Seed the database
 
 ```bash
 npm run seed
 ```
 
-### Run in development
+### 5. Run in development
+
+```bash
+npm run dev
+```
+
+This starts the Docker container, the API server (port 3001), and the Vite dev server (port 5173) in parallel.
+
+Or run them separately:
 
 ```bash
 # Terminal 1 — API server (port 3001)
@@ -70,16 +104,6 @@ npm run dev:server
 
 # Terminal 2 — Vite dev server (port 5173)
 npm run dev:client
-```
-
-### Environment variables
-
-Create a `.env` file in the project root:
-
-```env
-PORT=3001
-ADMIN_KEY=your_secret_key
-DB_PATH=../data/wc2026.db
 ```
 
 ---
