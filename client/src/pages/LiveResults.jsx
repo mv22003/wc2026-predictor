@@ -146,7 +146,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
             .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))
             .map(m => (
               <div key={m.id} className="flex items-center gap-2 px-4 py-2 border-b border-brand-border/30 last:border-0 hover:bg-white/3">
-                <span className="text-xs text-gray-400 w-28 shrink-0 hidden sm:block">
+                <span className="text-xs text-gray-400 w-14 sm:w-28 shrink-0">
                   {m.match_date ? new Date(m.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
                 </span>
                 <div className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
@@ -172,7 +172,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                     <TeamName name={m.away_team} code={m.away_code} />
                   </span>
                 </div>
-                <div className="w-28 shrink-0 hidden sm:flex items-center justify-end">
+                <div className="w-14 sm:w-28 shrink-0 flex items-center justify-end">
                   {m.status === 'finished' && <span className="tag pts-exact text-xs">FT</span>}
                   {m.status === 'live' && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-[10px] font-black text-red-400 leading-none">
