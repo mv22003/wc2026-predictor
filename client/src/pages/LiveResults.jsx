@@ -367,7 +367,7 @@ function MatchRow({ match }) {
         </div>
 
         {/* FT / LIVE / Today / date — spans full height */}
-        <div className="sm:w-16 shrink-0 flex items-center justify-end">
+        <div className="sm:w-16 shrink-0 flex items-start sm:items-center justify-end">
           {finished ? (
             <span className="tag pts-exact text-xs inline-flex justify-center w-12">FT</span>
           ) : live ? (
