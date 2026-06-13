@@ -254,6 +254,12 @@ function parseMinute(m) {
   return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
 }
 
+function formatMinute(min) {
+  const s = String(min);
+  const m = s.match(/^(\d+(?:\+\d+)?)\s*(\(p\))?$/i);
+  return m ? ` ${m[1]}'${m[2] ? ' (p)' : ''}` : ` ${s}'`;
+}
+
 function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
   const home = parseScorers(homeScorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   const away = parseScorers(awayScorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
@@ -267,7 +273,7 @@ function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center text-xs text-gray-400 gap-1">
           <span className="flex-1 min-w-0 flex items-center justify-end whitespace-nowrap">
-            {home[i] ? `${home[i].name}${home[i].minute != null ? ` ${home[i].minute}'` : ''}` : ''}
+            {home[i] ? `${home[i].name}${home[i].minute != null ? formatMinute(home[i].minute) : ''}` : ''}
           </span>
           <span className="w-16 sm:w-20 shrink-0 flex items-center justify-between">
             {home[i]
@@ -278,7 +284,7 @@ function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
               : <span className="w-[1em] shrink-0" />}
           </span>
           <span className="flex-1 min-w-0 flex items-center whitespace-nowrap">
-            {away[i] ? `${away[i].name}${away[i].minute != null ? ` ${away[i].minute}'` : ''}` : ''}
+            {away[i] ? `${away[i].name}${away[i].minute != null ? formatMinute(away[i].minute) : ''}` : ''}
           </span>
         </div>
       ))}

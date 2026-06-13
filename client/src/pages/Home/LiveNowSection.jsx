@@ -21,6 +21,12 @@ function parseMinute(m) {
   return parseInt(parts[0], 10) + (parts[1] ? parseInt(parts[1], 10) / 100 : 0);
 }
 
+function formatMinute(min) {
+  const s = String(min);
+  const m = s.match(/^(\d+(?:\+\d+)?)\s*(\(p\))?$/i);
+  return m ? ` ${m[1]}'${m[2] ? ' (p)' : ''}` : ` ${s}'`;
+}
+
 function LiveMatchCard({ match }) {
   const venue = VENUE_BY_MATCH[match.match_number] || match.venue;
   const homeScorers = parseScorers(match.home_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
@@ -66,7 +72,7 @@ function LiveMatchCard({ match }) {
               <div className="flex-1 flex items-center justify-end gap-1">
                 {homeScorers[i] ? (
                   <>
-                    <span>{homeScorers[i].name}{homeScorers[i].minute != null ? ` ${homeScorers[i].minute}'` : ''}</span>
+                    <span>{homeScorers[i].name}{homeScorers[i].minute != null ? formatMinute(homeScorers[i].minute) : ''}</span>
                     <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] shrink-0" />
                   </>
                 ) : null}
@@ -78,7 +84,7 @@ function LiveMatchCard({ match }) {
                 {awayScorers[i] ? (
                   <>
                     <img src="/wc-logos/trionda.webp" alt="goal" className="w-[1em] h-[1em] shrink-0" />
-                    <span>{awayScorers[i].name}{awayScorers[i].minute != null ? ` ${awayScorers[i].minute}'` : ''}</span>
+                    <span>{awayScorers[i].name}{awayScorers[i].minute != null ? formatMinute(awayScorers[i].minute) : ''}</span>
                   </>
                 ) : null}
               </div>
