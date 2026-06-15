@@ -145,10 +145,19 @@ export default function Home() {
         </div>
         <div className="card py-4 order-1 lg:order-2">
           <h2 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-2">Prize Distribution</h2>
-          <div className="text-sm flex flex-wrap gap-x-5 gap-y-1 lg:block lg:space-y-1">
-            <div className="text-yellow-400 font-bold">1st - 60%</div>
-            <div className="text-slate-200 font-bold">2nd - 30%</div>
-            <div className="text-amber-500 font-bold">3rd - 10%</div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="flex flex-col">
+              <span className="text-yellow-400 font-bold text-sm">1st</span>
+              <span className="text-yellow-400 font-black text-lg">£80</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-slate-200 font-bold text-sm">2nd</span>
+              <span className="text-slate-200 font-black text-lg">£40</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-amber-500 font-bold text-sm">3rd</span>
+              <span className="text-amber-500 font-black text-lg">£10</span>
+            </div>
           </div>
         </div>
       </div>
