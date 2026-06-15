@@ -169,7 +169,7 @@ export default function Home() {
                   ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
                   : 'bg-amber-500/15 text-amber-400 border-amber-500/25'
               }`}>
-                {prizePot.paid_count}/{leaderboard.length} paid
+                {prizePot.paid_count === leaderboard.length ? 'All paid!' : `${prizePot.paid_count}/${leaderboard.length} paid`}
               </span>
             )}
           </div>
