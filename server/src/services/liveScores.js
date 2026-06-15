@@ -21,6 +21,7 @@ function parseOneScorer(str) {
 }
 
 // Converts any raw API scorer value into canonical JSON string or null.
+// Prefers English name fields (name_en, player_en, etc.) over localised ones.
 function normalizeScorers(raw) {
   if (!raw || raw === 'null') return null;
   // Already proper JSON array of objects?
@@ -30,7 +31,13 @@ function normalizeScorers(raw) {
       const entries = parsed.map(s =>
         typeof s === 'string'
           ? parseOneScorer(s.replace(STRIP_RE, ''))
-          : { name: String(s.name ?? s.player ?? s.scorer ?? s), minute: s.minute != null ? String(s.minute) : '' }
+          : {
+              name: String(
+                s.name_en ?? s.player_en ?? s.scorer_en ?? s.english_name ?? s.name_english ??
+                s.name    ?? s.player    ?? s.scorer    ?? s
+              ),
+              minute: s.minute != null ? String(s.minute) : '',
+            }
       ).filter(e => e.name);
       return entries.length ? JSON.stringify(entries) : null;
     }
@@ -82,8 +89,11 @@ function clearToken() { _cachedToken = null; }
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 async function fetchGames(token) {
-  const res = await fetch(`${API_BASE}/get/games`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const res = await fetch(`${API_BASE}/get/games?lang=en`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Accept-Language': 'en',
+    },
   });
   if (res.status === 401) { clearToken(); throw new Error('API token expired — please refresh WORLDCUP_API_TOKEN'); }
   if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -139,9 +149,14 @@ async function syncScores() {
         : rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null)
         : null;
 
-      // Normalize scorer strings to [{name, minute}] JSON before storing
-      const homeScorers = normalizeScorers(game.home_scorers);
-      const awayScorers = normalizeScorers(game.away_scorers);
+      // Normalize scorer strings to [{name, minute}] JSON before storing.
+      // Prefer English-specific fields when the API provides them.
+      const homeScorers = normalizeScorers(
+        game.home_scorers_en ?? game.home_scorers_english ?? game.home_scorers
+      );
+      const awayScorers = normalizeScorers(
+        game.away_scorers_en ?? game.away_scorers_english ?? game.away_scorers
+      );
 
       const { rows: matchRows } = await db.query('SELECT * FROM matches WHERE match_number = $1', [matchNum]);
       const our = matchRows[0];
