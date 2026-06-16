@@ -73,6 +73,8 @@ export const api = {
     req('/admin/sync/start', { method: 'POST', headers: { 'x-admin-key': key }, body: { intervalMinutes } }),
   stopSync: (key) =>
     req('/admin/sync/stop', { method: 'POST', headers: { 'x-admin-key': key } }),
+  syncRaw: (key) =>
+    req('/admin/sync/raw', { headers: { 'x-admin-key': key } }),
   resetResult: (key, id) =>
     req(`/admin/matches/${id}/result`, {
       method: 'DELETE',
