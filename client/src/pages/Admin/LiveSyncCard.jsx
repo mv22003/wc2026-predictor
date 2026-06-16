@@ -10,54 +10,93 @@ const SCORER_FIELDS = new Set([
   'status', 'finished', 'live', 'time_elapsed',
 ]);
 
+function gameStatus(g) {
+  if (g.finished === 'TRUE' || g.finished === true || g.finished === 1) return 'finished';
+  if (
+    g.live === true || g.live === 1 || g.live === 'TRUE' ||
+    g.status === 'live' || g.status === 'in_progress' ||
+    g.status === '1H'   || g.status === '2H' || g.status === 'HT' ||
+    g.status === 'ET'   || g.status === 'PEN' ||
+    g.started === true  || g.started === 'TRUE' || g.started === 1
+  ) return 'live';
+  return 'upcoming';
+}
+
 function RawApiModal({ data, onClose }) {
-  // Filter to only games that are live or finished so we don't drown in noise
-  const interesting = (data.games || []).filter(
-    g => g.finished === 'TRUE' || g.finished === true || g.finished === 1 ||
-         g.live === true || g.live === 1 || g.live === 'TRUE' ||
-         g.status === 'live' || g.status === 'in_progress' ||
-         g.status === '1H' || g.status === '2H' || g.status === 'HT' ||
-         g.status === 'ET' || g.status === 'PEN'
-  );
-  const display = interesting.length > 0 ? interesting : (data.games || []).slice(0, 5);
+  const [search, setSearch] = useState('');
+
+  const all = (data.games || []).slice().sort((a, b) => {
+    const order = { live: 0, finished: 1, upcoming: 2 };
+    return order[gameStatus(a)] - order[gameStatus(b)];
+  });
+
+  const q = search.trim().toLowerCase();
+  const display = q
+    ? all.filter(g =>
+        String(g.id).includes(q) ||
+        (g.home_team ?? g.home ?? '').toLowerCase().includes(q) ||
+        (g.away_team ?? g.away ?? '').toLowerCase().includes(q)
+      )
+    : all;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 p-4 overflow-y-auto">
       <div className="bg-gray-900 border border-brand-border rounded-xl w-full max-w-4xl mt-8 mb-8">
-        <div className="flex items-center justify-between p-4 border-b border-brand-border">
+        <div className="flex items-center justify-between p-4 border-b border-brand-border gap-4">
           <div>
             <h2 className="font-black text-base">Raw API Response — worldcup26.ir</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              {interesting.length > 0
-                ? `${interesting.length} live/finished game(s) · scorer fields highlighted`
-                : `Showing first ${display.length} of ${data.total} games (none live/finished)`}
+              {display.length} of {all.length} games · scorer fields highlighted · live games first
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none px-2">✕</button>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search team or #id…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="text-xs bg-black/40 border border-gray-700 rounded px-2 py-1.5 text-white placeholder-gray-500 w-44 focus:outline-none focus:border-sky-500"
+            />
+            <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none px-2">✕</button>
+          </div>
         </div>
         <div className="p-4 space-y-4 overflow-x-auto">
-          {display.map((game, i) => (
-            <div key={i} className="border border-gray-700 rounded-lg p-3">
-              <div className="text-xs font-bold text-brand-gold mb-2">
-                Game #{game.id} — {game.home_team ?? game.home} vs {game.away_team ?? game.away}
+          {display.length === 0 && (
+            <p className="text-xs text-gray-400">No games match "{search}".</p>
+          )}
+          {display.map((game, i) => {
+            const st = gameStatus(game);
+            return (
+              <div key={i} className={`border rounded-lg p-3 ${
+                st === 'live'     ? 'border-emerald-500/50 bg-emerald-900/5' :
+                st === 'finished' ? 'border-gray-600'                        :
+                                    'border-gray-700/50'
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {st === 'live' && <span className="text-[10px] font-bold bg-emerald-500 text-black px-1.5 py-0.5 rounded">LIVE</span>}
+                  {st === 'finished' && <span className="text-[10px] font-bold bg-gray-600 text-white px-1.5 py-0.5 rounded">FT</span>}
+                  <span className="text-xs font-bold text-brand-gold">
+                    Game #{game.id} — {game.home_team ?? game.home} vs {game.away_team ?? game.away}
+                  </span>
+                </div>
+                <table className="text-xs w-full">
+                  <tbody>
+                    {Object.entries(game).map(([k, v]) => (
+                      <tr key={k} className={SCORER_FIELDS.has(k) ? 'bg-yellow-900/30' : ''}>
+                        <td className={`pr-4 py-0.5 font-mono align-top whitespace-nowrap ${SCORER_FIELDS.has(k) ? 'text-yellow-300' : 'text-gray-400'}`}>{k}</td>
+                        <td className={`font-mono break-all ${SCORER_FIELDS.has(k) ? 'text-white' : 'text-gray-300'}`}>
+                          {v === null ? <span className="text-gray-600">null</span>
+                            : v === '' ? <span className="text-gray-600">(empty string)</span>
+                            : typeof v === 'object' ? JSON.stringify(v)
+                            : String(v)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <table className="text-xs w-full">
-                <tbody>
-                  {Object.entries(game).map(([k, v]) => (
-                    <tr key={k} className={SCORER_FIELDS.has(k) ? 'bg-yellow-900/30' : ''}>
-                      <td className={`pr-4 py-0.5 font-mono align-top whitespace-nowrap ${SCORER_FIELDS.has(k) ? 'text-yellow-300' : 'text-gray-400'}`}>{k}</td>
-                      <td className={`font-mono break-all ${SCORER_FIELDS.has(k) ? 'text-white' : 'text-gray-300'}`}>
-                        {v === null ? <span className="text-gray-600">null</span>
-                          : v === '' ? <span className="text-gray-600">(empty string)</span>
-                          : typeof v === 'object' ? JSON.stringify(v)
-                          : String(v)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
