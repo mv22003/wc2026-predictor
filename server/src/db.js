@@ -70,32 +70,66 @@ async function initDb() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(10,2)`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_type TEXT`);
 
-  // Fix: Belgium vs Egypt should be match_number=15 and Iran vs NZ should be match_number=16.
-  // The original JSON had them reversed. Swap if the DB still has the old ordering.
-  const { rows: m15rows } = await db.query(`
-    SELECT ht.name AS home_team, at.name AS away_team
-    FROM matches m
-    JOIN teams ht ON m.home_team_id = ht.id
-    JOIN teams at ON m.away_team_id = at.id
-    WHERE m.match_number = 15
-  `);
-  const m15 = m15rows[0];
-  if (m15 && (m15.home_team === 'Iran' || m15.away_team === 'Iran')) {
-    const client = await db.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query('UPDATE matches SET match_number = 999 WHERE match_number = 15');
-      await client.query('UPDATE matches SET match_number = 15  WHERE match_number = 16');
-      await client.query('UPDATE matches SET match_number = 16  WHERE match_number = 999');
-      await client.query('COMMIT');
-      console.log('🔧 Migrated: swapped match_number 15 (Belgium vs Egypt) and 16 (Iran vs New Zealand)');
-    } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw err;
-    } finally {
-      client.release();
+  // Rebuild all group-stage match_numbers to match the API's chronological ordering.
+  // Reads the canonical schedule JSON and assigns each DB match the correct number
+  // by matching on home + away team names. Idempotent — skips if already correct.
+  await (async () => {
+    const path     = require('path');
+    const schedule = require(path.join(__dirname, '../../data/world-cup-2026-schedule.json'));
+
+    // Same name normalisation as seed.js
+    const NAME_MAP = {
+      'Korea Republic': 'South Korea', 'Türkiye': 'Turkey',
+      "Côte d'Ivoire": 'Ivory Coast',  'Curaçao': 'Curacao',
+      'Cabo Verde': 'Cape Verde',       'Congo DR': 'DR Congo',
+    };
+    const norm = n => NAME_MAP[n] || n;
+
+    // Build team-pair → correct match_number map from the JSON
+    const correctNum = {};
+    for (const m of schedule.matches) {
+      if (m.stage !== 'Group Stage') continue;
+      const key = norm(m.team_a) + '|' + norm(m.team_b);
+      correctNum[key] = m.match_number;
     }
-  }
+
+    // Fetch all group-stage DB rows with team names
+    const { rows: dbMatches } = await db.query(`
+      SELECT m.id, m.match_number, ht.name AS home_team, at.name AS away_team
+      FROM matches m
+      JOIN teams ht ON m.home_team_id = ht.id
+      JOIN teams at ON m.away_team_id = at.id
+      WHERE m.phase = 'group'
+    `);
+
+    const fixes = dbMatches.filter(r => {
+      const want = correctNum[r.home_team + '|' + r.away_team];
+      return want != null && want !== r.match_number;
+    });
+
+    if (fixes.length > 0) {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        // Park all affected rows to a high temp range to avoid unique conflicts
+        for (const r of fixes) {
+          await client.query('UPDATE matches SET match_number = $1 WHERE id = $2', [r.id + 10000, r.id]);
+        }
+        // Now assign the correct numbers
+        for (const r of fixes) {
+          const want = correctNum[r.home_team + '|' + r.away_team];
+          await client.query('UPDATE matches SET match_number = $1 WHERE id = $2', [want, r.id]);
+          console.log(`🔧 Fixed match_number: ${r.home_team} vs ${r.away_team}  ${r.match_number} → ${want}`);
+        }
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+  })();
 
   const { rows } = await db.query('SELECT COUNT(*) AS n FROM teams');
   if (parseInt(rows[0].n, 10) === 0) {
