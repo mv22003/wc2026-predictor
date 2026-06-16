@@ -115,11 +115,20 @@ async function initDb() {
         for (const r of fixes) {
           await client.query('UPDATE matches SET match_number = $1 WHERE id = $2', [r.id + 10000, r.id]);
         }
-        // Now assign the correct numbers
+        // Assign the correct numbers and clear any stale scores (written when the
+        // match_number was wrong, so the score belongs to a different game).
         for (const r of fixes) {
           const want = correctNum[r.home_team + '|' + r.away_team];
-          await client.query('UPDATE matches SET match_number = $1 WHERE id = $2', [want, r.id]);
-          console.log(`🔧 Fixed match_number: ${r.home_team} vs ${r.away_team}  ${r.match_number} → ${want}`);
+          await client.query(
+            `UPDATE matches
+             SET match_number = $1,
+                 home_score = NULL, away_score = NULL,
+                 status = 'upcoming', live_minute = NULL,
+                 home_scorers = NULL, away_scorers = NULL
+             WHERE id = $2`,
+            [want, r.id]
+          );
+          console.log(`🔧 Fixed match_number: ${r.home_team} vs ${r.away_team}  ${r.match_number} → ${want} (score reset)`);
         }
         await client.query('COMMIT');
       } catch (err) {
@@ -130,6 +139,65 @@ async function initDb() {
       }
     }
   })();
+
+  // One-time cleanup: the June 15 group-stage matches had their match_numbers
+  // corrected but still carry scores that were written when the numbers were wrong.
+  // Clear those stale scores so a fresh API sync can populate them correctly.
+  const { rows: cleanFlag } = await db.query(
+    "SELECT value_text FROM app_settings WHERE key = 'migration_june15_scores_cleared'"
+  );
+  if (cleanFlag.length === 0) {
+    const teamsToReset = [
+      ['Spain', 'Cape Verde'],
+      ['Belgium', 'Egypt'],
+      ['Saudi Arabia', 'Uruguay'],
+      ['Iran', 'New Zealand'],
+    ];
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      for (const [home, away] of teamsToReset) {
+        const { rows: mr } = await client.query(`
+          SELECT m.id FROM matches m
+          JOIN teams ht ON m.home_team_id = ht.id
+          JOIN teams at ON m.away_team_id = at.id
+          WHERE ht.name = $1 AND at.name = $2
+        `, [home, away]);
+        if (mr[0]) {
+          await client.query(
+            `UPDATE matches SET home_score = NULL, away_score = NULL,
+             status = 'upcoming', live_minute = NULL,
+             home_scorers = NULL, away_scorers = NULL
+             WHERE id = $1`,
+            [mr[0].id]
+          );
+          console.log(`🧹 Cleared stale score for: ${home} vs ${away}`);
+        }
+      }
+      // Also reset prediction points for these matches to 0
+      await client.query(`
+        UPDATE predictions SET points = 0
+        WHERE match_id IN (
+          SELECT m.id FROM matches m
+          JOIN teams ht ON m.home_team_id = ht.id
+          JOIN teams at ON m.away_team_id = at.id
+          WHERE (ht.name, at.name) IN (
+            ('Spain','Cape Verde'), ('Belgium','Egypt'),
+            ('Saudi Arabia','Uruguay'), ('Iran','New Zealand')
+          )
+        )
+      `);
+      await client.query(
+        "INSERT INTO app_settings (key, value_text) VALUES ('migration_june15_scores_cleared', 'true')"
+      );
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 
   const { rows } = await db.query('SELECT COUNT(*) AS n FROM teams');
   if (parseInt(rows[0].n, 10) === 0) {
