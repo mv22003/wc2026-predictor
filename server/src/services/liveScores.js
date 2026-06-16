@@ -149,18 +149,19 @@ async function syncScores() {
         : rawTimeElapsed != null ? (parseInt(String(rawTimeElapsed), 10) || null)
         : null;
 
-      // Normalize scorer strings to [{name, minute}] JSON before storing.
-      // Prefer English-specific fields when the API provides them.
-      const homeScorers = normalizeScorers(
-        game.home_scorers_en ?? game.home_scorers_english ?? game.home_scorers
-      );
-      const awayScorers = normalizeScorers(
-        game.away_scorers_en ?? game.away_scorers_english ?? game.away_scorers
-      );
-
       const { rows: matchRows } = await db.query('SELECT * FROM matches WHERE match_number = $1', [matchNum]);
       const our = matchRows[0];
       if (!our) { errors.push(`Match ${matchNum}: not in our DB`); continue; }
+
+      // Only use API scorer values when the DB field is empty — preserves manual edits.
+      const apiHomeScorers = normalizeScorers(
+        game.home_scorers_en ?? game.home_scorers_english ?? game.home_scorers
+      );
+      const apiAwayScorers = normalizeScorers(
+        game.away_scorers_en ?? game.away_scorers_english ?? game.away_scorers
+      );
+      const homeScorers = our.home_scorers || apiHomeScorers;
+      const awayScorers = our.away_scorers || apiAwayScorers;
 
       if (isFinished) {
         // Already up to date?
