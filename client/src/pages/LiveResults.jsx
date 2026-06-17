@@ -312,6 +312,11 @@ function PredictionsModal({ match, onClose }) {
       .catch(e => setError(e.message));
   }, [match.id]);
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   const handleClose = useCallback(() => {
     if (window.innerWidth < 640) {
       setClosing(true);
