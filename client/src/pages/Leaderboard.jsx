@@ -440,6 +440,7 @@ export default function Leaderboard() {
   const [flashIds, setFlashIds] = useState(new Set());
   const [lastUpdated, setLastUpdated] = useState(null);
   const [lastMatch, setLastMatch] = useState(null);
+  const [nextMatch, setNextMatch] = useState(null);
   const prevBoardRef = useRef(null);
   const flashTimerRef = useRef(null);
 
@@ -472,6 +473,15 @@ export default function Leaderboard() {
         home: newBoard[0].last_match_home,
         awayCode: newBoard[0].last_match_away_code,
         away: newBoard[0].last_match_away,
+      });
+    }
+
+    if (newBoard.length > 0 && newBoard[0].next_match_home_code) {
+      setNextMatch({
+        homeCode: newBoard[0].next_match_home_code,
+        home: newBoard[0].next_match_home,
+        awayCode: newBoard[0].next_match_away_code,
+        away: newBoard[0].next_match_away,
       });
     }
   }, []);
@@ -608,7 +618,7 @@ export default function Leaderboard() {
               <th className="hidden px-3 py-3 w-8 text-center text-gray-400 text-xs uppercase tracking-wider">H2H</th>
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
-              <th className="px-4 py-3 text-center text-xs hidden sm:table-cell">Paid</th>
+              <th className="px-4 py-3 text-center text-xs hidden">Paid</th>
               <SortableCell col="pts_5" sort={sort} onSort={handleSort}>
                 <span className="tag pts-exact px-2">+5</span>
               </SortableCell>
@@ -637,6 +647,16 @@ export default function Leaderboard() {
                     <Flag code={lastMatch.homeCode} name={lastMatch.home} className="w-5 h-4 rounded-sm object-cover" />
                     <span className="text-gray-600 text-xs">v</span>
                     <Flag code={lastMatch.awayCode} name={lastMatch.away} className="w-5 h-4 rounded-sm object-cover" />
+                  </div>
+                )}
+              </th>
+              <th className="px-4 py-3 text-center text-xs hidden sm:table-cell">
+                <div>Next Match</div>
+                {nextMatch && (
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <Flag code={nextMatch.homeCode} name={nextMatch.home} className="w-5 h-4 rounded-sm object-cover" />
+                    <span className="text-gray-600 text-xs">v</span>
+                    <Flag code={nextMatch.awayCode} name={nextMatch.away} className="w-5 h-4 rounded-sm object-cover" />
                   </div>
                 )}
               </th>
@@ -694,7 +714,7 @@ export default function Leaderboard() {
                         <span className={`text-gray-400 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center hidden sm:table-cell">
+                    <td className="px-4 py-3 text-center hidden">
                       {row.paid
                         ? <span className="text-xs font-bold text-emerald-400">✓</span>
                         : <span className="text-xs font-bold text-red-400/60">✗</span>
@@ -714,6 +734,12 @@ export default function Leaderboard() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <PtsBadge pts={row.last_result} pending={row.last_result === null} />
+                    </td>
+                    <td className="px-4 py-3 text-center hidden sm:table-cell">
+                      {row.next_pred_home !== null
+                        ? <span className="text-sm font-semibold text-gray-300">{row.next_pred_home}–{row.next_pred_away}</span>
+                        : <span className="text-gray-600 text-sm">—</span>
+                      }
                     </td>
                     <td className="px-4 py-3 text-center font-black text-brand-gold text-lg">
                       {row.total_points}

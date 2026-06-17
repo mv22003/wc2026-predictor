@@ -79,6 +79,29 @@ router.get('/', async (req, res) => {
 
     const lastResultByUserId = Object.fromEntries(lastResultRows.map(r => [r.user_id, r.points]));
 
+    // Find the next upcoming match and each user's prediction for it
+    const nextMatchRes = await db.query(`
+      SELECT m.id, t1.name AS home_team, t1.code AS home_code,
+             t2.name AS away_team, t2.code AS away_code
+      FROM matches m
+      JOIN teams t1 ON t1.id = m.home_team_id
+      JOIN teams t2 ON t2.id = m.away_team_id
+      WHERE m.status = 'upcoming'
+      ORDER BY m.match_date ASC, m.id ASC
+      LIMIT 1
+    `);
+
+    let nextMatch = null;
+    let nextPredByUserId = {};
+
+    if (nextMatchRes.rows.length > 0) {
+      nextMatch = nextMatchRes.rows[0];
+      const { rows: nextPredRows } = await db.query(`
+        SELECT user_id, pred_home, pred_away FROM predictions WHERE match_id = $1
+      `, [nextMatch.id]);
+      nextPredByUserId = Object.fromEntries(nextPredRows.map(r => [r.user_id, { h: r.pred_home, a: r.pred_away }]));
+    }
+
     res.json(ranked.map(r => ({
       ...r,
       last_result: lastResultByUserId[r.id] ?? null,
@@ -86,6 +109,12 @@ router.get('/', async (req, res) => {
       last_match_home_code: lastMatch.home_code,
       last_match_away: lastMatch.away_team,
       last_match_away_code: lastMatch.away_code,
+      next_match_home: nextMatch?.home_team ?? null,
+      next_match_home_code: nextMatch?.home_code ?? null,
+      next_match_away: nextMatch?.away_team ?? null,
+      next_match_away_code: nextMatch?.away_code ?? null,
+      next_pred_home: nextPredByUserId[r.id]?.h ?? null,
+      next_pred_away: nextPredByUserId[r.id]?.a ?? null,
     })));
   } catch (err) {
     console.error(err);
