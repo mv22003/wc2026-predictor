@@ -388,8 +388,7 @@ export default function Predict() {
     }));
   }
 
-  const finishedCount = matches.filter(m => m.status === 'finished' || m.status === 'live').length;
-  const predictionsDisabled = finishedCount >= 24;
+  const predictionsDisabled = true;
 
   const groupMatches = matches.filter(m => m.group_name === activeGroup);
   const predictableMatches = matches.filter(m => m.status !== 'live' && m.status !== 'finished');
