@@ -38,6 +38,7 @@ function ScorerInputs({ scorers, setScorers, count }) {
 export default function ResultRow({ match, adminKey, onSaved, openScorerId, setOpenScorerId }) {
   const [hs,  setHs]  = useState(match.home_score ?? '');
   const [as_, setAs]  = useState(match.away_score ?? '');
+  const [liveMinute, setLiveMinute] = useState(match.live_minute ?? '');
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -47,8 +48,8 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
   const [scorerSaving, setScorerSaving] = useState(false);
   const [scorerSaved,  setScorerSaved]  = useState(false);
 
-  const isFinished  = match.status === 'finished';
-  const isLive      = match.status === 'live';
+  const isFinished = match.status === 'finished';
+  const isLive     = match.status === 'live';
   const scorersOpen = openScorerId === match.id;
   const homeCount   = (Number.isInteger(+hs)  && +hs  >= 0) ? +hs  : 0;
   const awayCount   = (Number.isInteger(+as_) && +as_ >= 0) ? +as_ : 0;
@@ -93,6 +94,7 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
       await api.resetResult(adminKey, match.id);
       setHs('');
       setAs('');
+      setLiveMinute('');
       onSaved?.();
     } catch (e) {
       alert('Error: ' + e.message);
@@ -101,14 +103,64 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
     }
   }
 
+  // upcoming → live (keeps status as 'live')
+  async function goLive() {
+    setSaving(true);
+    try {
+      const hsVal = hs !== '' ? parseInt(hs, 10) : 0;
+      const asVal = as_ !== '' ? parseInt(as_, 10) : 0;
+      await api.setMatchLive(adminKey, match.id, hsVal, asVal, liveMinute || '1');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      onSaved?.();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // live → update live score/minute (keeps status as 'live')
+  async function updateLive() {
+    if (hs === '' || as_ === '') return;
+    setSaving(true);
+    try {
+      await api.setMatchLive(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10), liveMinute || null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      onSaved?.();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // live → finished
+  async function finishLive() {
+    if (hs === '' || as_ === '') return;
+    setSaving(true);
+    try {
+      await api.updateResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      onSaved?.();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // upcoming → finished  OR  finished → update finished
   async function save() {
     if (hs === '' || as_ === '') return;
     setSaving(true);
     try {
       if (isFinished) {
-        await api.updateResult(adminKey, match.id, parseInt(hs), parseInt(as_));
+        await api.updateResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10));
       } else {
-        await api.submitResult(adminKey, match.id, parseInt(hs), parseInt(as_));
+        await api.submitResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10));
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -146,7 +198,14 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
     <>
       <tr className="border-b border-brand-border/50 last:border-0 hover:bg-white/3 transition-colors">
         <td className="px-3 py-3">
-          <span className="tag bg-brand-border text-gray-300 text-xs whitespace-nowrap">{match.group_name} · M{match.match_number}</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="tag bg-brand-border text-gray-300 text-xs whitespace-nowrap">{match.group_name} · M{match.match_number}</span>
+            {isLive && (
+              <span className="tag bg-red-500/20 text-red-400 text-[10px] border border-red-500/30 animate-pulse whitespace-nowrap">
+                LIVE
+              </span>
+            )}
+          </div>
         </td>
         <td className="px-3 py-3 text-sm hidden md:table-cell text-gray-400">{dateStr}</td>
         <td className="px-3 py-3">
@@ -174,6 +233,19 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
               onChange={e => setAs(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
             />
           </div>
+          {isLive && (
+            <div className="flex items-center justify-center mt-1 gap-0.5">
+              <input
+                type="text"
+                placeholder="min"
+                className="w-14 text-center text-xs bg-brand-navy border border-yellow-500/40 rounded px-1 py-0.5
+                           text-yellow-400 focus:border-yellow-400 focus:outline-none"
+                value={liveMinute}
+                onChange={e => setLiveMinute(e.target.value)}
+              />
+              <span className="text-xs text-yellow-400">'</span>
+            </div>
+          )}
         </td>
         <td className="px-3 py-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -186,20 +258,64 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
           {match.prediction_count} preds
         </td>
         <td className="px-3 py-3">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={save}
-              disabled={saving || resetting || hs === '' || as_ === ''}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                saved      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
-                isFinished ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40 hover:bg-sky-500/30' :
-                             'bg-brand-gold text-brand-navy hover:brightness-110'
-              } disabled:opacity-40`}
-            >
-              {saved ? '✓' : saving ? '…' : isFinished ? 'Update' : 'Save'}
-            </button>
-
-            {isFinished && (
+          {isLive ? (
+            <div className="grid grid-cols-2 gap-1">
+              <button
+                onClick={updateLive}
+                disabled={saving || resetting || hs === '' || as_ === ''}
+                className={`py-2 rounded text-xs font-bold transition-all disabled:opacity-40 ${
+                  saved
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 hover:bg-yellow-500/30'
+                }`}
+              >
+                {saved ? '✓' : saving ? '…' : 'Update'}
+              </button>
+              <button
+                onClick={finishLive}
+                disabled={saving || resetting || hs === '' || as_ === ''}
+                className="py-2 rounded text-xs font-bold transition-all
+                           bg-emerald-500/20 text-emerald-400 border border-emerald-500/40
+                           hover:bg-emerald-500/30 disabled:opacity-40"
+                title="Mark as finished"
+              >
+                End
+              </button>
+              <button
+                onClick={reset}
+                disabled={resetting || saving}
+                title="Reset to upcoming"
+                className="py-2 rounded text-xs font-bold transition-all
+                           bg-red-500/10 text-red-400 border border-red-500/30
+                           hover:bg-red-500/20 disabled:opacity-40"
+              >
+                {resetting ? '…' : '✕'}
+              </button>
+              <button
+                onClick={() => setOpenScorerId(o => o === match.id ? null : match.id)}
+                title="Edit goalscorers"
+                className={`py-2 rounded text-xs font-bold transition-all border ${
+                  scorersOpen
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                    : 'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20'
+                }`}
+              >
+                ⚽
+              </button>
+            </div>
+          ) : isFinished ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={save}
+                disabled={saving || resetting || hs === '' || as_ === ''}
+                className={`px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 ${
+                  saved
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-sky-500/20 text-sky-400 border border-sky-500/40 hover:bg-sky-500/30'
+                }`}
+              >
+                {saved ? '✓' : saving ? '…' : 'Update'}
+              </button>
               <button
                 onClick={reset}
                 disabled={resetting || saving}
@@ -210,9 +326,6 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
               >
                 {resetting ? '…' : '✕'}
               </button>
-            )}
-
-            {(isFinished || isLive) && (
               <button
                 onClick={() => setOpenScorerId(o => o === match.id ? null : match.id)}
                 title="Edit goalscorers"
@@ -224,15 +337,40 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
               >
                 ⚽
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            // upcoming
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={save}
+                disabled={saving || resetting || hs === '' || as_ === ''}
+                className={`px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 ${
+                  saved
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-brand-gold text-brand-navy hover:brightness-110'
+                }`}
+              >
+                {saved ? '✓' : saving ? '…' : 'Save'}
+              </button>
+              <button
+                onClick={goLive}
+                disabled={saving || resetting}
+                title="Set match as live"
+                className="px-2 py-1.5 rounded text-xs font-bold transition-all
+                           bg-red-500/20 text-red-400 border border-red-500/40
+                           hover:bg-red-500/30 disabled:opacity-40"
+              >
+                ⚡
+              </button>
+            </div>
+          )}
         </td>
       </tr>
 
       {scorersOpen && (isFinished || isLive) && (
         <tr className="border-b border-brand-border/30 bg-brand-navy/20">
           <td colSpan={7} className="px-4 py-3">
-            <div className="flex gap-6">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 min-w-0 space-y-2">
                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{match.home_team}</p>
                 <ScorerInputs scorers={homeScorers} setScorers={setHomeScorers} count={homeCount} />

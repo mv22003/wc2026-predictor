@@ -82,6 +82,12 @@ export const api = {
       method: 'DELETE',
       headers: { 'x-admin-key': key },
     }),
+  setMatchLive: (key, id, homeScore, awayScore, liveMinute) =>
+    req(`/admin/matches/${id}/live`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': key },
+      body: { home_score: homeScore, away_score: awayScore, live_minute: liveMinute },
+    }),
   updateScorers: (key, id, homeScorers, awayScorers) =>
     req(`/admin/matches/${id}/scorers`, {
       method: 'PATCH',
