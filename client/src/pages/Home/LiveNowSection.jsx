@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import Flag from '../../components/Flag';
 import { VENUE_BY_MATCH } from '../../venueData';
 import { TeamName } from './MatchRow';
+import PredictionsModal from '../../components/PredictionsModal';
 
 function parseScorers(raw) {
   if (!raw || raw === 'null') return [];
@@ -28,6 +30,7 @@ function formatMinute(min) {
 }
 
 function LiveMatchCard({ match }) {
+  const [showPreds, setShowPreds] = useState(false);
   const venue = VENUE_BY_MATCH[match.match_number] || match.venue;
   const homeScorers = parseScorers(match.home_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
   const awayScorers = parseScorers(match.away_scorers).sort((a, b) => parseMinute(a.minute) - parseMinute(b.minute));
@@ -100,6 +103,20 @@ function LiveMatchCard({ match }) {
           </span>
         </div>
       )}
+
+      <div className="mt-3 flex justify-center">
+        <button
+          onClick={() => setShowPreds(true)}
+          className="text-xs text-brand-gold/70 hover:text-brand-gold transition-colors flex items-center gap-1.5"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.356-3.789M9 20H4v-2a4 4 0 015.356-3.789M15 11a4 4 0 11-8 0 4 4 0 018 0zm6 0a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          View predictions
+        </button>
+      </div>
+
+      {showPreds && <PredictionsModal match={match} onClose={() => setShowPreds(false)} />}
     </div>
   );
 }
