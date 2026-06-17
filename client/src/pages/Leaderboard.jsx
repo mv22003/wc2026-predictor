@@ -439,6 +439,7 @@ export default function Leaderboard() {
   const [comparing, setComparing] = useState(false);
   const [flashIds, setFlashIds] = useState(new Set());
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [lastMatch, setLastMatch] = useState(null);
   const prevBoardRef = useRef(null);
   const flashTimerRef = useRef(null);
 
@@ -464,6 +465,15 @@ export default function Leaderboard() {
     prevBoardRef.current = newBoard;
     setBoard(newBoard);
     setLastUpdated(new Date());
+
+    if (newBoard.length > 0 && newBoard[0].last_match_home_code) {
+      setLastMatch({
+        homeCode: newBoard[0].last_match_home_code,
+        home: newBoard[0].last_match_home,
+        awayCode: newBoard[0].last_match_away_code,
+        away: newBoard[0].last_match_away,
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -598,7 +608,7 @@ export default function Leaderboard() {
               <th className="hidden px-3 py-3 w-8 text-center text-gray-400 text-xs uppercase tracking-wider">H2H</th>
               <th className="px-4 py-3 text-left w-12">#</th>
               <th className="px-4 py-3 text-left">Player</th>
-              <th className="px-4 py-3 text-center text-xs">Paid</th>
+              <th className="px-4 py-3 text-center text-xs hidden sm:table-cell">Paid</th>
               <SortableCell col="pts_5" sort={sort} onSort={handleSort}>
                 <span className="tag pts-exact px-2">+5</span>
               </SortableCell>
@@ -611,6 +621,25 @@ export default function Leaderboard() {
               <SortableCell col="pts_0" sort={sort} onSort={handleSort}>
                 <span className="tag pts-zero px-2">0</span>
               </SortableCell>
+              <th
+                className="px-4 py-3 text-center text-xs cursor-pointer select-none hover:opacity-80 transition-opacity"
+                onClick={() => handleSort('last_result')}
+              >
+                <div className="flex items-center justify-center">
+                  <span className="w-3 shrink-0" />
+                  Last Result
+                  <span className="w-3 shrink-0 inline-flex justify-center text-gray-400 text-xs leading-none ml-1">
+                    {colSort('last_result') === 'desc' ? '▾' : colSort('last_result') === 'asc' ? '▴' : '·'}
+                  </span>
+                </div>
+                {lastMatch && (
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <Flag code={lastMatch.homeCode} name={lastMatch.home} className="w-5 h-4 rounded-sm object-cover" />
+                    <span className="text-gray-600 text-xs">v</span>
+                    <Flag code={lastMatch.awayCode} name={lastMatch.away} className="w-5 h-4 rounded-sm object-cover" />
+                  </div>
+                )}
+              </th>
               <th
                 className="px-4 py-3 text-center font-bold text-brand-gold cursor-pointer select-none hover:opacity-80 transition-opacity"
                 onClick={() => handleSort('total_points')}
@@ -628,7 +657,7 @@ export default function Leaderboard() {
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-400">
+                <td colSpan={9} className="text-center py-10 text-gray-400">
                   {search ? 'No player found.' : 'No predictions submitted yet. Be the first!'}
                 </td>
               </tr>
@@ -665,7 +694,7 @@ export default function Leaderboard() {
                         <span className={`text-gray-400 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center hidden sm:table-cell">
                       {row.paid
                         ? <span className="text-xs font-bold text-emerald-400">✓</span>
                         : <span className="text-xs font-bold text-red-400/60">✗</span>
@@ -682,6 +711,9 @@ export default function Leaderboard() {
                     </td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
                       <span className="tag pts-zero">{row.pts_0 ?? 0}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <PtsBadge pts={row.last_result} pending={row.last_result === null} />
                     </td>
                     <td className="px-4 py-3 text-center font-black text-brand-gold text-lg">
                       {row.total_points}
