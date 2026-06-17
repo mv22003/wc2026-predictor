@@ -50,6 +50,7 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
 
   const isFinished = match.status === 'finished';
   const isLive     = match.status === 'live';
+  const isLocked   = !!match.manual_lock;
   const scorersOpen = openScorerId === match.id;
   const homeCount   = (Number.isInteger(+hs)  && +hs  >= 0) ? +hs  : 0;
   const awayCount   = (Number.isInteger(+as_) && +as_ >= 0) ? +as_ : 0;
@@ -198,12 +199,22 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
     <>
       <tr className="border-b border-brand-border/50 last:border-0 hover:bg-white/3 transition-colors">
         <td className="px-3 py-3">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             <span className="tag bg-brand-border text-gray-300 text-xs whitespace-nowrap">{match.group_name} · M{match.match_number}</span>
             {isLive && (
               <span className="tag bg-red-500/20 text-red-400 text-[10px] border border-red-500/30 animate-pulse whitespace-nowrap">
                 LIVE
               </span>
+            )}
+            {isLocked && (
+              <button
+                onClick={() => api.setMatchLock(adminKey, match.id, false).then(onSaved)}
+                title="Manually locked — API sync skips this match. Click to unlock."
+                className="tag bg-orange-500/20 text-orange-400 text-[10px] border border-orange-500/30
+                           hover:bg-orange-500/30 cursor-pointer transition-colors whitespace-nowrap"
+              >
+                🔒
+              </button>
             )}
           </div>
         </td>
