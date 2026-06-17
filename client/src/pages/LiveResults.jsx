@@ -304,6 +304,7 @@ function PtsPill({ pts }) {
 function PredictionsModal({ match, onClose }) {
   const [preds, setPreds] = useState(null);
   const [error, setError] = useState(null);
+  const [closing, setClosing] = useState(false);
 
   useEffect(() => {
     api.getMatchPredictions(match.id)
@@ -311,12 +312,21 @@ function PredictionsModal({ match, onClose }) {
       .catch(e => setError(e.message));
   }, [match.id]);
 
+  const handleClose = useCallback(() => {
+    if (window.innerWidth < 640) {
+      setClosing(true);
+      setTimeout(onClose, 260);
+    } else {
+      onClose();
+    }
+  }, [onClose]);
+
   const finished = match.status === 'finished';
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-brand-card border border-brand-border rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col h-[72vh] sm:h-auto sm:max-h-[80vh]">
+      <div className={`absolute inset-0 bg-black/70 backdrop-blur-sm ${closing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose} />
+      <div className={`relative bg-brand-card border border-brand-border rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col h-[72vh] sm:h-auto sm:max-h-[80vh] ${closing ? 'animate-slide-down sm:animate-none' : 'animate-slide-up sm:animate-none'}`}>
 
         {/* Drag handle — mobile only */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
@@ -324,18 +334,34 @@ function PredictionsModal({ match, onClose }) {
         </div>
 
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-brand-border shrink-0">
-          <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
-            <Flag code={match.home_code} name={match.home_team} className="w-5 h-5 shrink-0" />
-            <span className="font-bold text-sm truncate min-w-0">{match.home_team}</span>
-            {finished
-              ? <span className="font-black text-brand-gold text-sm tabular-nums shrink-0 mx-0.5">{match.home_score}–{match.away_score}</span>
-              : <span className="text-gray-400 text-xs shrink-0 mx-0.5">vs</span>
-            }
-            <span className="font-bold text-sm truncate min-w-0">{match.away_team}</span>
-            <Flag code={match.away_code} name={match.away_team} className="w-5 h-5 shrink-0" />
+        <div className="flex items-center gap-2 px-4 pt-3 pb-4 border-b border-brand-border shrink-0">
+          {/* Spacer matches the ✕ button width so teams+score are truly centred */}
+          <div className="w-7 shrink-0" />
+          <div className="flex-1 min-w-0 flex flex-col items-center gap-1.5">
+            {/* Teams row: [flag name] score [name flag] */}
+            <div className="flex items-center w-full gap-1">
+              <div className="flex-1 min-w-0 flex items-center justify-end gap-1.5">
+                <span className="font-bold text-base truncate min-w-0 text-right">{match.home_code}</span>
+                <Flag code={match.home_code} name={match.home_team} className="w-7 h-7 shrink-0" />
+              </div>
+              <div className="shrink-0 w-16 sm:w-20 text-center">
+                {finished
+                  ? <span className="font-black text-brand-gold text-2xl tabular-nums">{match.home_score}–{match.away_score}</span>
+                  : <span className="text-gray-400 text-sm font-bold">vs</span>
+                }
+              </div>
+              <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                <Flag code={match.away_code} name={match.away_team} className="w-7 h-7 shrink-0" />
+                <span className="font-bold text-base truncate min-w-0">{match.away_code}</span>
+              </div>
+            </div>
+            {!finished && (
+              <span className="text-xs text-gray-500">
+                {match.match_date ? new Date(match.match_date).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+              </span>
+            )}
           </div>
-          <button onClick={onClose} className="shrink-0 ml-1 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-base leading-none">✕</button>
+          <button onClick={handleClose} className="shrink-0 self-start w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-base leading-none">✕</button>
         </div>
 
         {/* Sub-header */}
