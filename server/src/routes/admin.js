@@ -303,6 +303,14 @@ router.post('/matches/bulk', adminAuth, async (req, res) => {
   }
 });
 
+// Parses "67", "45+2", "HT" → integer minute (or null). Consistent with sync service.
+function parseLiveMinute(val) {
+  if (val == null || val === '') return null;
+  const s = String(val).trim().toUpperCase();
+  if (s === 'HT') return 45;
+  return parseInt(s, 10) || null;
+}
+
 // ── Match results ─────────────────────────────────────────────────────────────
 router.post('/matches/:id/result', adminAuth, async (req, res) => {
   try {
@@ -325,7 +333,7 @@ router.post('/matches/:id/result', adminAuth, async (req, res) => {
     try {
       await client.query('BEGIN');
       await client.query(
-        "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished' WHERE id = $3",
+        "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished', live_minute = NULL, manual_lock = TRUE WHERE id = $3",
         [hs, as_, matchId]
       );
       for (const p of preds) {
@@ -369,7 +377,7 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
     try {
       await client.query('BEGIN');
       await client.query(
-        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = $4, away_scorers = $5, live_minute = NULL WHERE id = $6',
+        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = $4, away_scorers = $5, live_minute = NULL, manual_lock = TRUE WHERE id = $6',
         [hs, as_, status || 'finished', home_scorers ?? null, away_scorers ?? null, matchId]
       );
       for (const p of preds) {
@@ -418,7 +426,7 @@ router.delete('/matches/:id/result', adminAuth, async (req, res) => {
     const matchId = parseInt(req.params.id, 10);
 
     await db.query(
-      "UPDATE matches SET home_score = NULL, away_score = NULL, home_scorers = NULL, away_scorers = NULL, live_minute = NULL, status = 'upcoming' WHERE id = $1",
+      "UPDATE matches SET home_score = NULL, away_score = NULL, home_scorers = NULL, away_scorers = NULL, live_minute = NULL, manual_lock = FALSE, status = 'upcoming' WHERE id = $1",
       [matchId]
     );
     await db.query('UPDATE predictions SET points = 0 WHERE match_id = $1', [matchId]);
@@ -439,6 +447,7 @@ router.patch('/matches/:id/live', adminAuth, async (req, res) => {
 
     const hs  = home_score  != null ? parseInt(home_score,  10) : 0;
     const as_ = away_score  != null ? parseInt(away_score,  10) : 0;
+    const minute = parseLiveMinute(live_minute);
 
     const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
 
@@ -446,8 +455,8 @@ router.patch('/matches/:id/live', adminAuth, async (req, res) => {
     try {
       await client.query('BEGIN');
       await client.query(
-        "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3 WHERE id = $4",
-        [hs, as_, live_minute ?? null, matchId]
+        "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3, manual_lock = TRUE WHERE id = $4",
+        [hs, as_, minute, matchId]
       );
       for (const p of preds) {
         await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
@@ -463,6 +472,21 @@ router.patch('/matches/:id/live', adminAuth, async (req, res) => {
     }
 
     res.json({ success: true, match_id: matchId, predictions_updated: preds.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Toggle manual_lock — when locked the API sync will not touch this match
+router.patch('/matches/:id/lock', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const matchId = parseInt(req.params.id, 10);
+    const { locked } = req.body;
+    if (typeof locked !== 'boolean') return res.status(400).json({ error: 'locked must be boolean' });
+    await db.query('UPDATE matches SET manual_lock = $1 WHERE id = $2', [locked, matchId]);
+    res.json({ success: true, locked });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

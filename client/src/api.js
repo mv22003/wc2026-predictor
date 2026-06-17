@@ -82,6 +82,12 @@ export const api = {
       method: 'DELETE',
       headers: { 'x-admin-key': key },
     }),
+  setMatchLock: (key, id, locked) =>
+    req(`/admin/matches/${id}/lock`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': key },
+      body: { locked },
+    }),
   setMatchLive: (key, id, homeScore, awayScore, liveMinute) =>
     req(`/admin/matches/${id}/live`, {
       method: 'PATCH',

@@ -153,6 +153,9 @@ async function syncScores() {
       const our = matchRows[0];
       if (!our) { errors.push(`Match ${matchNum}: not in our DB`); continue; }
 
+      // Skip matches that were manually managed — admin has locked them against API overwrites
+      if (our.manual_lock) { skipped++; continue; }
+
       // Only use API scorer values when the DB field is empty — preserves manual edits.
       const apiHomeScorers = normalizeScorers(
         game.home_scorers_en ?? game.home_scorers_english ?? game.home_scorers
