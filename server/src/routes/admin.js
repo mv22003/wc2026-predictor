@@ -369,7 +369,7 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
     try {
       await client.query('BEGIN');
       await client.query(
-        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = $4, away_scorers = $5 WHERE id = $6',
+        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = $4, away_scorers = $5, live_minute = NULL WHERE id = $6',
         [hs, as_, status || 'finished', home_scorers ?? null, away_scorers ?? null, matchId]
       );
       for (const p of preds) {
@@ -418,12 +418,51 @@ router.delete('/matches/:id/result', adminAuth, async (req, res) => {
     const matchId = parseInt(req.params.id, 10);
 
     await db.query(
-      "UPDATE matches SET home_score = NULL, away_score = NULL, home_scorers = NULL, away_scorers = NULL, status = 'upcoming' WHERE id = $1",
+      "UPDATE matches SET home_score = NULL, away_score = NULL, home_scorers = NULL, away_scorers = NULL, live_minute = NULL, status = 'upcoming' WHERE id = $1",
       [matchId]
     );
     await db.query('UPDATE predictions SET points = 0 WHERE match_id = $1', [matchId]);
 
     res.json({ success: true, match_id: matchId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Make a match live or update its live score/minute (without finishing it)
+router.patch('/matches/:id/live', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const matchId = parseInt(req.params.id, 10);
+    const { home_score, away_score, live_minute } = req.body;
+
+    const hs  = home_score  != null ? parseInt(home_score,  10) : 0;
+    const as_ = away_score  != null ? parseInt(away_score,  10) : 0;
+
+    const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        "UPDATE matches SET home_score = $1, away_score = $2, status = 'live', live_minute = $3 WHERE id = $4",
+        [hs, as_, live_minute ?? null, matchId]
+      );
+      for (const p of preds) {
+        await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+          calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+        ]);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    res.json({ success: true, match_id: matchId, predictions_updated: preds.length });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
