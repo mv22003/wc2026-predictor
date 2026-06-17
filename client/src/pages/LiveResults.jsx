@@ -366,19 +366,18 @@ function PredictionsModal({ match, onClose }) {
             <p className="text-center text-gray-400 text-sm py-10">No predictions submitted yet.</p>
           )}
           {preds?.map((p, i) => {
-            const predWinner = p.pred_home > p.pred_away ? 'home' : p.pred_home < p.pred_away ? 'away' : 'draw';
-            const actualWinner = match.home_score != null
-              ? match.home_score > match.away_score ? 'home' : match.home_score < match.away_score ? 'away' : 'draw'
-              : null;
-            const correct = actualWinner && predWinner === actualWinner;
+            const scoreCls = finished
+              ? p.points === 5 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+              : p.points === 3 ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
+              : p.points === 1 ? 'border-amber-700/40 bg-amber-800/10 text-amber-400'
+              : 'border-white/10 bg-white/5 text-gray-500'
+              : 'border-brand-border/60 bg-white/5 text-gray-300';
 
             return (
               <div key={i} className="flex items-center gap-2 px-4 py-2.5 hover:bg-white/5 transition-colors">
                 <span className="text-xs text-gray-600 w-5 shrink-0 text-right tabular-nums">{i + 1}</span>
                 <span className="flex-1 text-sm font-medium text-gray-200 truncate min-w-0">{p.user_name}</span>
-                <span className={`tabular-nums text-sm font-bold rounded-md px-2 py-0.5 w-14 text-center border shrink-0 ${
-                  correct ? 'border-emerald-500/40 bg-emerald-900/20 text-emerald-300' : 'border-brand-border/60 bg-white/5 text-gray-300'
-                }`}>
+                <span className={`tabular-nums text-sm font-bold rounded-md px-2 py-0.5 w-14 text-center border shrink-0 ${scoreCls}`}>
                   {p.pred_home}–{p.pred_away}
                 </span>
                 {finished && <PtsPill pts={p.points} />}
