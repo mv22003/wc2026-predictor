@@ -23,6 +23,8 @@ export const api = {
   submitPredictions: (name, predictions) =>
     req('/predictions', { method: 'POST', body: { name, predictions } }),
 
+  getMatchPredictions: (matchId) => req(`/predictions/match/${matchId}`),
+
   // Leaderboard
   getLeaderboard: () => req('/leaderboard'),
   getPrizePot:    () => req('/leaderboard/pot'),

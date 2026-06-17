@@ -35,6 +35,30 @@ router.get('/user/:name', async (req, res) => {
   }
 });
 
+// Get all user predictions for a specific match
+router.get('/match/:matchId', async (req, res) => {
+  try {
+    const db = getDb();
+    const matchId = parseInt(req.params.matchId, 10);
+    if (isNaN(matchId)) return res.status(400).json({ error: 'Invalid match id' });
+
+    const { rows } = await db.query(`
+      SELECT p.pred_home, p.pred_away, p.points,
+             u.name AS user_name
+      FROM predictions p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.match_id = $1
+        AND u.submitted_at IS NOT NULL
+      ORDER BY p.points DESC, u.name ASC
+    `, [matchId]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Submit predictions (one-shot, locked after submit)
 router.post('/', async (req, res) => {
   const db = getDb();

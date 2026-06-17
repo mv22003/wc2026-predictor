@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 import { R32_SLOTS, LATE_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
@@ -292,6 +293,105 @@ function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
   );
 }
 
+function PtsPill({ pts }) {
+  const base = 'tag font-bold text-center shrink-0 w-9 text-xs';
+  if (pts === 5) return <span className={`${base} pts-exact`}>+5</span>;
+  if (pts === 3) return <span className={`${base} pts-correct`}>+3</span>;
+  if (pts === 1) return <span className={`${base} bg-amber-800/30 text-amber-500 border border-amber-700/30`}>+1</span>;
+  return <span className={`${base} pts-zero`}>0</span>;
+}
+
+function PredictionsModal({ match, onClose }) {
+  const [preds, setPreds] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    api.getMatchPredictions(match.id)
+      .then(setPreds)
+      .catch(e => setError(e.message));
+  }, [match.id]);
+
+  const finished = match.status === 'finished';
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-brand-card border border-brand-border rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col h-[72vh] sm:h-auto sm:max-h-[80vh]">
+
+        {/* Drag handle — mobile only */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-brand-border shrink-0">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+            <Flag code={match.home_code} name={match.home_team} className="w-5 h-5 shrink-0" />
+            <span className="font-bold text-sm truncate min-w-0">{match.home_team}</span>
+            {finished
+              ? <span className="font-black text-brand-gold text-sm tabular-nums shrink-0 mx-0.5">{match.home_score}–{match.away_score}</span>
+              : <span className="text-gray-400 text-xs shrink-0 mx-0.5">vs</span>
+            }
+            <span className="font-bold text-sm truncate min-w-0">{match.away_team}</span>
+            <Flag code={match.away_code} name={match.away_team} className="w-5 h-5 shrink-0" />
+          </div>
+          <button onClick={onClose} className="shrink-0 ml-1 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-base leading-none">✕</button>
+        </div>
+
+        {/* Sub-header */}
+        <div className="px-4 py-2 border-b border-brand-border/50 shrink-0 flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Predictions</span>
+          {preds && <span className="text-xs text-gray-500">{preds.length} player{preds.length !== 1 ? 's' : ''}</span>}
+        </div>
+
+        {/* Column headers — only when data is loaded and match is finished */}
+        {finished && preds?.length > 0 && (
+          <div className="flex items-center gap-2 px-4 py-1.5 border-b border-brand-border/30 shrink-0">
+            <span className="text-[10px] text-gray-600 w-5 shrink-0" />
+            <span className="flex-1 text-[10px] text-gray-600 uppercase tracking-wide">Player</span>
+            <span className="text-[10px] text-gray-600 uppercase tracking-wide w-14 text-center">Pred</span>
+            <span className="text-[10px] text-gray-600 uppercase tracking-wide w-9 text-center">Pts</span>
+          </div>
+        )}
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 divide-y divide-brand-border/30">
+          {error && (
+            <p className="text-center text-red-400 text-sm py-10">{error}</p>
+          )}
+          {!error && preds === null && (
+            <p className="text-center text-gray-400 text-sm py-10 animate-pulse">Loading…</p>
+          )}
+          {!error && preds?.length === 0 && (
+            <p className="text-center text-gray-400 text-sm py-10">No predictions submitted yet.</p>
+          )}
+          {preds?.map((p, i) => {
+            const predWinner = p.pred_home > p.pred_away ? 'home' : p.pred_home < p.pred_away ? 'away' : 'draw';
+            const actualWinner = match.home_score != null
+              ? match.home_score > match.away_score ? 'home' : match.home_score < match.away_score ? 'away' : 'draw'
+              : null;
+            const correct = actualWinner && predWinner === actualWinner;
+
+            return (
+              <div key={i} className="flex items-center gap-2 px-4 py-2.5 hover:bg-white/5 transition-colors">
+                <span className="text-xs text-gray-600 w-5 shrink-0 text-right tabular-nums">{i + 1}</span>
+                <span className="flex-1 text-sm font-medium text-gray-200 truncate min-w-0">{p.user_name}</span>
+                <span className={`tabular-nums text-sm font-bold rounded-md px-2 py-0.5 w-14 text-center border shrink-0 ${
+                  correct ? 'border-emerald-500/40 bg-emerald-900/20 text-emerald-300' : 'border-brand-border/60 bg-white/5 text-gray-300'
+                }`}>
+                  {p.pred_home}–{p.pred_away}
+                </span>
+                {finished && <PtsPill pts={p.points} />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function MatchRow({ match }) {
   const finished  = match.status === 'finished';
   const live      = match.status === 'live';
@@ -303,6 +403,7 @@ function MatchRow({ match }) {
     : '–';
 
   const venue = VENUE_BY_MATCH[match.match_number];
+  const [showPreds, setShowPreds] = useState(false);
 
   return (
     <div className={`pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
@@ -364,6 +465,18 @@ function MatchRow({ match }) {
               </span>
             </div>
           )}
+          {/* Predictions button — inside center column so it aligns with the score */}
+          <div className="mt-2 flex justify-center">
+            <button
+              onClick={() => setShowPreds(true)}
+              className="text-[11px] text-gray-500 hover:text-brand-gold transition-colors flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.356-3.789M9 20H4v-2a4 4 0 015.356-3.789M15 11a4 4 0 11-8 0 4 4 0 018 0zm6 0a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              View predictions
+            </button>
+          </div>
         </div>
 
         {/* FT / LIVE / Today / date — spans full height */}
@@ -379,6 +492,7 @@ function MatchRow({ match }) {
           )}
         </div>
       </div>
+      {showPreds && <PredictionsModal match={match} onClose={() => setShowPreds(false)} />}
     </div>
   );
 }
