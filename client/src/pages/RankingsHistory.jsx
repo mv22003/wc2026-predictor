@@ -25,10 +25,23 @@ const PHASE_LABELS = {
   third:       '3rd Place',
 };
 
-const PAD_L      = 40;
-const PAD_T      = 36;  // extra top space for phase labels
-const PAD_B      = 30;
-const PAD_R      = 180;
+const PAD_L = 40;
+const PAD_T = 52;
+const PAD_B = 44;
+
+// Measure the exact pixel width of the longest possible end label so PAD_R
+// is tight rather than a conservative guess. Longest name is "Maxi Webster-Coles";
+// worst-case rank prefix is two digits, e.g. "#10 ".
+const PAD_R = (() => {
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx    = canvas.getContext('2d');
+    ctx.font     = '600 11px ui-sans-serif, sans-serif';
+    return Math.ceil(ctx.measureText('#10 Maxi Webster-Coles').width) + 20; // 12px gap + 8px buffer
+  } catch {
+    return 180;
+  }
+})();
 const MIN_STEP_Y = 22;
 const DOT_R      = 3;
 
@@ -260,15 +273,6 @@ export default function RankingsHistory() {
                   width={band.width} height={svgH}
                   fill={band.even ? 'rgba(255,255,255,0.0)' : 'rgba(255,255,255,0.025)'}
                 />
-                {/* Phase label at top */}
-                <text
-                  x={band.x + band.width / 2} y={14}
-                  textAnchor="middle" fontSize={10} fontWeight="600"
-                  fill="rgba(255,255,255,0.3)" fontFamily="ui-sans-serif,sans-serif"
-                  style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                >
-                  {band.label}
-                </text>
                 {/* Phase divider line (skip the first) */}
                 {i > 0 && (
                   <line
@@ -290,7 +294,7 @@ export default function RankingsHistory() {
               <>
                 <rect x={xOf(hoveredCol) - STEP_X/2} y={PAD_T - 8} width={STEP_X} height={plotH + 16} fill="rgba(255,255,255,0.05)" rx={2} />
                 <line x1={xOf(hoveredCol)} y1={PAD_T - 6} x2={xOf(hoveredCol)} y2={PAD_T + plotH + 6} stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="4 3" />
-                <text x={xOf(hoveredCol)} y={PAD_T - 10} textAnchor="middle" fontSize={9} fontWeight="600" fill="rgba(255,255,255,0.5)" fontFamily="ui-monospace,monospace">
+                <text x={xOf(hoveredCol)} y={PAD_T - 26} textAnchor="middle" fontSize={9} fontWeight="600" fill="rgba(255,255,255,0.5)" fontFamily="ui-monospace,monospace">
                   M{matches[hoveredCol].match_number}
                 </text>
               </>
@@ -306,7 +310,7 @@ export default function RankingsHistory() {
               const every = zoom <= 24 ? 5 : zoom <= 32 ? 3 : zoom <= 44 ? 2 : 1;
               if (i % every !== 0) return null;
               return (
-                <text key={i} x={xOf(i)} y={svgH - PAD_B + 14} textAnchor="middle" fontSize={9}
+                <text key={i} x={xOf(i)} y={svgH - 14} textAnchor="middle" fontSize={9}
                   fill={hoveredCol === i ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.18)'}
                   fontFamily="ui-monospace,monospace"
                 >
@@ -352,6 +356,34 @@ export default function RankingsHistory() {
                 );
               })
             )}
+
+            {/* Rank badges — only when a single user is isolated */}
+            {hoveredCol !== null && hoveredCol !== matchCount - 1 && selected.size >= 1 && selected.size <= 5 && users.map((user, ui) => {
+              if (!isVisible(user.name)) return null;
+              const rank = user.ranks[hoveredCol];
+              if (rank == null) return null;
+              const color = COLORS[ui % COLORS.length];
+              const cx = xOf(hoveredCol);
+              const cy = yOf(rank);
+              const label = String(rank);
+              const badgeW = label.length > 1 ? 24 : 18;
+              return (
+                <g key={user.name}>
+                  <rect
+                    x={cx - badgeW / 2} y={cy - 10}
+                    width={badgeW} height={18}
+                    rx={4} fill={color} opacity={0.92}
+                  />
+                  <text
+                    x={cx} y={cy + 4}
+                    textAnchor="middle" fontSize={12} fontWeight="700"
+                    fill="rgba(0,0,0,0.85)" fontFamily="ui-monospace,monospace"
+                  >
+                    {label}
+                  </text>
+                </g>
+              );
+            })}
           </svg>
         </div>
 
