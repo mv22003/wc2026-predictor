@@ -200,6 +200,23 @@ async function initDb() {
     }
   }
 
+  // Sync venue names from the canonical schedule JSON on every startup.
+  // This is a no-op when venues are already correct; it fixes stale values
+  // in already-seeded databases whenever the JSON is updated.
+  await (async () => {
+    const path     = require('path');
+    const schedule = require(path.join(__dirname, '../../data/world-cup-2026-schedule.json'));
+
+    for (const m of schedule.matches) {
+      if (m.stage !== 'Group Stage') continue;
+      const venue = `${m.venue}, ${m.city}`;
+      await db.query(
+        `UPDATE matches SET venue = $1 WHERE match_number = $2 AND phase = 'group' AND venue IS DISTINCT FROM $1`,
+        [venue, m.match_number]
+      );
+    }
+  })();
+
   const { rows } = await db.query('SELECT COUNT(*) AS n FROM teams');
   if (parseInt(rows[0].n, 10) === 0) {
     console.log('ℹ️  Database is empty. Run: node seed.js  to load WC 2026 data.');
