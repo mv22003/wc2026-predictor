@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate, Link, useLocation } from 'react-router-dom';
-import Home        from './pages/Home';
-import LiveResults from './pages/LiveResults';
-import Predict     from './pages/Predict';
-import Leaderboard from './pages/Leaderboard';
-import Compare     from './pages/Compare';
-import Admin       from './pages/Admin';
+import Home            from './pages/Home';
+import LiveResults     from './pages/LiveResults';
+import Predict         from './pages/Predict';
+import Leaderboard     from './pages/Leaderboard';
+import RankingsHistory from './pages/RankingsHistory';
+import Compare         from './pages/Compare';
+import Admin           from './pages/Admin';
 
 const NAV_ITEMS = [
   { to: '/',            label: 'Home',        exact: true },
   { to: '/live',        label: 'Live Results' },
   { to: '/predict',     label: 'Predict' },
   { to: '/leaderboard', label: 'Leaderboard' },
+  { to: '/history',     label: 'History' },
   { to: '/admin',       label: 'Admin' },
 ];
 
@@ -174,6 +176,7 @@ export default function App() {
           <Route path="/predict"     element={<Predict />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/leaderboard/compare" element={<Compare />} />
+          <Route path="/history" element={<RankingsHistory />} />
           <Route path="/admin"       element={<Admin />} />
         </Routes>
       </main>

@@ -14,6 +14,88 @@ router.get('/pot', async (req, res) => {
   }
 });
 
+router.get('/history', async (req, res) => {
+  try {
+    const db = getDb();
+
+    const { rows } = await db.query(`
+      WITH finished AS (
+        SELECT id, match_number, phase,
+               ROW_NUMBER() OVER (ORDER BY match_date, id) AS seq
+        FROM matches WHERE status = 'finished'
+      ),
+      all_users AS (
+        SELECT id, name FROM users WHERE submitted_at IS NOT NULL
+      ),
+      crossed AS (
+        SELECT u.id AS user_id, u.name, f.seq, f.match_number, f.phase,
+               COALESCE(p.points, 0)                                    AS pts,
+               CASE WHEN p.points = 5 THEN 1 ELSE 0 END                 AS p5,
+               CASE WHEN p.points = 3 THEN 1 ELSE 0 END                 AS p3,
+               CASE WHEN p.points = 1 THEN 1 ELSE 0 END                 AS p1,
+               CASE WHEN p.points = 0 AND p.id IS NOT NULL THEN 1 ELSE 0 END AS p0
+        FROM all_users u
+        CROSS JOIN finished f
+        LEFT JOIN predictions p ON p.user_id = u.id AND p.match_id = f.id
+      ),
+      cumul AS (
+        SELECT user_id, name, seq, match_number, phase,
+               SUM(pts) OVER w AS cum_pts,
+               SUM(p5)  OVER w AS cum_5,
+               SUM(p3)  OVER w AS cum_3,
+               SUM(p1)  OVER w AS cum_1,
+               SUM(p0)  OVER w AS cum_0
+        FROM crossed
+        WINDOW w AS (PARTITION BY user_id ORDER BY seq ROWS UNBOUNDED PRECEDING)
+      ),
+      ranked AS (
+        SELECT *,
+          ROW_NUMBER() OVER (
+            PARTITION BY seq
+            ORDER BY cum_pts DESC, cum_5 DESC, cum_3 DESC, cum_1 DESC, cum_0 ASC, name ASC
+          ) AS pos
+        FROM cumul
+      )
+      SELECT user_id, name, seq, match_number::int AS match_number, pos::int AS pos, cum_pts::int AS cum_pts, phase
+      FROM ranked
+      ORDER BY seq, pos
+    `);
+
+    if (rows.length === 0) return res.json({ matches: [], users: [] });
+
+    const seqs = [...new Set(rows.map(r => Number(r.seq)))].sort((a, b) => a - b);
+    const matches = seqs.map(seq => {
+      const r = rows.find(x => Number(x.seq) === seq);
+      return { seq, match_number: r.match_number, phase: r.phase };
+    });
+
+    const userNames = [];
+    rows.forEach(r => { if (!userNames.includes(r.name)) userNames.push(r.name); });
+
+    const users = userNames.map(name => {
+      const ranks = [];
+      const points = [];
+      matches.forEach(m => {
+        const r = rows.find(x => x.name === name && Number(x.seq) === m.seq);
+        ranks.push(r ? r.pos : null);
+        points.push(r ? r.cum_pts : null);
+      });
+      return { name, ranks, points };
+    });
+
+    users.sort((a, b) => {
+      const af = a.ranks[a.ranks.length - 1] ?? Infinity;
+      const bf = b.ranks[b.ranks.length - 1] ?? Infinity;
+      return af - bf;
+    });
+
+    res.json({ matches, users });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const db = getDb();

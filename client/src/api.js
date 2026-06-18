@@ -26,8 +26,9 @@ export const api = {
   getMatchPredictions: (matchId) => req(`/predictions/match/${matchId}`),
 
   // Leaderboard
-  getLeaderboard: () => req('/leaderboard'),
-  getPrizePot:    () => req('/leaderboard/pot'),
+  getLeaderboard:        () => req('/leaderboard'),
+  getLeaderboardHistory: () => req('/leaderboard/history'),
+  getPrizePot:           () => req('/leaderboard/pot'),
 
   // Admin
   adminStats:    (key)           => req('/admin/stats',   { headers: { 'x-admin-key': key } }),
