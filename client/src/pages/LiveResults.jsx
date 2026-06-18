@@ -178,7 +178,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   {m.status === 'live' && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-[10px] font-black text-red-400 leading-none">
                       <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse shrink-0" />
-                      {m.live_minute != null ? `${m.live_minute}'` : 'LIVE'}
+                      LIVE
                     </span>
                   )}
                 </div>
@@ -227,7 +227,7 @@ function LiveMinute({ minute }) {
   return (
     <span className="inline-flex items-center justify-center gap-1 w-12 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-xs font-semibold text-red-400 whitespace-nowrap">
       <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-      {minute != null ? (minute === 'HT' ? 'HT' : `${minute}'`) : 'LIVE'}
+      LIVE
     </span>
   );
 }

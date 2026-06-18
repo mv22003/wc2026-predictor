@@ -88,7 +88,7 @@ export default function PredictionsModal({ match, onClose }) {
             {live && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-[10px] font-black text-red-400 leading-none">
                 <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse shrink-0" />
-                {match.live_minute ? `${match.live_minute}'` : 'LIVE'}
+                LIVE
               </span>
             )}
             {!finished && !live && (

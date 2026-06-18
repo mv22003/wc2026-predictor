@@ -55,7 +55,7 @@ export default function MatchRow({ match }) {
           {live ? (
             <span className="inline-flex items-center justify-center gap-1 w-12 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/60 text-xs font-semibold text-emerald-400 whitespace-nowrap">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              {match.live_minute != null ? `${match.live_minute}'` : 'LIVE'}
+              LIVE
             </span>
           ) : finished ? (
             <span className="tag pts-exact text-xs inline-flex justify-center w-12">FT</span>

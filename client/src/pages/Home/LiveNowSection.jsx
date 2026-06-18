@@ -40,14 +40,6 @@ function LiveMatchCard({ match }) {
 
   return (
     <div className="py-2 px-1">
-      {match.live_minute != null && (
-        <div className="flex justify-center mb-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/60 text-xs font-black text-red-400 whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-            {match.live_minute}'
-          </span>
-        </div>
-      )}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           <span className="text-lg font-black text-white text-right leading-tight truncate">
