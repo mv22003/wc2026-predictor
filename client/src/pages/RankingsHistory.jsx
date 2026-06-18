@@ -105,9 +105,9 @@ export default function RankingsHistory() {
 
   if (isMobile) return (
     <div>
-      <div className="mb-5">
-        <h1 className="text-2xl font-black text-white">Ranking History</h1>
-        <p className="text-gray-400 text-sm mt-1">How the standings have evolved match by match</p>
+      <div className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-8 pt-6 sm:pt-3 pb-3">
+        <h1 className="text-2xl font-black">Ranking History</h1>
+        <p className="text-sm text-gray-400 mt-0.5">How the standings have evolved match by match</p>
       </div>
       <div className="bg-brand-card border border-brand-border rounded-2xl flex flex-col items-center justify-center gap-3 text-center py-16 px-6">
         <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
@@ -188,9 +188,9 @@ export default function RankingsHistory() {
 
   return (
     <div>
-      <div className="mb-5">
-        <h1 className="text-2xl font-black text-white">Ranking History</h1>
-        <p className="text-gray-400 text-sm mt-1">How the standings have evolved match by match</p>
+      <div className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-8 pt-6 sm:pt-3 pb-3">
+        <h1 className="text-2xl font-black">Ranking History</h1>
+        <p className="text-sm text-gray-400 mt-0.5">How the standings have evolved match by match</p>
       </div>
 
       <div className="bg-brand-card border border-brand-border rounded-2xl p-4 sm:p-6 space-y-4">
@@ -290,15 +290,24 @@ export default function RankingsHistory() {
             ))}
 
             {/* Column hover tint + indicator */}
-            {hoveredCol !== null && (
-              <>
-                <rect x={xOf(hoveredCol) - STEP_X/2} y={PAD_T - 8} width={STEP_X} height={plotH + 16} fill="rgba(255,255,255,0.05)" rx={2} />
-                <line x1={xOf(hoveredCol)} y1={PAD_T - 6} x2={xOf(hoveredCol)} y2={PAD_T + plotH + 6} stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="4 3" />
-                <text x={xOf(hoveredCol)} y={PAD_T - 26} textAnchor="middle" fontSize={9} fontWeight="600" fill="rgba(255,255,255,0.5)" fontFamily="ui-monospace,monospace">
-                  M{matches[hoveredCol].match_number}
-                </text>
-              </>
-            )}
+            {hoveredCol !== null && (() => {
+              const m = matches[hoveredCol];
+              const cx = xOf(hoveredCol);
+              return (
+                <>
+                  <rect x={cx - STEP_X/2} y={PAD_T} width={STEP_X} height={plotH} fill="rgba(255,255,255,0.05)" rx={2} />
+                  <line x1={cx} y1={PAD_T} x2={cx} y2={PAD_T + plotH} stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="4 3" />
+                  {m.home_code && (
+                    <>
+                      <rect x={cx - 20} y={PAD_T - 36} width={40} height={20} rx={3} fill="rgba(10,14,30,0.9)" />
+                      <image href={`/flags/${m.home_code.toLowerCase()}.svg`} x={cx - 18} y={PAD_T - 34} width={14} height={14} preserveAspectRatio="xMidYMid meet" />
+                      <text x={cx} y={PAD_T - 24} textAnchor="middle" fontSize={11} fontWeight="700" fill="rgba(255,255,255,0.5)" fontFamily="ui-sans-serif,sans-serif">v</text>
+                      <image href={`/flags/${m.away_code.toLowerCase()}.svg`} x={cx + 4}  y={PAD_T - 34} width={14} height={14} preserveAspectRatio="xMidYMid meet" />
+                    </>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Y-axis rank labels */}
             {Array.from({ length: userCount }, (_, i) => (

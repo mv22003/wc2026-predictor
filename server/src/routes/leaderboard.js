@@ -63,10 +63,20 @@ router.get('/history', async (req, res) => {
 
     if (rows.length === 0) return res.json({ matches: [], users: [] });
 
+    const { rows: matchDetails } = await db.query(`
+      SELECT m.match_number, ht.code AS home_code, at.code AS away_code
+      FROM matches m
+      JOIN teams ht ON ht.id = m.home_team_id
+      JOIN teams at ON at.id = m.away_team_id
+      WHERE m.status = 'finished'
+    `);
+    const detailsMap = Object.fromEntries(matchDetails.map(r => [r.match_number, r]));
+
     const seqs = [...new Set(rows.map(r => Number(r.seq)))].sort((a, b) => a - b);
     const matches = seqs.map(seq => {
       const r = rows.find(x => Number(x.seq) === seq);
-      return { seq, match_number: r.match_number, phase: r.phase };
+      const d = detailsMap[r.match_number] || {};
+      return { seq, match_number: r.match_number, phase: r.phase, home_code: d.home_code, away_code: d.away_code };
     });
 
     const userNames = [];
