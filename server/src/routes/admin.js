@@ -377,7 +377,7 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
     try {
       await client.query('BEGIN');
       await client.query(
-        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = $4, away_scorers = $5, live_minute = NULL, manual_lock = TRUE WHERE id = $6',
+        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = COALESCE($4, home_scorers), away_scorers = COALESCE($5, away_scorers), live_minute = NULL, manual_lock = TRUE WHERE id = $6',
         [hs, as_, status || 'finished', home_scorers ?? null, away_scorers ?? null, matchId]
       );
       for (const p of preds) {
