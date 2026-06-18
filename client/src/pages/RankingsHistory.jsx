@@ -367,7 +367,7 @@ export default function RankingsHistory() {
             )}
 
             {/* Rank badges — only when a single user is isolated */}
-            {hoveredCol !== null && hoveredCol !== matchCount - 1 && selected.size >= 1 && selected.size <= 5 && users.map((user, ui) => {
+            {hoveredCol !== null && hoveredCol !== 0 && hoveredCol !== matchCount - 1 && selected.size >= 1 && selected.size <= 5 && users.map((user, ui) => {
               if (!isVisible(user.name)) return null;
               const rank = user.ranks[hoveredCol];
               if (rank == null) return null;
@@ -377,7 +377,7 @@ export default function RankingsHistory() {
               const label = String(rank);
               const badgeW = label.length > 1 ? 24 : 18;
               return (
-                <g key={user.name}>
+                <g key={user.name} style={{ pointerEvents: 'none' }}>
                   <rect
                     x={cx - badgeW / 2} y={cy - 10}
                     width={badgeW} height={18}
