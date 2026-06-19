@@ -108,9 +108,9 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
   async function goLive() {
     setSaving(true);
     try {
-      const hsVal = hs !== '' ? parseInt(hs, 10) : 0;
-      const asVal = as_ !== '' ? parseInt(as_, 10) : 0;
-      await api.setMatchLive(adminKey, match.id, hsVal, asVal, liveMinute || '1');
+      await api.setMatchLive(adminKey, match.id, 0, 0, liveMinute || null);
+      setHs('0');
+      setAs('0');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       onSaved?.();

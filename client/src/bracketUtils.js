@@ -367,7 +367,7 @@ function resolveTiedGroup(teams, groupMatches) {
   return result;
 }
 
-export function calcStandings(groupMatches) {
+export function calcStandings(groupMatches, includeLive = false) {
   const table = {};
   for (const m of groupMatches) {
     for (const side of ['home', 'away']) {
@@ -381,7 +381,7 @@ export function calcStandings(groupMatches) {
     }
   }
   for (const m of groupMatches) {
-    if (m.status !== 'finished') continue;
+    if (m.status !== 'finished' && !(includeLive && m.status === 'live')) continue;
     const hs = m.home_score, as_ = m.away_score;
     const h = table[m.home_team], a = table[m.away_team];
     h.played++; h.gf += hs; h.ga += as_; h.gd = h.gf - h.ga;

@@ -16,7 +16,7 @@ function getAll3rdsRanked(allMatches, groups) {
   const thirds = [];
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    const standings = calcStandings(gm);
+    const standings = calcStandings(gm, true);
     if (standings.length >= 3 && standings[2].played > 0) thirds.push({ ...standings[2], group: g });
   }
   thirds.sort((a, b) =>
@@ -47,7 +47,7 @@ function TeamName({ name, code }) {
 function StandingsTable({ groupName, matches, qualifying3rd }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
-  const standings    = calcStandings(groupMatches);
+  const standings    = calcStandings(groupMatches, true);
   const played       = groupMatches.filter(m => m.status === 'finished').length;
   const hasLive      = groupMatches.some(m => m.status === 'live');
 
