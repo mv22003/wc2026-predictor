@@ -618,8 +618,8 @@ export default function Leaderboard() {
           <thead className="sticky top-0 z-10 bg-brand-card">
             <tr className="border-b border-brand-border text-gray-400 text-xs uppercase tracking-wider">
               <th className="hidden px-3 py-3 w-8 text-center text-gray-400 text-xs uppercase tracking-wider">H2H</th>
-              <th className="px-4 py-3 text-left w-12">#</th>
-              <th className="px-4 py-3 text-left">Player</th>
+              <th className="px-2 sm:px-4 py-3 text-left w-8 sm:w-12">#</th>
+              <th className="px-2 sm:px-4 py-3 text-left">Player</th>
               <th className="px-4 py-3 text-center text-xs hidden">Paid</th>
               <SortableCell col="pts_5" sort={sort} onSort={handleSort}>
                 <span className="tag pts-exact px-2">+5</span>
@@ -634,7 +634,7 @@ export default function Leaderboard() {
                 <span className="tag pts-zero px-2">0</span>
               </SortableCell>
               <th
-                className="px-4 py-3 text-center text-xs cursor-pointer select-none hover:opacity-80 transition-opacity"
+                className="px-2 sm:px-4 py-3 text-center text-xs cursor-pointer select-none hover:opacity-80 transition-opacity"
                 onClick={() => handleSort('last_result')}
               >
                 <div className="flex items-center justify-center gap-1">
@@ -668,7 +668,7 @@ export default function Leaderboard() {
                 )}
               </th>
               <th
-                className="px-4 py-3 text-center font-bold text-brand-gold cursor-pointer select-none hover:opacity-80 transition-opacity"
+                className="px-2 sm:px-4 py-3 text-center font-bold text-brand-gold cursor-pointer select-none hover:opacity-80 transition-opacity"
                 onClick={() => handleSort('total_points')}
               >
                 <div className="flex items-center justify-center">
@@ -712,10 +712,10 @@ export default function Leaderboard() {
                         className="w-4 h-4 rounded accent-brand-gold cursor-pointer disabled:opacity-30"
                       />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-3">
                       <RankBadge rank={row.rank} hasResults={hasResults} />
                     </td>
-                    <td className="px-4 py-3 font-semibold">
+                    <td className="px-2 sm:px-4 py-3 font-semibold">
                       <span className="flex items-center gap-1.5">
                         {row.name}
                         <span className={`text-gray-400 text-xs transition-transform inline-block ${expanded === row.id ? 'rotate-180' : ''}`}>▾</span>
@@ -739,7 +739,7 @@ export default function Leaderboard() {
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
                       <span className="tag pts-zero">{row.pts_0 ?? 0}</span>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-2 sm:px-4 py-3 text-center">
                       <PtsBadge pts={row.last_result} pending={row.last_result === null} />
                     </td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
@@ -748,7 +748,7 @@ export default function Leaderboard() {
                         : <span className="text-gray-600 text-sm">—</span>
                       }
                     </td>
-                    <td className="px-4 py-3 text-center font-black text-brand-gold text-lg">
+                    <td className="px-2 sm:px-4 py-3 text-center font-black text-brand-gold text-lg">
                       {row.total_points}
                     </td>
                   </tr>
