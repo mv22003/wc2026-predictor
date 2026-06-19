@@ -11,38 +11,12 @@ const PHASE_LABEL = {
   qf: 'Quarter-finals', sf: 'Semi-finals', '3rd': 'Third Place', final: 'Final',
 };
 
-function calcGroupStandings(groupMatches) {
-  const table = {};
-  for (const m of groupMatches) {
-    for (const key of ['home', 'away']) {
-      const name = m[`${key}_team`];
-      if (!table[name]) table[name] = {
-        name, code: m[`${key}_code`],
-        played: 0, won: 0, drawn: 0, lost: 0,
-        gf: 0, ga: 0, gd: 0, pts: 0,
-      };
-    }
-  }
-  for (const m of groupMatches) {
-    if (m.status !== 'finished' && m.status !== 'live') continue;
-    const hs = m.home_score, as_ = m.away_score;
-    const h = table[m.home_team], a = table[m.away_team];
-    h.played++; h.gf += hs; h.ga += as_; h.gd = h.gf - h.ga;
-    a.played++; a.gf += as_; a.ga += hs; a.gd = a.gf - a.ga;
-    if (hs > as_)       { h.won++;   h.pts += 3; a.lost++; }
-    else if (hs < as_)  { a.won++;   a.pts += 3; h.lost++; }
-    else                { h.drawn++; h.pts++;     a.drawn++; a.pts++; }
-  }
-  return Object.values(table).sort((a, b) =>
-    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name)
-  );
-}
 
 function getBest3rds(allMatches, groups) {
   const thirds = [];
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    const standings = calcGroupStandings(gm);
+    const standings = calcStandings(gm);
     if (standings.length >= 3 && standings[2].played > 0) thirds.push(standings[2]);
   }
   thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
@@ -62,7 +36,7 @@ function TeamName({ name, code }) {
 function StandingsTable({ groupName, matches, qualifying3rd }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
-  const standings    = calcGroupStandings(groupMatches);
+  const standings    = calcStandings(groupMatches);
   const played       = groupMatches.filter(m => m.status === 'finished').length;
   const hasLive      = groupMatches.some(m => m.status === 'live');
 
@@ -92,6 +66,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
             <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GF</th>
             <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GA</th>
             <th className="px-2 py-2 text-center w-10">GD</th>
+            <th className="px-2 py-2 text-center w-10">TCS</th>
             <th className="px-3 py-2 text-center w-10 font-bold text-brand-gold">Pts</th>
           </tr>
         </thead>
@@ -128,6 +103,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               <td className="px-2 py-2.5 text-center text-gray-400">
                 {row.gd > 0 ? `+${row.gd}` : row.gd}
               </td>
+              <td className="px-2 py-2.5 text-center text-gray-400">{row.conduct_score ?? 0}</td>
               <td className="px-3 py-2.5 text-center font-black text-brand-gold">{row.pts}</td>
             </tr>
           ))}
@@ -190,6 +166,11 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
   );
 }
 
+const COLUMN_LEGEND = [
+  ['P', 'Matches Played'], ['W', 'Wins'], ['D', 'Draws'], ['L', 'Loss'],
+  ['GF', 'Goals For'], ['GA', 'Goals Against'], ['GD', 'Goal Difference'], ['PTS', 'Points'],
+];
+
 function GroupsTab({ matches, groups }) {
   const qualifying3rd = getBest3rds(matches, groups);
   return (
@@ -208,6 +189,18 @@ function GroupsTab({ matches, groups }) {
         {groups.map(g => (
           <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} />
         ))}
+      </div>
+      <div className="space-y-1">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {COLUMN_LEGEND.map(([abbr, label]) => (
+            <span key={abbr} className="text-xs text-gray-500">
+              <span className="text-gray-300 font-semibold">{abbr}</span> = {label}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500">
+          <span className="text-gray-300 font-semibold">TCS</span> = Team Conduct Score — calculated based on yellow (-1) and red (-3) cards received
+        </p>
       </div>
     </div>
   );

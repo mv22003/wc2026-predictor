@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import Flag from '../components/Flag';
+import { calcStandings } from '../bracketUtils';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const PHASE_LABEL = {
@@ -20,38 +21,6 @@ function getBest3rds(allMatches, groups) {
   }
   thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
   return new Set(thirds.slice(0, 8).map(t => t.name));
-}
-
-function calcStandings(groupMatches) {
-  const table = {};
-
-  // Seed every team with zeroed stats
-  for (const m of groupMatches) {
-    for (const key of ['home', 'away']) {
-      const name = m[`${key}_team`];
-      if (!table[name]) table[name] = {
-        name, code: m[`${key}_code`],
-        played: 0, won: 0, drawn: 0, lost: 0,
-        gf: 0, ga: 0, gd: 0, pts: 0,
-      };
-    }
-  }
-
-  // Process finished matches
-  for (const m of groupMatches) {
-    if (m.status !== 'finished') continue;
-    const hs = m.home_score, as_ = m.away_score;
-    const h = table[m.home_team], a = table[m.away_team];
-    h.played++; h.gf += hs; h.ga += as_; h.gd = h.gf - h.ga;
-    a.played++; a.gf += as_; a.ga += hs; a.gd = a.gf - a.ga;
-    if (hs > as_)       { h.won++;   h.pts += 3; a.lost++; }
-    else if (hs < as_)  { a.won++;   a.pts += 3; h.lost++; }
-    else                { h.drawn++; h.pts++;     a.drawn++; a.pts++; }
-  }
-
-  return Object.values(table).sort((a, b) =>
-    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name)
-  );
 }
 
 // ─── Calendar components ──────────────────────────────────────────────────────
@@ -157,6 +126,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
             <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GF</th>
             <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GA</th>
             <th className="px-2 py-2 text-center w-10">GD</th>
+            <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">TCS</th>
             <th className="px-3 py-2 text-center w-10 font-bold text-brand-gold">Pts</th>
           </tr>
         </thead>
@@ -196,6 +166,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               <td className="px-2 py-2.5 text-center text-gray-400">
                 {row.gd > 0 ? `+${row.gd}` : row.gd}
               </td>
+              <td className="px-2 py-2.5 text-center text-gray-400 hidden sm:table-cell">{row.conduct_score ?? 0}</td>
               <td className="px-3 py-2.5 text-center font-black text-brand-gold">{row.pts}</td>
             </tr>
           ))}

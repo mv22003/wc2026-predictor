@@ -5,7 +5,9 @@ const { getDb } = require('../db');
 const MATCH_SELECT = `
   SELECT m.*,
     ht.name        as home_team,  ht.code as home_code,  ht.flag_emoji as home_flag,
-    at.name        as away_team,  at.code as away_code,  at.flag_emoji as away_flag
+    ht.conduct_score as home_conduct, ht.fifa_ranking as home_ranking,
+    at.name        as away_team,  at.code as away_code,  at.flag_emoji as away_flag,
+    at.conduct_score as away_conduct, at.fifa_ranking as away_ranking
   FROM matches m
   JOIN teams ht ON m.home_team_id = ht.id
   JOIN teams at ON m.away_team_id = at.id

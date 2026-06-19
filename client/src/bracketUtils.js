@@ -299,6 +299,74 @@ export const BEST3RD_SLOTS = [
 ];
 
 // ── Utility functions ─────────────────────────────────────────────────────────
+
+// Lower FIFA ranking number = better; nulls go last.
+function fifaRankCmp(a, b) {
+  if (a.fifa_ranking == null && b.fifa_ranking == null) return 0;
+  if (a.fifa_ranking == null) return 1;
+  if (b.fifa_ranking == null) return -1;
+  return a.fifa_ranking - b.fifa_ranking;
+}
+
+// Compute head-to-head stats for a subset of teams using only matches between them.
+function calcH2H(teams, matches) {
+  const names = new Set(teams.map(t => t.name));
+  const stats = {};
+  for (const t of teams) stats[t.name] = { pts: 0, gd: 0, gf: 0 };
+  for (const m of matches) {
+    if (m.status !== 'finished') continue;
+    if (!names.has(m.home_team) || !names.has(m.away_team)) continue;
+    const hs = m.home_score, as_ = m.away_score;
+    stats[m.home_team].gf += hs; stats[m.home_team].gd += hs - as_;
+    stats[m.away_team].gf += as_; stats[m.away_team].gd += as_ - hs;
+    if (hs > as_)      stats[m.home_team].pts += 3;
+    else if (hs < as_) stats[m.away_team].pts += 3;
+    else { stats[m.home_team].pts++; stats[m.away_team].pts++; }
+  }
+  return stats;
+}
+
+// Apply FIFA tiebreakers to a group of teams equal on points.
+// Step 1: h2h pts → h2h gd → h2h gf
+// Step 2 (for any subset still tied): overall gd → overall gf → alphabetical
+// (conduct score and FIFA ranking omitted — no data available)
+function resolveTiedGroup(teams, groupMatches) {
+  if (teams.length === 1) return teams;
+
+  const h2h = calcH2H(teams, groupMatches);
+  const byH2H = [...teams].sort((a, b) =>
+    (h2h[b.name].pts - h2h[a.name].pts) ||
+    (h2h[b.name].gd  - h2h[a.name].gd)  ||
+    (h2h[b.name].gf  - h2h[a.name].gf)
+  );
+
+  const result = [];
+  let i = 0;
+  while (i < byH2H.length) {
+    let j = i + 1;
+    const hi = h2h[byH2H[i].name];
+    while (j < byH2H.length) {
+      const hj = h2h[byH2H[j].name];
+      if (hj.pts === hi.pts && hj.gd === hi.gd && hj.gf === hi.gf) j++;
+      else break;
+    }
+    const subgroup = byH2H.slice(i, j);
+    if (subgroup.length === 1) {
+      result.push(subgroup[0]);
+    } else {
+      // Step 2: overall group stats, then conduct score, then FIFA ranking
+      result.push(...subgroup.sort((a, b) =>
+        (b.gd - a.gd) || (b.gf - a.gf) ||
+        (b.conduct_score - a.conduct_score) ||
+        fifaRankCmp(a, b) ||
+        a.name.localeCompare(b.name)
+      ));
+    }
+    i = j;
+  }
+  return result;
+}
+
 export function calcStandings(groupMatches) {
   const table = {};
   for (const m of groupMatches) {
@@ -307,6 +375,8 @@ export function calcStandings(groupMatches) {
       if (!table[name]) table[name] = {
         name, code: m[`${side}_code`],
         played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, pts: 0,
+        conduct_score: m[`${side}_conduct`] ?? 0,
+        fifa_ranking:  m[`${side}_ranking`] ?? null,
       };
     }
   }
@@ -320,9 +390,17 @@ export function calcStandings(groupMatches) {
     else if (hs < as_) { a.won++;   a.pts += 3; h.lost++; }
     else               { h.drawn++; h.pts++;     a.drawn++; a.pts++; }
   }
-  return Object.values(table).sort(
-    (a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name)
-  );
+
+  const teams = Object.values(table).sort((a, b) => b.pts - a.pts);
+  const result = [];
+  let i = 0;
+  while (i < teams.length) {
+    let j = i + 1;
+    while (j < teams.length && teams[j].pts === teams[i].pts) j++;
+    result.push(...resolveTiedGroup(teams.slice(i, j), groupMatches));
+    i = j;
+  }
+  return result;
 }
 
 export function resolveTeam(slot, byGroup, dbByNum) {
@@ -356,10 +434,16 @@ export function resolveBest3rdSlots(byGroup) {
   const thirds = Object.entries(byGroup)
     .map(([group, standings]) => {
       const t = standings[2];
-      return (t && t.played > 0) ? { name: t.name, code: t.code, group, pts: t.pts, gd: t.gd, gf: t.gf } : null;
+      return (t && t.played > 0)
+        ? { name: t.name, code: t.code, group, pts: t.pts, gd: t.gd, gf: t.gf,
+            conduct_score: t.conduct_score ?? 0, fifa_ranking: t.fifa_ranking ?? null }
+        : null;
     })
     .filter(Boolean)
-    .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
+    .sort((a, b) =>
+      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf ||
+      (b.conduct_score - a.conduct_score) || fifaRankCmp(a, b) || a.name.localeCompare(b.name)
+    );
 
   if (thirds.length < 8) return null;
 

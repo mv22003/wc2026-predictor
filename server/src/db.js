@@ -70,6 +70,8 @@ async function initDb() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT FALSE`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(10,2)`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_type TEXT`);
+  await db.query(`ALTER TABLE teams ADD COLUMN IF NOT EXISTS conduct_score INTEGER NOT NULL DEFAULT 0`);
+  await db.query(`ALTER TABLE teams ADD COLUMN IF NOT EXISTS fifa_ranking INTEGER`);
 
   // Rebuild all group-stage match_numbers to match the API's chronological ordering.
   // Reads the canonical schedule JSON and assigns each DB match the correct number

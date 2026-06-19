@@ -6,6 +6,7 @@ import RecalculateButton from './RecalculateButton';
 import ResultRow from './ResultRow';
 import UserPredictionsPanel from './UserPredictionsPanel';
 import PrizePotCard from './PrizePotCard';
+import ConductPanel from './ConductPanel';
 
 const LS_KEY = 'wc2026_admin_key';
 
@@ -193,6 +194,8 @@ export default function Admin() {
       </div>
 
       <KOPanel matches={matches} adminKey={key} onRefresh={() => load(key)} />
+
+      <ConductPanel adminKey={key} matches={matches} />
 
       <UserPredictionsPanel adminKey={key} />
 

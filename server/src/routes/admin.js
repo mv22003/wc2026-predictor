@@ -197,6 +197,49 @@ router.get('/teams', adminAuth, async (req, res) => {
   }
 });
 
+router.patch('/teams/:id', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const teamId = parseInt(req.params.id, 10);
+    const { conduct_score, fifa_ranking } = req.body ?? {};
+
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (conduct_score !== undefined) {
+      const cs = parseInt(conduct_score, 10);
+      if (isNaN(cs)) return res.status(400).json({ error: 'conduct_score must be an integer' });
+      fields.push(`conduct_score = $${idx++}`);
+      values.push(cs);
+    }
+    if (fifa_ranking !== undefined) {
+      if (fifa_ranking === null) {
+        fields.push(`fifa_ranking = $${idx++}`);
+        values.push(null);
+      } else {
+        const fr = parseInt(fifa_ranking, 10);
+        if (isNaN(fr) || fr < 1) return res.status(400).json({ error: 'fifa_ranking must be a positive integer or null' });
+        fields.push(`fifa_ranking = $${idx++}`);
+        values.push(fr);
+      }
+    }
+
+    if (fields.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+    values.push(teamId);
+    const { rowCount } = await db.query(
+      `UPDATE teams SET ${fields.join(', ')} WHERE id = $${idx}`,
+      values
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Team not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/teams/bulk', adminAuth, async (req, res) => {
   try {
     const db = getDb();
@@ -233,13 +276,16 @@ router.get('/matches', adminAuth, async (req, res) => {
     const { rows } = await db.query(`
       SELECT m.*,
         ht.name as home_team, ht.code as home_code, ht.flag_emoji as home_flag,
+        ht.conduct_score as home_conduct, ht.fifa_ranking as home_ranking,
         at.name as away_team, at.code as away_code, at.flag_emoji as away_flag,
+        at.conduct_score as away_conduct, at.fifa_ranking as away_ranking,
         COUNT(p.id) as prediction_count
       FROM matches m
       JOIN teams ht ON m.home_team_id = ht.id
       JOIN teams at ON m.away_team_id = at.id
       LEFT JOIN predictions p ON m.id = p.match_id
-      GROUP BY m.id, ht.name, ht.code, ht.flag_emoji, at.name, at.code, at.flag_emoji
+      GROUP BY m.id, ht.name, ht.code, ht.flag_emoji, ht.conduct_score, ht.fifa_ranking,
+                        at.name, at.code, at.flag_emoji, at.conduct_score, at.fifa_ranking
       ORDER BY m.match_date, m.id
     `);
     res.json(rows);
