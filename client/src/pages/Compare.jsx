@@ -176,15 +176,10 @@ function ScoringModal({ onClose }) {
 function PlayerCard({ name, paid, stats, onInfoClick }) {
   return (
     <div className="card flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-black text-lg truncate">{name}</p>
-          {paid
-            ? <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">Paid</span>
-            : <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/25">Not paid</span>
-          }
-        </div>
-        <div className="shrink-0 text-right">
+      {/* Mobile: name full row, pts below. Desktop: name left, pts right */}
+      <div className="sm:flex sm:items-start sm:justify-between sm:gap-2">
+        <p className="font-black text-lg truncate">{name}</p>
+        <div className="shrink-0 sm:text-right mt-0.5 sm:mt-0">
           <span className="text-brand-gold font-black text-3xl">{stats.pts}</span>
           <span className="text-gray-400 text-xs ml-1">pts</span>
         </div>
