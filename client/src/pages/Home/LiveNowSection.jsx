@@ -40,23 +40,39 @@ function LiveMatchCard({ match }) {
 
   return (
     <div className="py-2 px-1">
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-          <span className="text-lg font-black text-white text-right leading-tight truncate">
-            <TeamName name={match.home_team} code={match.home_code} />
-          </span>
-          <Flag code={match.home_code} name={match.home_team} className="w-12 h-12 shrink-0" />
+      <div className="flex items-end gap-2">
+        <div className="flex-1 min-w-0 flex flex-col items-end gap-1.5">
+          {match.home_ranking != null && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
+              <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
+              #{match.home_ranking}
+            </span>
+          )}
+          <div className="flex items-center justify-end gap-2 min-w-0 w-full">
+            <span className="text-lg font-black text-white text-right leading-tight truncate">
+              <TeamName name={match.home_team} code={match.home_code} />
+            </span>
+            <Flag code={match.home_code} name={match.home_team} className="w-12 h-12 shrink-0" />
+          </div>
         </div>
         <div className="shrink-0 px-2">
           <span className="font-black text-4xl text-white tabular-nums">
             {match.home_score}–{match.away_score}
           </span>
         </div>
-        <div className="flex-1 flex items-center gap-2 min-w-0">
-          <Flag code={match.away_code} name={match.away_team} className="w-12 h-12 shrink-0" />
-          <span className="text-lg font-black text-white leading-tight truncate">
-            <TeamName name={match.away_team} code={match.away_code} />
-          </span>
+        <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
+          {match.away_ranking != null && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
+              <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
+              #{match.away_ranking}
+            </span>
+          )}
+          <div className="flex items-center gap-2 min-w-0 w-full">
+            <Flag code={match.away_code} name={match.away_team} className="w-12 h-12 shrink-0" />
+            <span className="text-lg font-black text-white leading-tight truncate">
+              <TeamName name={match.away_team} code={match.away_code} />
+            </span>
+          </div>
         </div>
       </div>
 

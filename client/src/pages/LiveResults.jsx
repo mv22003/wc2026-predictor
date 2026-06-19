@@ -304,8 +304,7 @@ function MatchRow({ match }) {
       hover:bg-white/5 transition-colors
       ${live ? 'bg-emerald-900/20 border-l-4 border-l-emerald-400' : ''}`}>
       <div className="flex items-stretch gap-3">
-        {/* mirror spacer on mobile — matches the FT/LIVE pill width so the score stays centered */}
-        {(finished || live) && <div className="sm:hidden w-12 shrink-0" />}
+        {/* no mobile spacer needed — FT lives inside the score column, keeping both sides balanced */}
         {/* group · match# pill — desktop only */}
         <div className="hidden sm:flex sm:w-20 shrink-0 items-center justify-center">
           <span className="tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
@@ -315,14 +314,24 @@ function MatchRow({ match }) {
 
         {/* center: teams + score + venue pill */}
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
-              <span className={`text-sm font-semibold min-w-0 truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                <TeamName name={match.home_team} code={match.home_code} />
-              </span>
-              <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
+          <div className="flex items-end gap-2 sm:gap-3">
+            <div className="flex-1 min-w-0 flex flex-col items-end gap-1.5">
+              {match.home_ranking != null && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
+                  <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
+                  #{match.home_ranking}
+                </span>
+              )}
+              <div className="flex items-center gap-2 justify-end w-full">
+                <span className={`text-sm font-semibold min-w-0 truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
+                  <TeamName name={match.home_team} code={match.home_code} />
+                </span>
+                <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
+              </div>
             </div>
-            <div className="w-16 sm:w-20 shrink-0 flex items-center justify-center">
+            <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-end gap-1">
+              {finished && <span className="sm:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FT</span>}
+              {live && <span className="sm:hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-semibold text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />LIVE</span>}
               {finished ? (
                 <span className="font-black text-brand-gold text-xl tabular-nums">
                   {match.home_score}–{match.away_score}
@@ -337,11 +346,19 @@ function MatchRow({ match }) {
                 </span>
               )}
             </div>
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              <Flag code={match.away_code} name={match.away_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
-              <span className={`text-sm font-semibold min-w-0 truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                <TeamName name={match.away_team} code={match.away_code} />
-              </span>
+            <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
+              {match.away_ranking != null && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
+                  <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
+                  #{match.away_ranking}
+                </span>
+              )}
+              <div className="flex items-center gap-2 w-full">
+                <Flag code={match.away_code} name={match.away_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
+                <span className={`text-sm font-semibold min-w-0 truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
+                  <TeamName name={match.away_team} code={match.away_code} />
+                </span>
+              </div>
             </div>
           </div>
           {(finished || live) && (
@@ -373,8 +390,8 @@ function MatchRow({ match }) {
           </div>
         </div>
 
-        {/* FT / LIVE / Today / date — spans full height */}
-        <div className="sm:w-16 shrink-0 flex items-start sm:items-center justify-end">
+        {/* FT / LIVE / Today / date — desktop only; mobile FT lives inside the score column */}
+        <div className="hidden sm:flex sm:w-16 shrink-0 items-center justify-end">
           {finished ? (
             <span className="tag pts-exact text-xs inline-flex justify-center w-12">FT</span>
           ) : live ? (
