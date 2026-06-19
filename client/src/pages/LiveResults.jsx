@@ -191,6 +191,7 @@ function Best3rdsTable({ allMatches, groups }) {
         <thead>
           <tr className="text-[11px] uppercase tracking-wider text-gray-400 border-b border-brand-border/50">
             <th className="px-3 py-2 text-left w-6">#</th>
+            <th className="px-3 py-2 text-center w-8 hidden sm:table-cell">Group</th>
             <th className="px-3 py-2 text-left">Team</th>
             <th className="px-2 py-2 text-center w-7">P</th>
             <th className="px-2 py-2 text-center w-7">W</th>
@@ -211,6 +212,9 @@ function Best3rdsTable({ allMatches, groups }) {
             >
               <td className="px-3 py-2.5">
                 <span className={`text-xs font-bold ${i < 8 ? 'text-amber-400' : 'text-gray-400'}`}>{i + 1}</span>
+              </td>
+              <td className="px-3 py-2.5 text-center hidden sm:table-cell">
+                <span className="text-xs font-bold text-gray-400">{row.group}</span>
               </td>
               <td className="px-3 py-2.5 max-w-0 w-full">
                 <div className="flex items-center gap-2 min-w-0">
