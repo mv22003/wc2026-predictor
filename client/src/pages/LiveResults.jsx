@@ -12,15 +12,26 @@ const PHASE_LABEL = {
 };
 
 
-function getBest3rds(allMatches, groups) {
+function getAll3rdsRanked(allMatches, groups) {
   const thirds = [];
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
     const standings = calcStandings(gm);
-    if (standings.length >= 3 && standings[2].played > 0) thirds.push(standings[2]);
+    if (standings.length >= 3 && standings[2].played > 0) thirds.push({ ...standings[2], group: g });
   }
-  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
-  return new Set(thirds.slice(0, 8).map(t => t.name));
+  thirds.sort((a, b) =>
+    b.pts - a.pts ||
+    b.gd  - a.gd  ||
+    b.gf  - a.gf  ||
+    (b.conduct_score ?? 0) - (a.conduct_score ?? 0) ||
+    (a.fifa_ranking ?? Infinity) - (b.fifa_ranking ?? Infinity) ||
+    a.name.localeCompare(b.name)
+  );
+  return thirds;
+}
+
+function getBest3rds(allMatches, groups) {
+  return new Set(getAll3rdsRanked(allMatches, groups).slice(0, 8).map(t => t.name));
 }
 
 function TeamName({ name, code }) {
@@ -166,6 +177,66 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
   );
 }
 
+function Best3rdsTable({ allMatches, groups }) {
+  const thirds = getAll3rdsRanked(allMatches, groups);
+  if (thirds.length === 0) return null;
+
+  return (
+    <div className="card p-0 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60">
+        <h3 className="font-black text-base">Best Third Places</h3>
+        <span className="text-xs text-gray-400">{thirds.length} of {groups.length} groups</span>
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-[11px] uppercase tracking-wider text-gray-400 border-b border-brand-border/50">
+            <th className="px-3 py-2 text-left w-6">#</th>
+            <th className="px-3 py-2 text-left">Team</th>
+            <th className="px-2 py-2 text-center w-7">P</th>
+            <th className="px-2 py-2 text-center w-7">W</th>
+            <th className="px-2 py-2 text-center w-7">D</th>
+            <th className="px-2 py-2 text-center w-7">L</th>
+            <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GF</th>
+            <th className="px-2 py-2 text-center w-10 hidden sm:table-cell">GA</th>
+            <th className="px-2 py-2 text-center w-10">GD</th>
+            <th className="px-2 py-2 text-center w-10">TCS</th>
+            <th className="px-3 py-2 text-center w-10 font-bold text-brand-gold">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {thirds.map((row, i) => (
+            <tr key={row.name}
+              className={`border-b border-brand-border/30 last:border-0 transition-colors
+                ${i < 8 ? 'bg-amber-900/10 hover:bg-amber-900/20' : 'hover:bg-white/5'}`}
+            >
+              <td className="px-3 py-2.5">
+                <span className={`text-xs font-bold ${i < 8 ? 'text-amber-400' : 'text-gray-400'}`}>{i + 1}</span>
+              </td>
+              <td className="px-3 py-2.5 max-w-0 w-full">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
+                  <span className="font-semibold truncate text-sm"><TeamName name={row.name} code={row.code} /></span>
+                </div>
+              </td>
+              <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
+              <td className="px-2 py-2.5 text-center text-gray-300">{row.won}</td>
+              <td className="px-2 py-2.5 text-center text-gray-300">{row.drawn}</td>
+              <td className="px-2 py-2.5 text-center text-gray-300">{row.lost}</td>
+              <td className="px-2 py-2.5 text-center text-gray-400 hidden sm:table-cell">{row.gf}</td>
+              <td className="px-2 py-2.5 text-center text-gray-400 hidden sm:table-cell">{row.ga}</td>
+              <td className="px-2 py-2.5 text-center text-gray-400">
+                {row.gd > 0 ? `+${row.gd}` : row.gd}
+              </td>
+              <td className="px-2 py-2.5 text-center text-gray-400">{row.conduct_score ?? 0}</td>
+              <td className="px-3 py-2.5 text-center font-black text-brand-gold">{row.pts}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const COLUMN_LEGEND = [
   ['P', 'Matches Played'], ['W', 'Wins'], ['D', 'Draws'], ['L', 'Loss'],
   ['GF', 'Goals For'], ['GA', 'Goals Against'], ['GD', 'Goal Difference'], ['PTS', 'Points'],
@@ -189,6 +260,9 @@ function GroupsTab({ matches, groups }) {
         {groups.map(g => (
           <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} />
         ))}
+      </div>
+      <div className="sm:max-w-[calc(50%-12px)] sm:mx-auto">
+        <Best3rdsTable allMatches={matches} groups={groups} />
       </div>
       <div className="space-y-1">
         <div className="flex flex-wrap gap-x-4 gap-y-1">
