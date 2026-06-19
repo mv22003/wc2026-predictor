@@ -440,6 +440,7 @@ export default function Leaderboard() {
   const [flashIds, setFlashIds] = useState(new Set());
   const [lastUpdated, setLastUpdated] = useState(null);
   const [lastMatch, setLastMatch] = useState(null);
+  const [lastMatchIsLive, setLastMatchIsLive] = useState(false);
   const [nextMatch, setNextMatch] = useState(null);
   const prevBoardRef = useRef(null);
   const flashTimerRef = useRef(null);
@@ -474,6 +475,7 @@ export default function Leaderboard() {
         awayCode: newBoard[0].last_match_away_code,
         away: newBoard[0].last_match_away,
       });
+      setLastMatchIsLive(!!newBoard[0].last_match_is_live);
     }
 
     if (newBoard.length > 0 && newBoard[0].next_match_home_code) {
@@ -635,18 +637,23 @@ export default function Leaderboard() {
                 className="px-4 py-3 text-center text-xs cursor-pointer select-none hover:opacity-80 transition-opacity"
                 onClick={() => handleSort('last_result')}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-center gap-1">
                   <span className="w-3 shrink-0" />
-                  Last Result
-                  <span className="w-3 shrink-0 inline-flex justify-center text-gray-400 text-xs leading-none ml-1">
+                  {lastMatchIsLive ? (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-xs font-black text-red-400 leading-none">
+                      <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse shrink-0" />
+                      LIVE MATCH
+                    </span>
+                  ) : 'Last Result'}
+                  <span className="w-3 shrink-0 inline-flex justify-center text-gray-400 text-xs leading-none">
                     {colSort('last_result') === 'desc' ? '▾' : colSort('last_result') === 'asc' ? '▴' : '·'}
                   </span>
                 </div>
                 {lastMatch && (
                   <div className="flex items-center justify-center gap-1 mt-1">
-                    <Flag code={lastMatch.homeCode} name={lastMatch.home} className="w-5 h-4 rounded-sm object-cover" />
+                    <Flag code={lastMatch.homeCode} name={lastMatch.home} className="w-4 h-4 rounded-sm object-cover" />
                     <span className="text-gray-600 text-xs">v</span>
-                    <Flag code={lastMatch.awayCode} name={lastMatch.away} className="w-5 h-4 rounded-sm object-cover" />
+                    <Flag code={lastMatch.awayCode} name={lastMatch.away} className="w-4 h-4 rounded-sm object-cover" />
                   </div>
                 )}
               </th>
@@ -654,9 +661,9 @@ export default function Leaderboard() {
                 <div>Next Match</div>
                 {nextMatch && (
                   <div className="flex items-center justify-center gap-1 mt-1">
-                    <Flag code={nextMatch.homeCode} name={nextMatch.home} className="w-5 h-4 rounded-sm object-cover" />
+                    <Flag code={nextMatch.homeCode} name={nextMatch.home} className="w-4 h-4 rounded-sm object-cover" />
                     <span className="text-gray-600 text-xs">v</span>
-                    <Flag code={nextMatch.awayCode} name={nextMatch.away} className="w-5 h-4 rounded-sm object-cover" />
+                    <Flag code={nextMatch.awayCode} name={nextMatch.away} className="w-4 h-4 rounded-sm object-cover" />
                   </div>
                 )}
               </th>

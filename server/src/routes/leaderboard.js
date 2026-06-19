@@ -147,15 +147,17 @@ router.get('/', async (req, res) => {
 
     const ranked = assignRanks(rows);
 
-    // Find each user's points from the last finished match for the "Last Result" column
+    // Find the last finished or currently live match for the "Last Result" column
+    // Live matches are prioritised so they appear immediately in the header
     const lastMatchRes = await db.query(`
-      SELECT m.id, t1.name AS home_team, t1.code AS home_code,
+      SELECT m.id, m.status, t1.name AS home_team, t1.code AS home_code,
              t2.name AS away_team, t2.code AS away_code
       FROM matches m
       JOIN teams t1 ON t1.id = m.home_team_id
       JOIN teams t2 ON t2.id = m.away_team_id
-      WHERE m.status = 'finished'
-      ORDER BY m.match_date DESC, m.id DESC
+      WHERE m.status IN ('finished', 'live')
+      ORDER BY CASE WHEN m.status = 'live' THEN 0 ELSE 1 END ASC,
+               m.match_date DESC, m.id DESC
       LIMIT 1
     `);
 
@@ -201,6 +203,7 @@ router.get('/', async (req, res) => {
       last_match_home_code: lastMatch.home_code,
       last_match_away: lastMatch.away_team,
       last_match_away_code: lastMatch.away_code,
+      last_match_is_live: lastMatch.status === 'live',
       next_match_home: nextMatch?.home_team ?? null,
       next_match_home_code: nextMatch?.home_code ?? null,
       next_match_away: nextMatch?.away_team ?? null,
