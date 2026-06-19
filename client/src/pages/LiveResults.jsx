@@ -329,7 +329,7 @@ function MatchRow({ match }) {
                 <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
               </div>
             </div>
-            <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-end gap-1">
+            <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-center gap-1 min-h-[24px] sm:min-h-[28px]">
               {finished && <span className="sm:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FT</span>}
               {live && <span className="sm:hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-semibold text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />LIVE</span>}
               {finished ? (
