@@ -92,15 +92,15 @@ export default function Home() {
                 Predict every match, climb the leaderboard, and prove your football knowledge!
               </p>
               <div className="mt-4 hidden sm:flex justify-start">
-                <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
-                  Make Predictions
+                <Link to="/leaderboard" className="btn-primary inline-flex items-center justify-center text-sm">
+                  See Leaderboard
                 </Link>
               </div>
             </div>
           </div>
           <div className="mt-1 flex w-full justify-center gap-3 sm:hidden">
-            <Link to="/predict" className="btn-primary inline-flex items-center justify-center text-sm">
-              Make Predictions
+            <Link to="/leaderboard" className="btn-primary inline-flex items-center justify-center text-sm">
+              See Leaderboard
             </Link>
 
             <div className="bg-brand-gold/10 border border-brand-gold/40 rounded-lg px-3 py-2 backdrop-blur-sm shrink-0 text-center">
