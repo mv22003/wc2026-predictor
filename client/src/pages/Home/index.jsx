@@ -79,9 +79,9 @@ export default function Home() {
         <div className="relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="flex flex-row sm:contents items-center sm:items-start gap-3 w-full sm:w-auto">
             <img
-              src="/wc-logos/wc2026-logo-white.svg"
+              src="/wc-logos/new_logo.png"
               alt="FIFA World Cup 2026"
-              className="h-20 sm:h-28 w-auto shrink-0 px-1 sm:px-3"
+              className="h-28 sm:h-36 w-auto shrink-0 px-1 sm:px-3"
             />
 
             <div className="flex-1 text-left sm:text-left">

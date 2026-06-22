@@ -117,16 +117,18 @@ function Navbar({ onMenuOpen }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-brand-border bg-brand-navy/95 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-4">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center gap-4 ${loc.pathname === '/' ? 'justify-end' : 'justify-between'}`}>
 
         {/* Logo / Brand */}
-        <Link to="/" className="flex items-center gap-3 shrink-0">
-          <img
-            src="/wc-logos/wc2026-logo-white.svg"
-            alt="FIFA World Cup 2026"
-            className="h-7 sm:h-8 w-auto py-0.5"
-          />
-        </Link>
+        {loc.pathname !== '/' && (
+          <Link to="/" className="flex items-center gap-3 shrink-0">
+            <img
+              src="/wc-logos/new_logo.png"
+              alt="FIFA World Cup 2026"
+              className="h-7 sm:h-8 w-auto py-0.5"
+            />
+          </Link>
+        )}
 
         {/* Nav links — desktop only */}
         <nav className="hidden sm:flex items-center gap-1">
