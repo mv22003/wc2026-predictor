@@ -39,6 +39,9 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
   const [hs,  setHs]  = useState(match.home_score ?? '');
   const [as_, setAs]  = useState(match.away_score ?? '');
   const [liveMinute, setLiveMinute] = useState(match.live_minute ?? '');
+  const [outcome,  setOutcome] = useState(match.outcome ?? null);   // null | 'et' | 'pen'
+  const [penHs, setPenHs] = useState(match.pen_home ?? '');
+  const [penAs, setPenAs] = useState(match.pen_away ?? '');
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -51,6 +54,14 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
   const isFinished = match.status === 'finished';
   const isLive     = match.status === 'live';
   const isLocked   = !!match.manual_lock;
+  const isKO       = match.phase !== 'group';
+  const isDraw     = isKO && hs !== '' && as_ !== '' && Number(hs) === Number(as_);
+  // KO draws must be resolved by penalties — block save if pen data is incomplete or tied
+  const drawBlocked = isDraw && (
+    outcome !== 'pen' ||
+    penHs === '' || penAs === '' ||
+    Number(penHs) === Number(penAs)
+  );
   const scorersOpen = openScorerId === match.id;
   const homeCount   = (Number.isInteger(+hs)  && +hs  >= 0) ? +hs  : 0;
   const awayCount   = (Number.isInteger(+as_) && +as_ >= 0) ? +as_ : 0;
@@ -96,6 +107,9 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
       setHs('');
       setAs('');
       setLiveMinute('');
+      setOutcome(null);
+      setPenHs('');
+      setPenAs('');
       onSaved?.();
     } catch (e) {
       alert('Error: ' + e.message);
@@ -137,12 +151,24 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
     }
   }
 
+  function effectiveOutcome() {
+    if (!isKO) return null;
+    if (outcome === 'pen' && !isDraw) return null;  // Penalties only on draws
+    return outcome || null;
+  }
+
+  function penScores() {
+    if (effectiveOutcome() !== 'pen') return [null, null];
+    return [penHs === '' ? null : parseInt(penHs, 10), penAs === '' ? null : parseInt(penAs, 10)];
+  }
+
   // live → finished
   async function finishLive() {
     if (hs === '' || as_ === '') return;
     setSaving(true);
+    const [ph, pa] = penScores();
     try {
-      await api.updateResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10));
+      await api.updateResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10), effectiveOutcome(), ph, pa);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       onSaved?.();
@@ -157,11 +183,12 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
   async function save() {
     if (hs === '' || as_ === '') return;
     setSaving(true);
+    const [ph, pa] = penScores();
     try {
       if (isFinished) {
-        await api.updateResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10));
+        await api.updateResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10), effectiveOutcome(), ph, pa);
       } else {
-        await api.submitResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10));
+        await api.submitResult(adminKey, match.id, parseInt(hs, 10), parseInt(as_, 10), effectiveOutcome(), ph, pa);
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -230,20 +257,73 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
           <div className="flex items-center justify-center gap-1.5">
             <input
               type="number" min="0" max="99"
-              className="w-10 h-9 text-center font-bold rounded bg-brand-navy border border-brand-border
-                         focus:border-brand-gold focus:outline-none text-sm"
+              className="w-10 h-9 text-center font-black tabular-nums rounded bg-brand-navy border border-brand-border
+                         focus:border-brand-gold focus:outline-none text-base"
               value={hs}
               onChange={e => setHs(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
             />
             <span className="text-gray-400">–</span>
             <input
               type="number" min="0" max="99"
-              className="w-10 h-9 text-center font-bold rounded bg-brand-navy border border-brand-border
-                         focus:border-brand-gold focus:outline-none text-sm"
+              className="w-10 h-9 text-center font-black tabular-nums rounded bg-brand-navy border border-brand-border
+                         focus:border-brand-gold focus:outline-none text-base"
               value={as_}
               onChange={e => setAs(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
             />
           </div>
+
+          {/* ET / PEN selector — KO matches only */}
+          {isKO && (
+            <div className="mt-1.5 flex flex-col items-center gap-1">
+              <div className="flex gap-1">
+                {[['et', 'ET'], ['pen', 'Pen']].map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setOutcome(o => o === val ? null : val)}
+                    disabled={val === 'pen' && !isDraw}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
+                      outcome === val
+                        ? val === 'pen'
+                          ? 'bg-orange-500/20 text-orange-300 border-orange-500/50'
+                          : 'bg-sky-500/20 text-sky-300 border-sky-500/50'
+                        : 'bg-brand-border/40 text-gray-400 border-brand-border/60 hover:text-gray-200'
+                    } disabled:opacity-40`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {outcome === 'pen' && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <input
+                    type="number" min="0" max="99"
+                    placeholder="0"
+                    className="w-8 h-6 text-center text-xs font-bold rounded bg-brand-navy border border-orange-500/40
+                               text-orange-300 focus:border-orange-400 focus:outline-none"
+                    value={penHs}
+                    onChange={e => setPenHs(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                  />
+                  <span className="text-[10px] text-gray-500">pen</span>
+                  <input
+                    type="number" min="0" max="99"
+                    placeholder="0"
+                    className="w-8 h-6 text-center text-xs font-bold rounded bg-brand-navy border border-orange-500/40
+                               text-orange-300 focus:border-orange-400 focus:outline-none"
+                    value={penAs}
+                    onChange={e => setPenAs(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {drawBlocked && (
+            <p className="mt-1 text-[10px] text-orange-400/80 text-center leading-tight">
+              {outcome === 'pen' ? 'Enter non-equal pen scores' : 'Select ET or Pen'}
+            </p>
+          )}
+
           {isLive && (
             <div className="flex items-center justify-center mt-1 gap-0.5">
               <input
@@ -284,11 +364,11 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
               </button>
               <button
                 onClick={finishLive}
-                disabled={saving || resetting || hs === '' || as_ === ''}
+                disabled={saving || resetting || hs === '' || as_ === '' || drawBlocked}
                 className="py-2 rounded text-xs font-bold transition-all
                            bg-emerald-500/20 text-emerald-400 border border-emerald-500/40
                            hover:bg-emerald-500/30 disabled:opacity-40"
-                title="Mark as finished"
+                title={drawBlocked ? 'KO draw requires Pen result' : 'Mark as finished'}
               >
                 End
               </button>
@@ -318,7 +398,8 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
             <div className="flex items-center gap-1.5">
               <button
                 onClick={save}
-                disabled={saving || resetting || hs === '' || as_ === ''}
+                disabled={saving || resetting || hs === '' || as_ === '' || drawBlocked}
+                title={drawBlocked ? 'KO draw requires Pen result' : undefined}
                 className={`px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 ${
                   saved
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
@@ -354,7 +435,8 @@ export default function ResultRow({ match, adminKey, onSaved, openScorerId, setO
             <div className="flex items-center gap-1.5">
               <button
                 onClick={save}
-                disabled={saving || resetting || hs === '' || as_ === ''}
+                disabled={saving || resetting || hs === '' || as_ === '' || drawBlocked}
+                title={drawBlocked ? 'KO draw requires Pen result' : undefined}
                 className={`px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 ${
                   saved
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'

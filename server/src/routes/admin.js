@@ -361,7 +361,7 @@ function parseLiveMinute(val) {
 router.post('/matches/:id/result', adminAuth, async (req, res) => {
   try {
     const db = getDb();
-    const { home_score, away_score } = req.body;
+    const { home_score, away_score, outcome, pen_home, pen_away } = req.body;
     const matchId = parseInt(req.params.id, 10);
 
     if (home_score == null || away_score == null)
@@ -373,14 +373,23 @@ router.post('/matches/:id/result', adminAuth, async (req, res) => {
     const { rows: savedRows } = await db.query('SELECT phase FROM matches WHERE id = $1', [matchId]);
     const saved = savedRows[0];
 
+    if (saved?.phase !== 'group' && hs === as_) {
+      if (outcome !== 'pen')
+        return res.status(400).json({ error: 'KO draws must be resolved by penalties (outcome="pen")' });
+      const ph = parseInt(pen_home, 10);
+      const pa = parseInt(pen_away, 10);
+      if (isNaN(ph) || isNaN(pa) || ph === pa)
+        return res.status(400).json({ error: 'KO draws require non-equal pen_home and pen_away scores' });
+    }
+
     const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
 
     const client = await db.connect();
     try {
       await client.query('BEGIN');
       await client.query(
-        "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished', live_minute = NULL, manual_lock = TRUE WHERE id = $3",
-        [hs, as_, matchId]
+        "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished', live_minute = NULL, manual_lock = TRUE, outcome = $3, pen_home = $4, pen_away = $5 WHERE id = $6",
+        [hs, as_, outcome ?? null, pen_home ?? null, pen_away ?? null, matchId]
       );
       for (const p of preds) {
         await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
@@ -408,7 +417,7 @@ router.post('/matches/:id/result', adminAuth, async (req, res) => {
 router.put('/matches/:id/result', adminAuth, async (req, res) => {
   try {
     const db = getDb();
-    const { home_score, away_score, status, home_scorers, away_scorers } = req.body;
+    const { home_score, away_score, status, home_scorers, away_scorers, outcome, pen_home, pen_away } = req.body;
     const matchId = parseInt(req.params.id, 10);
 
     const hs = parseInt(home_score, 10);
@@ -417,14 +426,23 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
     const { rows: savedRows } = await db.query('SELECT phase FROM matches WHERE id = $1', [matchId]);
     const savedPut = savedRows[0];
 
+    if (savedPut?.phase !== 'group' && hs === as_) {
+      if (outcome !== 'pen')
+        return res.status(400).json({ error: 'KO draws must be resolved by penalties (outcome="pen")' });
+      const ph = parseInt(pen_home, 10);
+      const pa = parseInt(pen_away, 10);
+      if (isNaN(ph) || isNaN(pa) || ph === pa)
+        return res.status(400).json({ error: 'KO draws require non-equal pen_home and pen_away scores' });
+    }
+
     const { rows: preds } = await db.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
 
     const client = await db.connect();
     try {
       await client.query('BEGIN');
       await client.query(
-        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = COALESCE($4, home_scorers), away_scorers = COALESCE($5, away_scorers), live_minute = NULL, manual_lock = TRUE WHERE id = $6',
-        [hs, as_, status || 'finished', home_scorers ?? null, away_scorers ?? null, matchId]
+        'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = COALESCE($4, home_scorers), away_scorers = COALESCE($5, away_scorers), live_minute = NULL, manual_lock = TRUE, outcome = $6, pen_home = $7, pen_away = $8 WHERE id = $9',
+        [hs, as_, status || 'finished', home_scorers ?? null, away_scorers ?? null, outcome ?? null, pen_home ?? null, pen_away ?? null, matchId]
       );
       for (const p of preds) {
         await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
@@ -465,6 +483,58 @@ router.patch('/matches/:id/scorers', adminAuth, async (req, res) => {
   }
 });
 
+// Delete all matches for a KO phase (and all subsequent phases — cascade)
+const KO_PHASE_ORDER = ['r32', 'r16', 'qf', 'sf', '3rd', 'final'];
+
+router.delete('/matches/phase/:phase', adminAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const phase = req.params.phase.toLowerCase();
+    const force = req.query.force === 'true';
+
+    const phaseIdx = KO_PHASE_ORDER.indexOf(phase);
+    if (phaseIdx === -1) return res.status(400).json({ error: 'Invalid KO phase' });
+
+    const phasesToDelete = KO_PHASE_ORDER.slice(phaseIdx);
+
+    const { rows: allMatches } = await db.query(
+      `SELECT id, status, phase FROM matches WHERE phase = ANY($1::text[])`,
+      [phasesToDelete]
+    );
+
+    if (!force) {
+      const finished = allMatches.filter(m => m.status === 'finished');
+      if (finished.length > 0) {
+        return res.status(409).json({
+          error: `${finished.length} match(es) already have results. Pass force=true to delete anyway.`,
+          finished_count: finished.length,
+        });
+      }
+    }
+
+    const matchIds = allMatches.map(m => m.id);
+    if (matchIds.length === 0) return res.json({ success: true, deleted: 0, phases_deleted: [] });
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM predictions WHERE match_id = ANY($1::int[])', [matchIds]);
+      await client.query('DELETE FROM matches WHERE id = ANY($1::int[])', [matchIds]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    res.json({ success: true, deleted: matchIds.length, phases_deleted: phasesToDelete });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Reset a result — clears score, sets status back to upcoming, zeroes all points
 router.delete('/matches/:id/result', adminAuth, async (req, res) => {
   try {
@@ -472,7 +542,7 @@ router.delete('/matches/:id/result', adminAuth, async (req, res) => {
     const matchId = parseInt(req.params.id, 10);
 
     await db.query(
-      "UPDATE matches SET home_score = NULL, away_score = NULL, home_scorers = NULL, away_scorers = NULL, live_minute = NULL, manual_lock = FALSE, status = 'upcoming' WHERE id = $1",
+      "UPDATE matches SET home_score = NULL, away_score = NULL, home_scorers = NULL, away_scorers = NULL, live_minute = NULL, manual_lock = FALSE, status = 'upcoming', outcome = NULL, pen_home = NULL, pen_away = NULL WHERE id = $1",
       [matchId]
     );
     await db.query('UPDATE predictions SET points = 0 WHERE match_id = $1', [matchId]);

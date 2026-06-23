@@ -51,8 +51,12 @@ const RIGHT = {
 function BCard({ matchNum, dbByNum, projMap, flip = false }) {
   const dbMatch  = dbByNum[matchNum];
   const finished = dbMatch?.status === 'finished';
-  const homeWon  = finished && dbMatch.home_score > dbMatch.away_score;
-  const awayWon  = finished && dbMatch.away_score > dbMatch.home_score;
+  const homeWon  = finished && (dbMatch.outcome === 'pen'
+    ? (dbMatch.pen_home ?? 0) > (dbMatch.pen_away ?? 0)
+    : dbMatch.home_score > dbMatch.away_score);
+  const awayWon  = finished && (dbMatch.outcome === 'pen'
+    ? (dbMatch.pen_away ?? 0) > (dbMatch.pen_home ?? 0)
+    : dbMatch.away_score > dbMatch.home_score);
 
   function getTeam(side) {
     if (dbMatch) return { code: dbMatch[`${side}_code`], name: dbMatch[`${side}_team`] };
@@ -63,10 +67,10 @@ function BCard({ matchNum, dbByNum, projMap, flip = false }) {
   const away = getTeam('away');
   const rh   = CH / 2;
 
-  function Row({ team, score, won }) {
+  function Row({ team, score, penScore, won }) {
     const codeText = team ? (team.code || team.name?.slice(0, 3).toUpperCase()) : null;
     return (
-      <div className={`flex items-center gap-1 px-1.5 ${won ? 'bg-brand-gold/10' : ''} ${flip ? 'flex-row-reverse' : ''}`}
+      <div className={`flex items-center gap-1 px-1.5 ${won ? 'bg-emerald-500/10' : ''} ${flip ? 'flex-row-reverse' : ''}`}
            style={{ height: rh }}>
         {team ? (
           <>
@@ -83,9 +87,11 @@ function BCard({ matchNum, dbByNum, projMap, flip = false }) {
           </>
         )}
         {finished && (
-          <span className={`text-[11px] font-black tabular-nums ${flip ? 'mr-auto' : 'ml-auto'}
-            ${won ? 'text-brand-gold' : 'text-gray-600'}`}>
-            {score ?? '–'}
+          <span className={`text-[11px] font-black tabular-nums leading-none ${flip ? 'mr-auto' : 'ml-auto'}
+            ${won ? 'text-emerald-400' : 'text-gray-600'}`}>
+            {score ?? '–'}{penScore != null && (
+              <span className="text-[9px] font-bold"> ({penScore})</span>
+            )}
           </span>
         )}
       </div>
@@ -93,13 +99,15 @@ function BCard({ matchNum, dbByNum, projMap, flip = false }) {
   }
 
   return (
-    <div className={`overflow-hidden rounded border ${dbMatch
-        ? 'border-brand-border bg-brand-navy'
-        : 'border-brand-border/40 bg-brand-navy/60'}`}
-         style={{ width: CW, height: CH }}>
-      <Row team={home} score={dbMatch?.home_score} won={homeWon} />
-      <div className="border-t border-brand-border/30" />
-      <Row team={away} score={dbMatch?.away_score} won={awayWon} />
+    <div>
+      <div className={`overflow-hidden rounded border ${dbMatch
+          ? 'border-brand-border bg-brand-navy'
+          : 'border-brand-border/40 bg-brand-navy/60'}`}
+           style={{ width: CW, height: CH }}>
+        <Row team={home} score={dbMatch?.home_score} penScore={dbMatch?.outcome === 'pen' ? dbMatch?.pen_home : null} won={homeWon} />
+        <div className="border-t border-brand-border/30" />
+        <Row team={away} score={dbMatch?.away_score} penScore={dbMatch?.outcome === 'pen' ? dbMatch?.pen_away : null} won={awayWon} />
+      </div>
     </div>
   );
 }
@@ -194,7 +202,9 @@ export default function Bracket() {
   for (const m of allMatches) dbByNum[m.match_number] = m;
 
   const groupStarted = groupMatches.some(m => m.status === 'finished');
+  const koConfirmed  = koMatches.length > 0;
   const koFinished   = koMatches.filter(m => m.status === 'finished').length;
+  const showBracket  = groupStarted || koConfirmed;
 
   const best3rdMap = resolveBest3rdSlots(byGroup) || {};
   const projMap    = {};
@@ -240,15 +250,17 @@ export default function Bracket() {
       <div>
         <h1 className="text-2xl font-black">Knockout Bracket</h1>
         <p className="text-gray-400 text-sm mt-0.5">
-          {koMatches.length > 0
-            ? `${koFinished} of ${koMatches.length} knockout matches played · updates every 30 s`
+          {koConfirmed
+            ? koFinished > 0
+              ? `${koFinished} of ${koMatches.length} knockout matches played · updates every 30 s`
+              : `${koMatches.length} knockout match${koMatches.length > 1 ? 'es' : ''} confirmed · updates every 30 s`
             : groupStarted
             ? 'Projected from live standings · updates every 30 s'
             : 'Bracket will project once the group stage begins'}
         </p>
       </div>
 
-      {!groupStarted ? (
+      {!showBracket ? (
         <div className="card text-center py-16">
           <p className="text-5xl mb-4">⏳</p>
           <p className="font-semibold text-gray-300">Group stage hasn't started yet</p>

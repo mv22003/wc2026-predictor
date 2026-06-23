@@ -418,7 +418,9 @@ export function resolveTeam(slot, byGroup, dbByNum) {
   if (slot.type === 'winner' || slot.type === 'loser') {
     const m = dbByNum[slot.match];
     if (m?.status === 'finished') {
-      const homeWon  = m.home_score > m.away_score;
+      const homeWon  = m.outcome === 'pen'
+        ? (m.pen_home ?? 0) > (m.pen_away ?? 0)
+        : m.home_score > m.away_score;
       const pickHome = slot.type === 'winner' ? homeWon : !homeWon;
       return pickHome
         ? { name: m.home_team, code: m.home_code, projected: false }

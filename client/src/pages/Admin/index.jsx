@@ -16,8 +16,10 @@ export default function Admin() {
   const [authed,   setAuthed]   = useState(false);
   const [matches,  setMatches]  = useState([]);
   const [stats,    setStats]    = useState(null);
-  const [filter,   setFilter]   = useState('all');
+  const [filter,      setFilter]      = useState('all');
+  const [phaseFilter, setPhaseFilter] = useState('all');
   const [resultsOpen,   setResultsOpen]   = useState(false);
+  const [koOpen,        setKoOpen]        = useState(false);
   const [openScorerId,  setOpenScorerId]  = useState(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
@@ -58,11 +60,17 @@ export default function Admin() {
     load(k);
   }
 
-  const visibleMatches = filter === 'all'
-    ? matches
-    : filter === 'pending'
-    ? matches.filter(m => m.status !== 'finished')
-    : matches.filter(m => m.status === 'finished');
+  const phaseFiltered = phaseFilter === 'group'
+    ? matches.filter(m => m.phase === 'group')
+    : phaseFilter === 'ko'
+    ? matches.filter(m => m.phase !== 'group')
+    : matches;
+
+  const visibleMatches = filter === 'pending'
+    ? phaseFiltered.filter(m => m.status !== 'finished')
+    : filter === 'done'
+    ? phaseFiltered.filter(m => m.status === 'finished')
+    : phaseFiltered;
 
   if (!authed) {
     return (
@@ -137,22 +145,39 @@ export default function Admin() {
 
         {resultsOpen && (
           <>
-            <div className="flex gap-1.5 px-4 py-3 border-b border-brand-border">
-              {['all', 'pending', 'done'].map(f => (
+            <div className="flex flex-wrap items-center gap-1.5 px-4 py-3 border-b border-brand-border">
+              {[
+                { v: 'all',     label: `All (${matches.length})`,     type: 'status' },
+                { v: 'pending', label: `Pending (${matches.filter(m => m.status !== 'finished').length})`, type: 'status' },
+                { v: 'done',    label: `Done (${matches.filter(m => m.status === 'finished').length})`,    type: 'status' },
+              ].map(({ v, label }) => (
                 <button
-                  key={f}
-                  onClick={() => setFilter(f)}
+                  key={v}
+                  onClick={() => setFilter(v)}
                   className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                    filter === f
+                    filter === v
                       ? 'bg-brand-gold text-brand-navy'
                       : 'bg-brand-border text-gray-300 hover:text-white'
                   }`}
                 >
-                  {f === 'all'
-                    ? `All (${matches.length})`
-                    : f === 'pending'
-                    ? `Pending (${matches.filter(m => m.status !== 'finished').length})`
-                    : `Done (${matches.filter(m => m.status === 'finished').length})`}
+                  {label}
+                </button>
+              ))}
+              <span className="w-px h-5 bg-brand-border/60 mx-1" />
+              {[
+                { v: 'group', label: `Group Stage`, count: matches.filter(m => m.phase === 'group').length },
+                { v: 'ko',    label: `Knockout`, count: matches.filter(m => m.phase !== 'group').length },
+              ].map(({ v, label, count }) => (
+                <button
+                  key={v}
+                  onClick={() => setPhaseFilter(pf => pf === v ? 'all' : v)}
+                  className={`px-3 py-1.5 rounded text-xs font-bold transition-all border ${
+                    phaseFilter === v
+                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/50'
+                      : 'bg-brand-border text-gray-300 hover:text-white border-transparent'
+                  }`}
+                >
+                  {label} <span className="hidden sm:inline">({count})</span>
                 </button>
               ))}
             </div>
@@ -193,7 +218,20 @@ export default function Admin() {
         )}
       </div>
 
-      <KOPanel matches={matches} adminKey={key} onRefresh={() => load(key)} />
+      <div className="card p-0 overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-brand-border hover:bg-white/3 transition-colors"
+          onClick={() => setKoOpen(o => !o)}
+        >
+          <h2 className="font-black text-lg">Knockout Management</h2>
+          <span className={`text-gray-400 text-xs transition-transform ${koOpen ? 'rotate-90' : ''}`}>▶</span>
+        </button>
+        {koOpen && (
+          <div className="p-4">
+            <KOPanel matches={matches} adminKey={key} onRefresh={() => load(key)} />
+          </div>
+        )}
+      </div>
 
       <ConductPanel adminKey={key} matches={matches} />
 

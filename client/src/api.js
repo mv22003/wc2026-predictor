@@ -54,17 +54,17 @@ export const api = {
       headers: { 'x-admin-key': key },
       body: { total },
     }),
-  submitResult:  (key, id, hs, as_) =>
+  submitResult:  (key, id, hs, as_, outcome, penHome, penAway) =>
     req(`/admin/matches/${id}/result`, {
       method: 'POST',
       headers: { 'x-admin-key': key },
-      body: { home_score: hs, away_score: as_ },
+      body: { home_score: hs, away_score: as_, outcome: outcome ?? null, pen_home: penHome ?? null, pen_away: penAway ?? null },
     }),
-  updateResult:  (key, id, hs, as_) =>
+  updateResult:  (key, id, hs, as_, outcome, penHome, penAway) =>
     req(`/admin/matches/${id}/result`, {
       method: 'PUT',
       headers: { 'x-admin-key': key },
-      body: { home_score: hs, away_score: as_ },
+      body: { home_score: hs, away_score: as_, outcome: outcome ?? null, pen_home: penHome ?? null, pen_away: penAway ?? null },
     }),
   recalculateAll: (key) =>
     req('/admin/recalculate', { method: 'POST', headers: { 'x-admin-key': key } }),
@@ -105,6 +105,11 @@ export const api = {
   updateTeam:  (key, id, body) => req(`/admin/teams/${id}`, { method: 'PATCH', headers: { 'x-admin-key': key }, body }),
   bulkTeams:   (key, teams)   => req('/admin/teams/bulk',   { method: 'POST', headers: { 'x-admin-key': key }, body: { teams } }),
   bulkMatches: (key, matches) => req('/admin/matches/bulk', { method: 'POST', headers: { 'x-admin-key': key }, body: { matches } }),
+  deletePhase: (key, phase, force = false) =>
+    req(`/admin/matches/phase/${phase}${force ? '?force=true' : ''}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-key': key },
+    }),
   getUserPredictions: (key, userId) =>
     req(`/admin/users/${userId}/predictions`, { headers: { 'x-admin-key': key } }),
   updatePrediction: (key, predId, predHome, predAway) =>

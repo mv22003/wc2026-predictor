@@ -513,9 +513,19 @@ function MatchRow({ match }) {
               {finished && <span className="sm:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FT</span>}
               {live && <span className="sm:hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-semibold text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />LIVE</span>}
               {finished ? (
-                <span className="font-black text-brand-gold text-xl tabular-nums">
-                  {match.home_score}–{match.away_score}
-                </span>
+                <div className="relative">
+                  <span className="font-black text-brand-gold text-xl tabular-nums block">
+                    {match.home_score}–{match.away_score}
+                  </span>
+                  {match.outcome === 'pen' && match.pen_home != null && (
+                    <span className="absolute left-1/2 -translate-x-1/2 top-full mt-0.5 text-[10px] text-brand-gold tabular-nums whitespace-nowrap font-bold">
+                      ({match.pen_home}–{match.pen_away} pens)
+                    </span>
+                  )}
+                  {match.outcome === 'et' && !(match.outcome === 'pen' && match.pen_home != null) && (
+                    <span className="absolute left-1/2 -translate-x-1/2 top-full mt-0.5 text-[10px] text-brand-gold font-bold">ET</span>
+                  )}
+                </div>
               ) : live ? (
                 <span className="font-black text-white text-xl tabular-nums">
                   {match.home_score}–{match.away_score}
@@ -542,15 +552,17 @@ function MatchRow({ match }) {
             </div>
           </div>
           {(finished || live) && (
-            <ScorerLine
-              homeScorers={match.home_scorers}
-              awayScorers={match.away_scorers}
-              homeScore={match.home_score ?? 0}
-              awayScore={match.away_score ?? 0}
-            />
+            <div className={match.outcome === 'pen' && match.pen_home != null ? 'mt-3' : ''}>
+              <ScorerLine
+                homeScorers={match.home_scorers}
+                awayScorers={match.away_scorers}
+                homeScore={match.home_score ?? 0}
+                awayScore={match.away_score ?? 0}
+              />
+            </div>
           )}
           {venue && (
-            <div className="mt-3 flex justify-center">
+            <div className={`${match.outcome === 'pen' && match.pen_home != null ? 'mt-5' : 'mt-3'} flex justify-center`}>
               <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[11px] text-gray-400 whitespace-nowrap">
                 {venue}
               </span>
@@ -573,7 +585,9 @@ function MatchRow({ match }) {
         {/* FT / LIVE / Today / date — desktop only; mobile FT lives inside the score column */}
         <div className="hidden sm:flex sm:w-16 shrink-0 items-center justify-end">
           {finished ? (
-            <span className="tag pts-exact text-xs inline-flex justify-center w-12">FT</span>
+            <span className="tag pts-exact text-xs inline-flex justify-center w-12">
+              FT
+            </span>
           ) : live ? (
             <LiveMinute minute={match.live_minute} />
           ) : (
@@ -719,8 +733,12 @@ function slotLabel(slot) {
 function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
   const dbMatch  = dbByNum[matchNum];
   const finished = dbMatch?.status === 'finished';
-  const homeWon  = finished && dbMatch.home_score > dbMatch.away_score;
-  const awayWon  = finished && dbMatch.away_score > dbMatch.home_score;
+  const homeWon  = finished && (dbMatch.outcome === 'pen'
+    ? (dbMatch.pen_home ?? 0) > (dbMatch.pen_away ?? 0)
+    : dbMatch.home_score > dbMatch.away_score);
+  const awayWon  = finished && (dbMatch.outcome === 'pen'
+    ? (dbMatch.pen_away ?? 0) > (dbMatch.pen_home ?? 0)
+    : dbMatch.away_score > dbMatch.home_score);
 
   const r32Slots = R32_SLOTS[matchNum];
   const showLabels = r32Slots && !allTeamsPlayed;
@@ -737,10 +755,10 @@ function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
   const awaySlot = showLabels ? slotLabel(r32Slots.away) : null;
   const rh   = CH / 2;
 
-  function Row({ team, score, won, slot }) {
+  function Row({ team, score, penScore, won, slot }) {
     const codeText = team ? (team.code || team.name?.slice(0, 3).toUpperCase()) : null;
     return (
-      <div className={`flex items-center gap-1 px-1.5 ${won ? 'bg-brand-gold/10' : ''} ${flip ? 'flex-row-reverse' : ''}`}
+      <div className={`flex items-center gap-1 px-1.5 ${won ? 'bg-emerald-500/10' : ''} ${flip ? 'flex-row-reverse' : ''}`}
            style={{ height: rh }}>
         {team ? (
           <>
@@ -762,9 +780,11 @@ function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
           </>
         )}
         {finished && (
-          <span className={`text-[11px] font-black tabular-nums ${flip ? 'mr-auto' : 'ml-auto'}
-            ${won ? 'text-brand-gold' : 'text-gray-400'}`}>
-            {score ?? '–'}
+          <span className={`text-[11px] font-black tabular-nums leading-none ${flip ? 'mr-auto' : 'ml-auto'}
+            ${won ? 'text-emerald-400' : 'text-gray-400'}`}>
+            {score ?? '–'}{penScore != null && (
+              <span className="text-[9px] font-bold text-orange-400/80"> ({penScore})</span>
+            )}
           </span>
         )}
       </div>
@@ -772,13 +792,15 @@ function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
   }
 
   return (
-    <div className={`overflow-hidden rounded border ${dbMatch
-        ? 'border-brand-border bg-brand-navy'
-        : 'border-brand-border bg-brand-card'}`}
-         style={{ width: CW, height: CH }}>
-      <Row team={home} score={dbMatch?.home_score} won={homeWon} slot={homeSlot} />
-      <div className="border-t border-brand-border/30" />
-      <Row team={away} score={dbMatch?.away_score} won={awayWon} slot={awaySlot} />
+    <div>
+      <div className={`overflow-hidden rounded border ${dbMatch
+          ? 'border-brand-border bg-brand-navy'
+          : 'border-brand-border bg-brand-card'}`}
+           style={{ width: CW, height: CH }}>
+        <Row team={home} score={dbMatch?.home_score} penScore={dbMatch?.outcome === 'pen' ? dbMatch?.pen_home : null} won={homeWon} slot={homeSlot} />
+        <div className="border-t border-brand-border/30" />
+        <Row team={away} score={dbMatch?.away_score} penScore={dbMatch?.outcome === 'pen' ? dbMatch?.pen_away : null} won={awayWon} slot={awaySlot} />
+      </div>
     </div>
   );
 }
@@ -896,8 +918,12 @@ function BracketTab({ allMatches }) {
           </div>
         </div>
       )}
-      {allTeamsPlayed && koFinished > 0 && (
-        <p className="text-gray-400 text-xs">{koFinished} of {koMatches.length} knockout matches played</p>
+      {koMatches.length > 0 && (
+        <p className="text-gray-400 text-xs">
+          {koFinished > 0
+            ? `${koFinished} of ${koMatches.length} knockout matches played`
+            : `${koMatches.length} knockout match${koMatches.length > 1 ? 'es' : ''} confirmed, awaiting results`}
+        </p>
       )}
       <div className="overflow-x-auto pb-4">
         <div style={{ width: TW, minWidth: TW }} className="mx-auto">
@@ -1007,7 +1033,13 @@ export default function LiveResults() {
             <p className="text-gray-400 text-sm mt-0.5">
               {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
             </p>
-            <p className={`text-gray-400 text-xs mt-0.5 ${tab !== 'bracket' ? 'invisible' : ''}`}>Projected from live standings</p>
+            {tab === 'bracket' && (
+              <p className="text-gray-400 text-xs mt-0.5">
+                {matches.some(m => m.phase !== 'group')
+                  ? 'Knockout bracket confirmed'
+                  : 'Projected from live standings'}
+              </p>
+            )}
           </div>
           <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
             {TABS.map(t => (
@@ -1027,15 +1059,18 @@ export default function LiveResults() {
         {tab === 'calendar' && (
           <div className="mt-3 space-y-2">
             <div className="sm:hidden space-y-1.5">
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 flex-wrap">
                 <FilterBtn value="all" active={filter} onChange={handleFilterChange} compact stretch>All</FilterBtn>
-                {groups.slice(0, 6).map(g => (
+                {groups.slice(0, 5).map(g => (
                   <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} compact stretch>{g}</FilterBtn>
                 ))}
               </div>
-              <div className="flex gap-1.5">
-                {groups.slice(6).map(g => (
+              <div className="flex gap-1.5 flex-wrap">
+                {groups.slice(5).map(g => (
                   <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} compact stretch>{g}</FilterBtn>
+                ))}
+                {koPhases.length > 0 && koPhases.map(p => (
+                  <FilterBtn key={p} value={p} active={filter} onChange={handleFilterChange} compact stretch>{p}</FilterBtn>
                 ))}
               </div>
             </div>
