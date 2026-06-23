@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import Flag from '../components/Flag';
 import PredictionsModal from '../components/PredictionsModal';
-import { R32_SLOTS, LATE_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
+import { R32_SLOTS, LATE_SLOTS, BEST3RD_TABLE, BEST3RD_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
 import { VENUE_BY_MATCH } from '../venueData';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
@@ -241,6 +241,107 @@ function Best3rdsTable({ allMatches, groups }) {
   );
 }
 
+// Maps BEST3RD_SLOTS index → match number and home slot description
+const SLOT_CONTEXT = BEST3RD_SLOTS.map(([matchNum]) => {
+  const slot = R32_SLOTS[matchNum];
+  const home = slot?.home;
+  const homeLabel = home?.type === 'group' ? `1${home.group}` : '?';
+  const awayDef = slot?.away;
+  const poolLabel = awayDef?.groups ? awayDef.groups.join('/') : '?';
+  return { matchNum, homeLabel, poolLabel };
+});
+
+function AnnexeCPanel({ allMatches, groups }) {
+  const thirds = getAll3rdsRanked(allMatches, groups);
+  if (thirds.length < 8) return null;
+
+  const top8 = thirds.slice(0, 8);
+  const key = top8.map(t => t.group).sort().join('');
+  const assignment = BEST3RD_TABLE[key];
+  if (!assignment) return null;
+
+  const byGroup = Object.fromEntries(top8.map(t => [t.group, t]));
+
+  // Build group → 1st place team for all groups
+  const groupFirstPlace = Object.fromEntries(
+    groups.map(g => {
+      const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+      const standings = calcStandings(gm, true);
+      return [g, standings[0] ?? null];
+    })
+  );
+
+  return (
+    <div className="card p-0 overflow-hidden">
+      <div className="px-4 py-3 border-b border-brand-border bg-brand-navy/60">
+        <h3 className="font-black text-base">Annexe C Assignment</h3>
+        <p className="text-xs text-gray-400 mt-0.5">
+          Active combination: <span className="font-mono text-amber-400 font-bold">{key}</span>
+          {' '}— the 8 best 3rd-place groups determine which R32 slot each team fills.
+        </p>
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-[11px] uppercase tracking-wider text-gray-400 border-b border-brand-border/50">
+            <th className="px-2 py-2 text-center">Match</th>
+            <th className="px-3 py-2 text-left">3rd Place Team</th>
+            <th className="px-3 py-2 text-left hidden sm:table-cell">Opponent</th>
+            <th className="px-3 py-2 text-left hidden sm:table-cell">Pool</th>
+          </tr>
+        </thead>
+        <tbody>
+          {SLOT_CONTEXT.map(({ matchNum, homeLabel, poolLabel }, i) => {
+            const groupLetter = assignment[i];
+            const team = byGroup[groupLetter];
+            return (
+              <tr key={matchNum} className="border-b border-brand-border/30 last:border-0 hover:bg-white/5 transition-colors">
+                <td className="px-2 py-2.5 text-center">
+                  <span className="text-xs font-mono font-bold text-gray-300">M{matchNum}</span>
+                </td>
+                <td className="px-3 py-2.5">
+                  {team ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Flag code={team.code} name={team.name} className="w-5 h-5 shrink-0" />
+                      <span className="font-semibold truncate"><TeamName name={team.name} code={team.code} /></span>
+                      <span className="text-xs text-gray-500 font-bold">(3{groupLetter})</span>
+                      {(() => {
+                        const homeGroup = homeLabel.replace('1', '');
+                        const opponent = groupFirstPlace[homeGroup];
+                        return <span className="sm:hidden flex items-center gap-1 text-xs text-gray-400">
+                          <span className="text-gray-600">vs</span>
+                          {opponent
+                            ? <><Flag code={opponent.code} name={opponent.name} className="w-5 h-5" /><span className="font-semibold"><TeamName name={opponent.name} code={opponent.code} /></span><span className="text-gray-500">({homeLabel})</span></>
+                            : <span>{homeLabel}</span>}
+                        </span>;
+                      })()}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-xs">Group {groupLetter} — TBD</span>
+                  )}
+                </td>
+                <td className="px-3 py-2.5 text-gray-400 text-xs hidden sm:table-cell">
+                  {(() => {
+                    const homeGroup = homeLabel.replace('1', '');
+                    const opponent = groupFirstPlace[homeGroup];
+                    return opponent
+                      ? <div className="flex items-center gap-1.5">
+                          <Flag code={opponent.code} name={opponent.name} className="w-4 h-4 shrink-0" />
+                          <TeamName name={opponent.name} code={opponent.code} />
+                          <span className="text-gray-600">({homeLabel})</span>
+                        </div>
+                      : <span>{homeLabel}</span>;
+                  })()}
+                </td>
+                <td className="px-3 py-2.5 text-gray-500 text-xs hidden sm:table-cell">From {poolLabel}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const COLUMN_LEGEND = [
   ['P', 'Matches Played'], ['W', 'Wins'], ['D', 'Draws'], ['L', 'Loss'],
   ['GF', 'Goals For'], ['GA', 'Goals Against'], ['GD', 'Goal Difference'], ['PTS', 'Points'],
@@ -265,8 +366,9 @@ function GroupsTab({ matches, groups }) {
           <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} />
         ))}
       </div>
-      <div className="sm:max-w-[calc(50%-12px)] sm:mx-auto">
+      <div className="grid sm:grid-cols-2 gap-6 items-start">
         <Best3rdsTable allMatches={matches} groups={groups} />
+        <AnnexeCPanel allMatches={matches} groups={groups} />
       </div>
       <div className="space-y-1">
         <div className="flex flex-wrap gap-x-4 gap-y-1">

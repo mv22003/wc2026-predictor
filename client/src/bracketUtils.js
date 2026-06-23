@@ -41,7 +41,7 @@ export const ALL_SLOTS = { ...R32_SLOTS, ...LATE_SLOTS };
 
 // ── Annexe C: official best-3rd-place assignment table ────────────────────────
 // Key = 8 sorted group letters; Value = assignment for [M79,M85,M81,M74,M82,M77,M87,M80]
-const BEST3RD_TABLE = {
+export const BEST3RD_TABLE = {
   "EFGHIJKL":["E","J","I","F","H","G","L","K"],"DFGHIJKL":["H","G","I","D","J","F","L","K"],
   "DEGHIJKL":["E","J","I","D","H","G","L","K"],"DEFHIJKL":["E","J","I","D","H","F","L","K"],
   "DEFGIJKL":["E","G","I","D","J","F","L","K"],"DEFGHJKL":["E","G","J","D","H","F","L","K"],
