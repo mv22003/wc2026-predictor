@@ -34,6 +34,34 @@ function getBest3rds(allMatches, groups) {
   return new Set(getAll3rdsRanked(allMatches, groups).slice(0, 8).map(t => t.name));
 }
 
+function getMath3rdsConfirmed(allMatches, groups) {
+  const isGroupDone = g => {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    return gm.length === 6 && gm.every(m => m.status === 'finished');
+  };
+  const finishedGroups = groups.filter(isGroupDone);
+  const unfinishedCount = groups.length - finishedGroups.length;
+
+  const finished3rds = [];
+  for (const g of finishedGroups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    const standings = calcStandings(gm, true);
+    if (standings.length >= 3) finished3rds.push({ ...standings[2], group: g });
+  }
+  finished3rds.sort((a, b) =>
+    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf ||
+    (b.conduct_score ?? 0) - (a.conduct_score ?? 0) ||
+    (a.fifa_ranking ?? Infinity) - (b.fifa_ranking ?? Infinity) ||
+    a.name.localeCompare(b.name)
+  );
+
+  const confirmed = new Set();
+  finished3rds.forEach((team, idx) => {
+    if (idx + 1 + unfinishedCount <= 8) confirmed.add(team.name);
+  });
+  return confirmed;
+}
+
 function TeamName({ name, code }) {
   return (
     <>
@@ -48,6 +76,12 @@ function StatusBadge({ status }) {
   if (status === 'qualified')
     return (
       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-[9px] font-black text-emerald-400 leading-none whitespace-nowrap">
+        ✓ Q
+      </span>
+    );
+  if (status === 'third-qualified')
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-[9px] font-black text-amber-400 leading-none whitespace-nowrap">
         ✓ Q
       </span>
     );
@@ -72,7 +106,7 @@ function h2hResult(groupMatches, teamName, opponentName) {
   return teamScore > oppScore ? 'won' : teamScore < oppScore ? 'lost' : 'draw';
 }
 
-function getRowStatus(standings, i, qualifying3rd, groupMatches) {
+function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds) {
   const row = standings[i];
   const third = standings[2];
 
@@ -127,6 +161,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
   }
 
   if (groupDone) {
+    if (i === 2 && confirmed3rds?.has(row.name)) return 'third-qualified';
     if (i === 2 && qualifying3rd?.has(row.name)) return 'none';
     return 'eliminated';
   }
@@ -147,7 +182,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
   return 'none';
 }
 
-function StandingsTable({ groupName, matches, qualifying3rd }) {
+function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
   const standings    = calcStandings(groupMatches, true);
@@ -192,11 +227,12 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
         </thead>
         <tbody>
           {standings.map((row, i) => {
-            const status = getRowStatus(standings, i, qualifying3rd, groupMatches);
+            const status = getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds);
             const isElim      = status === 'eliminated';
             const isLiveFirst = status === 'live-first';
             const isLiveQual  = status === 'live-qualified';
             const isLiveElim  = status === 'live-eliminated';
+            const is3rdQual   = status === 'third-qualified';
             return (
             <tr key={row.name}
               style={{
@@ -204,6 +240,8 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   ? '3px solid rgba(234,179,8,0.85)'
                   : status === 'qualified'
                   ? '3px solid rgba(16,185,129,0.7)'
+                  : is3rdQual
+                  ? '3px solid rgba(245,158,11,0.7)'
                   : isElim
                   ? '3px solid rgba(239,68,68,0.6)'
                   : isLiveFirst
@@ -217,6 +255,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               className={`border-b border-brand-border/30 last:border-0 transition-colors
                 ${status === 'first' ? 'bg-yellow-900/15 hover:bg-yellow-900/25'
                   : status === 'qualified' ? 'bg-emerald-900/15 hover:bg-emerald-900/25'
+                  : is3rdQual ? 'bg-amber-900/15 hover:bg-amber-900/25'
                   : isElim ? 'bg-red-900/10 hover:bg-red-900/15'
                   : isLiveFirst ? 'bg-yellow-900/10 hover:bg-yellow-900/15'
                   : isLiveQual ? 'bg-emerald-900/10 hover:bg-emerald-900/15'
@@ -229,6 +268,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                 <span className={`text-xs font-bold
                   ${status === 'first' ? 'text-brand-gold'
                     : status === 'qualified' ? 'text-emerald-400'
+                    : is3rdQual ? 'text-amber-400'
                     : isElim ? 'text-red-500/70'
                     : isLiveFirst ? 'text-yellow-500/70'
                     : isLiveQual ? 'text-emerald-400/60'
@@ -243,6 +283,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   <span className="font-semibold truncate text-sm">
                     <TeamName name={row.name} code={row.code} />
                   </span>
+                  <StatusBadge status={status} />
                 </div>
               </td>
               <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
@@ -318,7 +359,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
   );
 }
 
-function Best3rdsTable({ allMatches, groups }) {
+function Best3rdsTable({ allMatches, groups, confirmed3rds }) {
   const thirds = getAll3rdsRanked(allMatches, groups);
   if (thirds.length === 0) return null;
 
@@ -361,6 +402,7 @@ function Best3rdsTable({ allMatches, groups }) {
                 <div className="flex items-center gap-2 min-w-0">
                   <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
                   <span className="font-semibold truncate text-sm"><TeamName name={row.name} code={row.code} /></span>
+                  {confirmed3rds?.has(row.name) && <StatusBadge status="third-qualified" />}
                 </div>
               </td>
               <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
@@ -493,16 +535,17 @@ const DASH_GRADIENT = (r, g, b, a) =>
 
 function GroupsTab({ matches, groups }) {
   const qualifying3rd = getBest3rds(matches, groups);
+  const confirmed3rds = getMath3rdsConfirmed(matches, groups);
 
   return (
     <div className="space-y-6">
       <div className="grid sm:grid-cols-2 gap-6">
         {groups.map(g => (
-          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} />
+          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} confirmed3rds={confirmed3rds} />
         ))}
       </div>
       <div className="grid sm:grid-cols-2 gap-6 items-start">
-        <Best3rdsTable allMatches={matches} groups={groups} />
+        <Best3rdsTable allMatches={matches} groups={groups} confirmed3rds={confirmed3rds} />
         <AnnexeCPanel allMatches={matches} groups={groups} />
       </div>
       <div className="space-y-1">
