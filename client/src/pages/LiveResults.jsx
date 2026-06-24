@@ -1236,23 +1236,21 @@ export default function LiveResults() {
                 <span className="text-xs text-gray-400">Eliminated</span>
               </div>
             </div>
-            {hasLive && (
-              <div className="flex items-center gap-x-4">
-                <span className="hidden sm:inline text-gray-700 text-xs">|</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(234,179,8,0.75) }} />
-                  <span className="text-xs text-gray-400">1st (live)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(16,185,129,0.65) }} />
-                  <span className="text-xs text-gray-400">Qual. (live)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(239,68,68,0.6) }} />
-                  <span className="text-xs text-gray-400">Elim. (live)</span>
-                </div>
+            <div className="flex items-center gap-x-4">
+              <span className="hidden sm:inline text-gray-700 text-xs">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(234,179,8,0.75) }} />
+                <span className="text-xs text-gray-400">1st (live)</span>
               </div>
-            )}
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(16,185,129,0.65) }} />
+                <span className="text-xs text-gray-400">Qual. (live)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(239,68,68,0.6) }} />
+                <span className="text-xs text-gray-400">Elim. (live)</span>
+              </div>
+            </div>
           </div>
         )}
 
