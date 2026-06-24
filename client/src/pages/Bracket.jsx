@@ -196,7 +196,7 @@ export default function Bracket() {
 
   const groups = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
   const byGroup = {};
-  for (const g of groups) byGroup[g] = calcStandings(groupMatches.filter(m => m.group_name === g));
+  for (const g of groups) byGroup[g] = calcStandings(groupMatches.filter(m => m.group_name === g), true);
 
   const dbByNum = {};
   for (const m of allMatches) dbByNum[m.match_number] = m;
