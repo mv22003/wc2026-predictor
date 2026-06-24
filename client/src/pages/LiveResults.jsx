@@ -79,12 +79,6 @@ function StatusBadge({ status }) {
         ✓ Q
       </span>
     );
-  if (status === 'third-qualified')
-    return (
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-[9px] font-black text-amber-400 leading-none whitespace-nowrap">
-        ✓ Q
-      </span>
-    );
   if (status === 'eliminated')
     return (
       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-red-900/30 border border-red-800/50 text-[9px] font-black text-red-500/80 leading-none whitespace-nowrap">
@@ -155,13 +149,12 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds) 
     if (groupDone) return couldFinishAbove === 0 ? 'first' : 'qualified';
     if (couldFinishAbove === 0) return 'first';
     if (couldFinishAbove === 1) return 'qualified';
-    // Not yet confirmed — show provisional stripe while live matches are in progress
     if (hasLiveInGroup) return i === 0 ? 'live-first' : 'live-qualified';
     return 'top2';
   }
 
   if (groupDone) {
-    if (i === 2 && confirmed3rds?.has(row.name)) return 'third-qualified';
+    if (i === 2 && confirmed3rds?.has(row.name)) return 'qualified';
     if (i === 2 && qualifying3rd?.has(row.name)) return 'none';
     return 'eliminated';
   }
@@ -176,7 +169,6 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds) 
   if (rowStats.maxPts === thirdStats.pts && h2hResult(groupMatches, row.name, third.name) === 'lost')
     return 'eliminated';
 
-  // Not yet confirmed — show provisional stripe while live matches are in progress
   if (hasLiveInGroup) return 'live-eliminated';
 
   return 'none';
@@ -232,7 +224,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds }) {
             const isLiveFirst = status === 'live-first';
             const isLiveQual  = status === 'live-qualified';
             const isLiveElim  = status === 'live-eliminated';
-            const is3rdQual   = status === 'third-qualified';
             return (
             <tr key={row.name}
               style={{
@@ -240,8 +231,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds }) {
                   ? '3px solid rgba(234,179,8,0.85)'
                   : status === 'qualified'
                   ? '3px solid rgba(16,185,129,0.7)'
-                  : is3rdQual
-                  ? '3px solid rgba(245,158,11,0.7)'
                   : isElim
                   ? '3px solid rgba(239,68,68,0.6)'
                   : isLiveFirst
@@ -255,7 +244,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds }) {
               className={`border-b border-brand-border/30 last:border-0 transition-colors
                 ${status === 'first' ? 'bg-yellow-900/15 hover:bg-yellow-900/25'
                   : status === 'qualified' ? 'bg-emerald-900/15 hover:bg-emerald-900/25'
-                  : is3rdQual ? 'bg-amber-900/15 hover:bg-amber-900/25'
                   : isElim ? 'bg-red-900/10 hover:bg-red-900/15'
                   : isLiveFirst ? 'bg-yellow-900/10 hover:bg-yellow-900/15'
                   : isLiveQual ? 'bg-emerald-900/10 hover:bg-emerald-900/15'
@@ -268,7 +256,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds }) {
                 <span className={`text-xs font-bold
                   ${status === 'first' ? 'text-brand-gold'
                     : status === 'qualified' ? 'text-emerald-400'
-                    : is3rdQual ? 'text-amber-400'
                     : isElim ? 'text-red-500/70'
                     : isLiveFirst ? 'text-yellow-500/70'
                     : isLiveQual ? 'text-emerald-400/60'
@@ -283,7 +270,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds }) {
                   <span className="font-semibold truncate text-sm">
                     <TeamName name={row.name} code={row.code} />
                   </span>
-                  <StatusBadge status={status} />
                 </div>
               </td>
               <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
@@ -359,7 +345,7 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds }) {
   );
 }
 
-function Best3rdsTable({ allMatches, groups, confirmed3rds }) {
+function Best3rdsTable({ allMatches, groups }) {
   const thirds = getAll3rdsRanked(allMatches, groups);
   if (thirds.length === 0) return null;
 
@@ -402,7 +388,6 @@ function Best3rdsTable({ allMatches, groups, confirmed3rds }) {
                 <div className="flex items-center gap-2 min-w-0">
                   <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
                   <span className="font-semibold truncate text-sm"><TeamName name={row.name} code={row.code} /></span>
-                  {confirmed3rds?.has(row.name) && <StatusBadge status="third-qualified" />}
                 </div>
               </td>
               <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
@@ -545,7 +530,7 @@ function GroupsTab({ matches, groups }) {
         ))}
       </div>
       <div className="grid sm:grid-cols-2 gap-6 items-start">
-        <Best3rdsTable allMatches={matches} groups={groups} confirmed3rds={confirmed3rds} />
+        <Best3rdsTable allMatches={matches} groups={groups} />
         <AnnexeCPanel allMatches={matches} groups={groups} />
       </div>
       <div className="space-y-1">
