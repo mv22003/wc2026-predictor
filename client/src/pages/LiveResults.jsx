@@ -155,12 +155,12 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
 
   if (groupDone) {
     if (i === 2 && confirmed3rds?.has(row.name)) return 'qualified';
-    if (i === 2 && qualifying3rd?.has(row.name)) return hasAnyLive ? 'live-third' : 'none';
+    if (i === 2 && qualifying3rd?.has(row.name)) return hasAnyLive ? 'live-qualified' : 'none';
     return 'eliminated';
   }
 
   // Mid-group: position 3 always has a shot at best 3rd, never confirmed eliminated
-  if (i === 2) return hasAnyLive && qualifying3rd?.has(row.name) ? 'live-third' : 'none';
+  if (i === 2) return hasAnyLive && qualifying3rd?.has(row.name) ? 'live-qualified' : 'none';
 
   // Position 4: can't finish 3rd if max pts (from finished games) < 3rd's finished pts
   if (rowStats.maxPts < thirdStats.pts) return 'eliminated';
@@ -224,7 +224,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
             const isLiveFirst = status === 'live-first';
             const isLiveQual  = status === 'live-qualified';
             const isLiveElim  = status === 'live-eliminated';
-            const isLiveThird = status === 'live-third';
             return (
             <tr key={row.name}
               style={{
@@ -240,8 +239,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
                   ? '3px dashed rgba(16,185,129,0.65)'
                   : isLiveElim
                   ? '3px dashed rgba(239,68,68,0.6)'
-                  : isLiveThird
-                  ? '3px dashed rgba(245,158,11,0.65)'
                   : '3px solid transparent',
               }}
               className={`border-b border-brand-border/30 last:border-0 transition-colors
@@ -251,7 +248,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
                   : isLiveFirst ? 'bg-yellow-900/10 hover:bg-yellow-900/15'
                   : isLiveQual ? 'bg-emerald-900/10 hover:bg-emerald-900/15'
                   : isLiveElim ? 'bg-red-900/10 hover:bg-red-900/15'
-                  : isLiveThird ? 'bg-amber-900/10 hover:bg-amber-900/20'
                   : i < 2 ? 'bg-emerald-900/10 hover:bg-emerald-900/20'
                   : i === 2 && qualifying3rd?.has(row.name) ? 'bg-amber-900/10 hover:bg-amber-900/20'
                   : 'hover:bg-white/5'}`}
@@ -264,7 +260,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
                     : isLiveFirst ? 'text-yellow-500/70'
                     : isLiveQual ? 'text-emerald-400/60'
                     : isLiveElim ? 'text-red-500/60'
-                    : isLiveThird ? 'text-amber-400/60'
                     : 'text-gray-400'}`}>
                   {i + 1}
                 </span>
