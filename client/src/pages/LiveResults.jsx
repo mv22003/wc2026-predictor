@@ -74,17 +74,34 @@ function h2hResult(groupMatches, teamName, opponentName) {
 
 function getRowStatus(standings, i, qualifying3rd, groupMatches) {
   const row = standings[i];
-  const remaining = 3 - row.played;
-  const maxPts = row.pts + 3 * remaining;
   const third = standings[2];
-  const fourth = standings[3];
-  const thirdMaxPts  = (third?.pts  ?? 0) + 3 * Math.max(0, 3 - (third?.played  ?? 3));
-  const fourthMaxPts = (fourth?.pts ?? 0) + 3 * Math.max(0, 3 - (fourth?.played ?? 3));
-  // The highest any challenger (pos 3 or 4) can ever reach
-  const maxChallengerPts = Math.max(thirdMaxPts, fourthMaxPts);
-  const thirdPts = third?.pts ?? 0;
-  const groupDone = standings.every(s => s.played === 3);
+
+  // groupDone must use finished matches only — calcStandings counts live games in
+  // played, so standings.every(s => s.played === 3) would be true mid-live-round
+  const groupDone = groupMatches.every(m => m.status === 'finished');
   const hasLiveInGroup = groupMatches.some(m => m.status === 'live');
+
+  // Confirmed-status checks must ignore live scores to avoid false positives.
+  // A live 2-0 lead is not yet banked, so we only count finished-game pts/played.
+  function finishedStats(name) {
+    let pts = 0, played = 0;
+    for (const m of groupMatches) {
+      if (m.status !== 'finished') continue;
+      if (m.home_team === name) {
+        played++;
+        if (m.home_score > m.away_score) pts += 3;
+        else if (m.home_score === m.away_score) pts += 1;
+      } else if (m.away_team === name) {
+        played++;
+        if (m.away_score > m.home_score) pts += 3;
+        else if (m.away_score === m.home_score) pts += 1;
+      }
+    }
+    return { pts, played, maxPts: pts + 3 * Math.max(0, 3 - played) };
+  }
+
+  const rowStats   = finishedStats(row.name);
+  const thirdStats = finishedStats(third?.name ?? '');
 
   if (i < 2) {
     // Confirmed top-2 if at most 1 other team can possibly finish above this team.
@@ -92,10 +109,10 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
     let couldFinishAbove = 0;
     for (const [j, c] of standings.entries()) {
       if (j === i) continue;
-      const cMax = c.pts + 3 * Math.max(0, 3 - c.played);
-      if (cMax > standings[i].pts) {
+      const cStats = finishedStats(c.name);
+      if (cStats.maxPts > rowStats.pts) {
         couldFinishAbove++;
-      } else if (cMax === standings[i].pts) {
+      } else if (cStats.maxPts === rowStats.pts) {
         // Can tie — only a threat if H2H not already settled in our favour
         if (h2hResult(groupMatches, row.name, c.name) !== 'won') couldFinishAbove++;
       }
@@ -117,11 +134,11 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
   // Mid-group: position 3 always has a shot at best 3rd, never confirmed eliminated
   if (i === 2) return 'none';
 
-  // Position 4: can't finish 3rd if max pts < 3rd's current pts (3rd can never lose pts)
-  if (maxPts < thirdPts) return 'eliminated';
+  // Position 4: can't finish 3rd if max pts (from finished games) < 3rd's finished pts
+  if (rowStats.maxPts < thirdStats.pts) return 'eliminated';
 
   // Tie in points possible, but H2H already settled in 3rd's favour
-  if (maxPts === thirdPts && h2hResult(groupMatches, row.name, third.name) === 'lost')
+  if (rowStats.maxPts === thirdStats.pts && h2hResult(groupMatches, row.name, third.name) === 'lost')
     return 'eliminated';
 
   // Not yet confirmed — show provisional stripe while live matches are in progress
@@ -480,22 +497,26 @@ function GroupsTab({ matches, groups }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(234,179,8,0.85)' }} />
-          <span className="text-xs text-gray-400">1st secured</span>
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1.5 gap-x-4">
+        {/* Row 1 on mobile: confirmed stripes */}
+        <div className="flex items-center gap-x-4">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(234,179,8,0.85)' }} />
+            <span className="text-xs text-gray-400">1st secured</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(16,185,129,0.7)' }} />
+            <span className="text-xs text-gray-400">Qualified</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(239,68,68,0.6)' }} />
+            <span className="text-xs text-gray-400">Eliminated</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(16,185,129,0.7)' }} />
-          <span className="text-xs text-gray-400">Qualified</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(239,68,68,0.6)' }} />
-          <span className="text-xs text-gray-400">Eliminated</span>
-        </div>
+        {/* Row 2 on mobile: live/provisional stripes — only shown when live */}
         {hasAnyLive && (
-          <>
-            <span className="text-gray-700 text-xs hidden sm:inline">|</span>
+          <div className="flex items-center gap-x-4">
+            <span className="hidden sm:inline text-gray-700 text-xs">|</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(234,179,8,0.75) }} />
               <span className="text-xs text-gray-400">1st (live)</span>
@@ -508,7 +529,7 @@ function GroupsTab({ matches, groups }) {
               <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(239,68,68,0.6) }} />
               <span className="text-xs text-gray-400">Elim. (live)</span>
             </div>
-          </>
+          </div>
         )}
       </div>
       <div className="grid sm:grid-cols-2 gap-6">
