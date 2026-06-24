@@ -405,10 +405,10 @@ export default function UserPredictionsPanel({ adminKey }) {
                 value={newUserName}
                 onChange={e => setNewUserName(e.target.value)}
                 placeholder="Add dummy user name"
-                className="flex-1 min-w-[220px] bg-brand-navy border border-brand-border rounded px-3 py-2 text-sm text-gray-300
+                className="flex-1 min-w-0 bg-brand-navy border border-brand-border rounded px-3 py-2 text-sm text-gray-300
                            focus:border-brand-gold focus:outline-none"
               />
-              <button type="submit" disabled={creatingUser || !newUserName.trim()} className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+              <button type="submit" disabled={creatingUser || !newUserName.trim()} className="btn-secondary text-sm w-full sm:w-auto disabled:opacity-40 disabled:cursor-not-allowed">
                 {creatingUser ? 'Adding...' : 'Add Dummy User'}
               </button>
             </form>

@@ -171,7 +171,7 @@ export default function ConductPanel({ adminKey, matches = [] }) {
             <p><span className="text-white font-semibold">FIFA ranking:</span> lower number is better (rank 1 = world #1). Leave blank if unknown.</p>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             <a
               href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings"
               target="_blank"

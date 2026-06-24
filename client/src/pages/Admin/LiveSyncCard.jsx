@@ -168,7 +168,7 @@ export default function LiveSyncCard({ adminKey, onDone }) {
   return (
     <>
     <div className={`card border ${configured ? 'border-brand-border' : 'border-yellow-700/40 bg-yellow-900/5'}`}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className={`w-2 h-2 ${
@@ -227,29 +227,31 @@ export default function LiveSyncCard({ adminKey, onDone }) {
         </div>
 
         {configured && (
-          <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            <button
-              onClick={viewRaw}
-              disabled={loadingRaw}
-              className="text-sm whitespace-nowrap disabled:opacity-50 px-3 py-2 rounded-lg font-bold border border-sky-500/40 text-sky-400 hover:bg-sky-500/10 transition-all"
-            >
-              {loadingRaw ? '…' : 'View Raw API'}
-            </button>
-            <button
-              onClick={toggleAuto}
-              disabled={toggling}
-              className={`text-sm whitespace-nowrap disabled:opacity-50 px-3 py-2 rounded-lg font-bold border transition-all ${
-                autoSyncRunning
-                  ? 'border-red-500/40 text-red-400 hover:bg-red-500/10'
-                  : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
-              }`}
-            >
-              {toggling ? '…' : autoSyncRunning ? 'Stop Auto-sync' : 'Start Auto-sync'}
-            </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:shrink-0">
+            <div className="flex gap-2">
+              <button
+                onClick={viewRaw}
+                disabled={loadingRaw}
+                className="flex-1 sm:flex-none text-sm whitespace-nowrap disabled:opacity-50 px-3 py-2 rounded-lg font-bold border border-sky-500/40 text-sky-400 hover:bg-sky-500/10 transition-all"
+              >
+                {loadingRaw ? '…' : 'View Raw API'}
+              </button>
+              <button
+                onClick={toggleAuto}
+                disabled={toggling}
+                className={`flex-1 sm:flex-none text-sm whitespace-nowrap disabled:opacity-50 px-3 py-2 rounded-lg font-bold border transition-all ${
+                  autoSyncRunning
+                    ? 'border-red-500/40 text-red-400 hover:bg-red-500/10'
+                    : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+                }`}
+              >
+                {toggling ? '…' : autoSyncRunning ? 'Stop Auto-sync' : 'Start Auto-sync'}
+              </button>
+            </div>
             <button
               onClick={sync}
               disabled={syncing || status?.inProgress}
-              className="btn-primary text-sm whitespace-nowrap disabled:opacity-50"
+              className="btn-primary text-sm whitespace-nowrap disabled:opacity-50 w-full sm:w-auto"
             >
               {syncing || status?.inProgress ? 'Syncing…' : 'Sync Now'}
             </button>
