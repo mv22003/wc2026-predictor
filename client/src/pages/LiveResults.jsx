@@ -488,50 +488,14 @@ const COLUMN_LEGEND = [
   ['GF', 'Goals For'], ['GA', 'Goals Against'], ['GD', 'Goal Difference'], ['PTS', 'Points'],
 ];
 
+const DASH_GRADIENT = (r, g, b, a) =>
+  `repeating-linear-gradient(to bottom, rgba(${r},${g},${b},${a}) 0px, rgba(${r},${g},${b},${a}) 4px, transparent 4px, transparent 7px)`;
+
 function GroupsTab({ matches, groups }) {
   const qualifying3rd = getBest3rds(matches, groups);
-  const hasAnyLive = matches.some(m => m.status === 'live');
-
-  const DASH_GRADIENT = (r, g, b, a) =>
-    `repeating-linear-gradient(to bottom, rgba(${r},${g},${b},${a}) 0px, rgba(${r},${g},${b},${a}) 4px, transparent 4px, transparent 7px)`;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1.5 gap-x-4">
-        {/* Row 1 on mobile: confirmed stripes */}
-        <div className="flex items-center gap-x-4">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(234,179,8,0.85)' }} />
-            <span className="text-xs text-gray-400">1st secured</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(16,185,129,0.7)' }} />
-            <span className="text-xs text-gray-400">Qualified</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(239,68,68,0.6)' }} />
-            <span className="text-xs text-gray-400">Eliminated</span>
-          </div>
-        </div>
-        {/* Row 2 on mobile: live/provisional stripes — only shown when live */}
-        {hasAnyLive && (
-          <div className="flex items-center gap-x-4">
-            <span className="hidden sm:inline text-gray-700 text-xs">|</span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(234,179,8,0.75) }} />
-              <span className="text-xs text-gray-400">1st (live)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(16,185,129,0.65) }} />
-              <span className="text-xs text-gray-400">Qual. (live)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(239,68,68,0.6) }} />
-              <span className="text-xs text-gray-400">Elim. (live)</span>
-            </div>
-          </div>
-        )}
-      </div>
       <div className="grid sm:grid-cols-2 gap-6">
         {groups.map(g => (
           <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} />
@@ -1226,6 +1190,42 @@ export default function LiveResults() {
             ))}
           </div>
         </div>
+
+        {tab === 'groups' && (
+          <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1.5 gap-x-4">
+            <div className="flex items-center gap-x-4">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(234,179,8,0.85)' }} />
+                <span className="text-xs text-gray-400">1st secured</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(16,185,129,0.7)' }} />
+                <span className="text-xs text-gray-400">Qualified</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(239,68,68,0.6)' }} />
+                <span className="text-xs text-gray-400">Eliminated</span>
+              </div>
+            </div>
+            {hasLive && (
+              <div className="flex items-center gap-x-4">
+                <span className="hidden sm:inline text-gray-700 text-xs">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(234,179,8,0.75) }} />
+                  <span className="text-xs text-gray-400">1st (live)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(16,185,129,0.65) }} />
+                  <span className="text-xs text-gray-400">Qual. (live)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(239,68,68,0.6) }} />
+                  <span className="text-xs text-gray-400">Elim. (live)</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {tab === 'calendar' && (
           <div className="mt-3 space-y-2">
