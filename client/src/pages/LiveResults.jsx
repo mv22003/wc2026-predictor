@@ -84,6 +84,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
   const maxChallengerPts = Math.max(thirdMaxPts, fourthMaxPts);
   const thirdPts = third?.pts ?? 0;
   const groupDone = standings.every(s => s.played === 3);
+  const hasLiveInGroup = groupMatches.some(m => m.status === 'live');
 
   if (i < 2) {
     // Confirmed top-2 if at most 1 other team can possibly finish above this team.
@@ -103,6 +104,8 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
     if (groupDone) return couldFinishAbove === 0 ? 'first' : 'qualified';
     if (couldFinishAbove === 0) return 'first';
     if (couldFinishAbove === 1) return 'qualified';
+    // Not yet confirmed — show provisional stripe while live matches are in progress
+    if (hasLiveInGroup) return i === 0 ? 'live-first' : 'live-qualified';
     return 'top2';
   }
 
@@ -120,6 +123,9 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
   // Tie in points possible, but H2H already settled in 3rd's favour
   if (maxPts === thirdPts && h2hResult(groupMatches, row.name, third.name) === 'lost')
     return 'eliminated';
+
+  // Not yet confirmed — show provisional stripe while live matches are in progress
+  if (hasLiveInGroup) return 'live-eliminated';
 
   return 'none';
 }
@@ -170,7 +176,10 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
         <tbody>
           {standings.map((row, i) => {
             const status = getRowStatus(standings, i, qualifying3rd, groupMatches);
-            const isElim = status === 'eliminated';
+            const isElim      = status === 'eliminated';
+            const isLiveFirst = status === 'live-first';
+            const isLiveQual  = status === 'live-qualified';
+            const isLiveElim  = status === 'live-eliminated';
             return (
             <tr key={row.name}
               style={{
@@ -180,12 +189,21 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   ? '3px solid rgba(16,185,129,0.7)'
                   : isElim
                   ? '3px solid rgba(239,68,68,0.6)'
+                  : isLiveFirst
+                  ? '3px dashed rgba(234,179,8,0.75)'
+                  : isLiveQual
+                  ? '3px dashed rgba(16,185,129,0.65)'
+                  : isLiveElim
+                  ? '3px dashed rgba(239,68,68,0.6)'
                   : '3px solid transparent',
               }}
               className={`border-b border-brand-border/30 last:border-0 transition-colors
                 ${status === 'first' ? 'bg-yellow-900/15 hover:bg-yellow-900/25'
                   : status === 'qualified' ? 'bg-emerald-900/15 hover:bg-emerald-900/25'
                   : isElim ? 'bg-red-900/10 hover:bg-red-900/15'
+                  : isLiveFirst ? 'bg-yellow-900/10 hover:bg-yellow-900/15'
+                  : isLiveQual ? 'bg-emerald-900/10 hover:bg-emerald-900/15'
+                  : isLiveElim ? 'bg-red-900/10 hover:bg-red-900/15'
                   : i < 2 ? 'bg-emerald-900/10 hover:bg-emerald-900/20'
                   : i === 2 && qualifying3rd?.has(row.name) ? 'bg-amber-900/10 hover:bg-amber-900/20'
                   : 'hover:bg-white/5'}`}
@@ -195,6 +213,9 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
                   ${status === 'first' ? 'text-brand-gold'
                     : status === 'qualified' ? 'text-emerald-400'
                     : isElim ? 'text-red-500/70'
+                    : isLiveFirst ? 'text-yellow-500/70'
+                    : isLiveQual ? 'text-emerald-400/60'
+                    : isLiveElim ? 'text-red-500/60'
                     : 'text-gray-400'}`}>
                   {i + 1}
                 </span>
@@ -452,9 +473,14 @@ const COLUMN_LEGEND = [
 
 function GroupsTab({ matches, groups }) {
   const qualifying3rd = getBest3rds(matches, groups);
+  const hasAnyLive = matches.some(m => m.status === 'live');
+
+  const DASH_GRADIENT = (r, g, b, a) =>
+    `repeating-linear-gradient(to bottom, rgba(${r},${g},${b},${a}) 0px, rgba(${r},${g},${b},${a}) 4px, transparent 4px, transparent 7px)`;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-1.5">
           <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(234,179,8,0.85)' }} />
           <span className="text-xs text-gray-400">1st secured</span>
@@ -467,6 +493,23 @@ function GroupsTab({ matches, groups }) {
           <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(239,68,68,0.6)' }} />
           <span className="text-xs text-gray-400">Eliminated</span>
         </div>
+        {hasAnyLive && (
+          <>
+            <span className="text-gray-700 text-xs hidden sm:inline">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(234,179,8,0.75) }} />
+              <span className="text-xs text-gray-400">1st (live)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(16,185,129,0.65) }} />
+              <span className="text-xs text-gray-400">Qual. (live)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1 h-4 shrink-0 rounded-sm" style={{ background: DASH_GRADIENT(239,68,68,0.6) }} />
+              <span className="text-xs text-gray-400">Elim. (live)</span>
+            </div>
+          </>
+        )}
       </div>
       <div className="grid sm:grid-cols-2 gap-6">
         {groups.map(g => (
