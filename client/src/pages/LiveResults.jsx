@@ -159,8 +159,22 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
     return 'eliminated';
   }
 
-  // Mid-group: position 3 always has a shot at best 3rd, never confirmed eliminated
-  if (i === 2) return hasAnyLive && qualifying3rd?.has(row.name) ? 'live-qualified' : 'none';
+  // Mid-group: position 3 can only show live-qualified if 4th place is mathematically
+  // locked out of reaching 3rd — otherwise 1st/2nd aren't even settled yet, which
+  // makes a 3rd-place badge misleading.
+  if (i === 2) {
+    if (!hasAnyLive || !qualifying3rd?.has(row.name)) return 'none';
+    const fourth = standings[3];
+    if (fourth) {
+      const fourthStats = finishedStats(fourth.name);
+      const fourthLockedOut =
+        fourthStats.maxPts < rowStats.pts ||
+        (fourthStats.maxPts === rowStats.pts &&
+         h2hResult(groupMatches, fourth.name, row.name) === 'lost');
+      if (!fourthLockedOut) return 'none';
+    }
+    return 'live-qualified';
+  }
 
   // Position 4: can't finish 3rd if max pts (from finished games) < 3rd's finished pts
   if (rowStats.maxPts < thirdStats.pts) return 'eliminated';
