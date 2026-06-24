@@ -181,11 +181,13 @@ export default function Bracket() {
     api.getMatches().then(setAllMatches).catch(console.error).finally(() => setLoading(false));
   }
 
+  const hasLive = allMatches.some(m => m.status === 'live');
+
   useEffect(() => {
     load();
-    const t = setInterval(load, 30_000);
+    const t = setInterval(load, hasLive ? 10_000 : 30_000);
     return () => clearInterval(t);
-  }, []);
+  }, [hasLive]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-48 text-gray-400">Loading…</div>
@@ -252,10 +254,10 @@ export default function Bracket() {
         <p className="text-gray-400 text-sm mt-0.5">
           {koConfirmed
             ? koFinished > 0
-              ? `${koFinished} of ${koMatches.length} knockout matches played · updates every 30 s`
-              : `${koMatches.length} knockout match${koMatches.length > 1 ? 'es' : ''} confirmed · updates every 30 s`
+              ? `${koFinished} of ${koMatches.length} knockout matches played · updates every ${hasLive ? '10' : '30'} s`
+              : `${koMatches.length} knockout match${koMatches.length > 1 ? 'es' : ''} confirmed · updates every ${hasLive ? '10' : '30'} s`
             : groupStarted
-            ? 'Projected from live standings · updates every 30 s'
+            ? `Projected from live standings · updates every ${hasLive ? '10' : '30'} s`
             : 'Bracket will project once the group stage begins'}
         </p>
       </div>
