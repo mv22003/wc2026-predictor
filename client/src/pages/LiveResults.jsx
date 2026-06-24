@@ -44,12 +44,93 @@ function TeamName({ name, code }) {
 }
 
 // ─── Groups tab ────────────────────────────────────────────────────────────────
+function StatusBadge({ status }) {
+  if (status === 'qualified')
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-[9px] font-black text-emerald-400 leading-none whitespace-nowrap">
+        ✓ Q
+      </span>
+    );
+  if (status === 'eliminated')
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-red-900/30 border border-red-800/50 text-[9px] font-black text-red-500/80 leading-none whitespace-nowrap">
+        OUT
+      </span>
+    );
+  return null;
+}
+
+function h2hResult(groupMatches, teamName, opponentName) {
+  const m = groupMatches.find(m =>
+    m.status === 'finished' &&
+    ((m.home_team === teamName && m.away_team === opponentName) ||
+     (m.home_team === opponentName && m.away_team === teamName))
+  );
+  if (!m) return null;
+  const teamScore = m.home_team === teamName ? m.home_score : m.away_score;
+  const oppScore  = m.home_team === teamName ? m.away_score : m.home_score;
+  return teamScore > oppScore ? 'won' : teamScore < oppScore ? 'lost' : 'draw';
+}
+
+function getRowStatus(standings, i, qualifying3rd, groupMatches) {
+  const row = standings[i];
+  const remaining = 3 - row.played;
+  const maxPts = row.pts + 3 * remaining;
+  const third = standings[2];
+  const fourth = standings[3];
+  const thirdMaxPts  = (third?.pts  ?? 0) + 3 * Math.max(0, 3 - (third?.played  ?? 3));
+  const fourthMaxPts = (fourth?.pts ?? 0) + 3 * Math.max(0, 3 - (fourth?.played ?? 3));
+  // The highest any challenger (pos 3 or 4) can ever reach
+  const maxChallengerPts = Math.max(thirdMaxPts, fourthMaxPts);
+  const thirdPts = third?.pts ?? 0;
+  const groupDone = standings.every(s => s.played === 3);
+
+  if (i < 2) {
+    // Confirmed top-2 if at most 1 other team can possibly finish above this team.
+    // (Being overtaken by exactly 1 team still leaves you in 2nd place.)
+    let couldFinishAbove = 0;
+    for (const [j, c] of standings.entries()) {
+      if (j === i) continue;
+      const cMax = c.pts + 3 * Math.max(0, 3 - c.played);
+      if (cMax > standings[i].pts) {
+        couldFinishAbove++;
+      } else if (cMax === standings[i].pts) {
+        // Can tie — only a threat if H2H not already settled in our favour
+        if (h2hResult(groupMatches, row.name, c.name) !== 'won') couldFinishAbove++;
+      }
+    }
+
+    if (groupDone) return couldFinishAbove === 0 ? 'first' : 'qualified';
+    if (couldFinishAbove === 0) return 'first';
+    if (couldFinishAbove === 1) return 'qualified';
+    return 'top2';
+  }
+
+  if (groupDone) {
+    if (i === 2 && qualifying3rd?.has(row.name)) return 'none';
+    return 'eliminated';
+  }
+
+  // Mid-group: position 3 always has a shot at best 3rd, never confirmed eliminated
+  if (i === 2) return 'none';
+
+  // Position 4: can't finish 3rd if max pts < 3rd's current pts (3rd can never lose pts)
+  if (maxPts < thirdPts) return 'eliminated';
+
+  // Tie in points possible, but H2H already settled in 3rd's favour
+  if (maxPts === thirdPts && h2hResult(groupMatches, row.name, third.name) === 'lost')
+    return 'eliminated';
+
+  return 'none';
+}
+
 function StandingsTable({ groupName, matches, qualifying3rd }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
   const standings    = calcStandings(groupMatches, true);
   const played       = groupMatches.filter(m => m.status === 'finished').length;
   const hasLive      = groupMatches.some(m => m.status === 'live');
+  const groupDone    = played === 6;
 
   return (
     <div className="card p-0 overflow-hidden">
@@ -60,6 +141,11 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-[10px] font-black text-red-400 leading-none">
               <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse shrink-0" />
               LIVE
+            </span>
+          )}
+          {groupDone && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/10 border border-brand-border text-[9px] font-black text-gray-400 leading-none">
+              FINAL
             </span>
           )}
         </div>
@@ -82,19 +168,33 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
           </tr>
         </thead>
         <tbody>
-          {standings.map((row, i) => (
+          {standings.map((row, i) => {
+            const status = getRowStatus(standings, i, qualifying3rd, groupMatches);
+            const isElim = status === 'eliminated';
+            return (
             <tr key={row.name}
+              style={{
+                borderLeft: status === 'first'
+                  ? '3px solid rgba(234,179,8,0.85)'
+                  : status === 'qualified'
+                  ? '3px solid rgba(16,185,129,0.7)'
+                  : isElim
+                  ? '3px solid rgba(239,68,68,0.6)'
+                  : '3px solid transparent',
+              }}
               className={`border-b border-brand-border/30 last:border-0 transition-colors
-                ${i < 2
-                  ? 'bg-emerald-900/10 hover:bg-emerald-900/20'
-                  : i === 2 && qualifying3rd?.has(row.name)
-                  ? 'bg-amber-900/10 hover:bg-amber-900/20'
+                ${status === 'first' ? 'bg-yellow-900/15 hover:bg-yellow-900/25'
+                  : status === 'qualified' ? 'bg-emerald-900/15 hover:bg-emerald-900/25'
+                  : isElim ? 'bg-red-900/10 hover:bg-red-900/15'
+                  : i < 2 ? 'bg-emerald-900/10 hover:bg-emerald-900/20'
+                  : i === 2 && qualifying3rd?.has(row.name) ? 'bg-amber-900/10 hover:bg-amber-900/20'
                   : 'hover:bg-white/5'}`}
             >
               <td className="px-3 py-2.5">
                 <span className={`text-xs font-bold
-                  ${i < 2 ? 'text-emerald-400'
-                    : i === 2 && qualifying3rd?.has(row.name) ? 'text-amber-400'
+                  ${status === 'first' ? 'text-brand-gold'
+                    : status === 'qualified' ? 'text-emerald-400'
+                    : isElim ? 'text-red-500/70'
                     : 'text-gray-400'}`}>
                   {i + 1}
                 </span>
@@ -102,7 +202,9 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               <td className="px-3 py-2.5 max-w-0 w-full">
                 <div className="flex items-center gap-2 min-w-0">
                   <Flag code={row.code} name={row.name} className="w-5 h-5 shrink-0" />
-                  <span className="font-semibold truncate text-sm"><TeamName name={row.name} code={row.code} /></span>
+                  <span className="font-semibold truncate text-sm">
+                    <TeamName name={row.name} code={row.code} />
+                  </span>
                 </div>
               </td>
               <td className="px-2 py-2.5 text-center text-gray-400">{row.played}</td>
@@ -117,7 +219,8 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
               <td className="px-2 py-2.5 text-center text-gray-400">{row.conduct_score ?? 0}</td>
               <td className="px-3 py-2.5 text-center font-black text-brand-gold">{row.pts}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       <div className="border-t border-brand-border/50 flex items-center justify-end px-3 py-2">
@@ -353,12 +456,16 @@ function GroupsTab({ matches, groups }) {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70 shrink-0" />
-          <span className="text-xs text-gray-400">Qualified (top 2)</span>
+          <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(234,179,8,0.85)' }} />
+          <span className="text-xs text-gray-400">1st secured</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500/70 shrink-0" />
-          <span className="text-xs text-gray-400">Best 3rd (8 advance)</span>
+          <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(16,185,129,0.7)' }} />
+          <span className="text-xs text-gray-400">Qualified</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1 h-4 rounded-full shrink-0" style={{ background: 'rgba(239,68,68,0.6)' }} />
+          <span className="text-xs text-gray-400">Eliminated</span>
         </div>
       </div>
       <div className="grid sm:grid-cols-2 gap-6">
