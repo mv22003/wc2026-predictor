@@ -34,6 +34,34 @@ function getBest3rds(allMatches, groups) {
   return new Set(getAll3rdsRanked(allMatches, groups).slice(0, 8).map(t => t.name));
 }
 
+function getMath3rdsConfirmed(allMatches, groups) {
+  const isGroupDone = g => {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    return gm.length === 6 && gm.every(m => m.status === 'finished');
+  };
+  const finishedGroups = groups.filter(isGroupDone);
+  const unfinishedCount = groups.length - finishedGroups.length;
+
+  const finished3rds = [];
+  for (const g of finishedGroups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    const standings = calcStandings(gm, true);
+    if (standings.length >= 3) finished3rds.push({ ...standings[2], group: g });
+  }
+  finished3rds.sort((a, b) =>
+    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf ||
+    (b.conduct_score ?? 0) - (a.conduct_score ?? 0) ||
+    (a.fifa_ranking ?? Infinity) - (b.fifa_ranking ?? Infinity) ||
+    a.name.localeCompare(b.name)
+  );
+
+  const confirmed = new Set();
+  finished3rds.forEach((team, idx) => {
+    if (idx + 1 + unfinishedCount <= 8) confirmed.add(team.name);
+  });
+  return confirmed;
+}
+
 function TeamName({ name, code }) {
   return (
     <>
@@ -72,7 +100,7 @@ function h2hResult(groupMatches, teamName, opponentName) {
   return teamScore > oppScore ? 'won' : teamScore < oppScore ? 'lost' : 'draw';
 }
 
-function getRowStatus(standings, i, qualifying3rd, groupMatches) {
+function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive) {
   const row = standings[i];
   const third = standings[2];
 
@@ -121,18 +149,18 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
     if (groupDone) return couldFinishAbove === 0 ? 'first' : 'qualified';
     if (couldFinishAbove === 0) return 'first';
     if (couldFinishAbove === 1) return 'qualified';
-    // Not yet confirmed — show provisional stripe while live matches are in progress
     if (hasLiveInGroup) return i === 0 ? 'live-first' : 'live-qualified';
     return 'top2';
   }
 
   if (groupDone) {
-    if (i === 2 && qualifying3rd?.has(row.name)) return 'none';
+    if (i === 2 && confirmed3rds?.has(row.name)) return 'qualified';
+    if (i === 2 && qualifying3rd?.has(row.name)) return hasAnyLive ? 'live-qualified' : 'none';
     return 'eliminated';
   }
 
   // Mid-group: position 3 always has a shot at best 3rd, never confirmed eliminated
-  if (i === 2) return 'none';
+  if (i === 2) return hasAnyLive && qualifying3rd?.has(row.name) ? 'live-qualified' : 'none';
 
   // Position 4: can't finish 3rd if max pts (from finished games) < 3rd's finished pts
   if (rowStats.maxPts < thirdStats.pts) return 'eliminated';
@@ -141,13 +169,12 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches) {
   if (rowStats.maxPts === thirdStats.pts && h2hResult(groupMatches, row.name, third.name) === 'lost')
     return 'eliminated';
 
-  // Not yet confirmed — show provisional stripe while live matches are in progress
   if (hasLiveInGroup) return 'live-eliminated';
 
   return 'none';
 }
 
-function StandingsTable({ groupName, matches, qualifying3rd }) {
+function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasAnyLive }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
   const standings    = calcStandings(groupMatches, true);
@@ -192,7 +219,7 @@ function StandingsTable({ groupName, matches, qualifying3rd }) {
         </thead>
         <tbody>
           {standings.map((row, i) => {
-            const status = getRowStatus(standings, i, qualifying3rd, groupMatches);
+            const status = getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive);
             const isElim      = status === 'eliminated';
             const isLiveFirst = status === 'live-first';
             const isLiveQual  = status === 'live-qualified';
@@ -493,12 +520,14 @@ const DASH_GRADIENT = (r, g, b, a) =>
 
 function GroupsTab({ matches, groups }) {
   const qualifying3rd = getBest3rds(matches, groups);
+  const confirmed3rds = getMath3rdsConfirmed(matches, groups);
+  const hasAnyLive    = matches.some(m => m.status === 'live' && m.phase === 'group');
 
   return (
     <div className="space-y-6">
       <div className="grid sm:grid-cols-2 gap-6">
         {groups.map(g => (
-          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} />
+          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} confirmed3rds={confirmed3rds} hasAnyLive={hasAnyLive} />
         ))}
       </div>
       <div className="grid sm:grid-cols-2 gap-6 items-start">
