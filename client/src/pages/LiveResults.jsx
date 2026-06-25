@@ -180,7 +180,9 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
       }
     }
 
-    if (groupDone) return couldFinishAbove === 0 ? 'first' : 'qualified';
+    // Group is finished — calcStandings already resolved all tiebreakers correctly.
+    // Position in the sorted array is definitive; no need to re-check couldFinishAbove.
+    if (groupDone) return i === 0 ? 'first' : 'qualified';
     if (couldFinishAbove === 0) return 'first';
     if (couldFinishAbove === 1) return 'qualified';
     if (hasLiveInGroup) return i === 0 ? 'live-first' : 'live-qualified';
