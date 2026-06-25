@@ -1,9 +1,123 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import Flag from '../components/Flag';
 import PredictionsModal from '../components/PredictionsModal';
 import { R32_SLOTS, LATE_SLOTS, BEST3RD_TABLE, BEST3RD_SLOTS, calcStandings, resolveTeam, resolveBest3rdSlots } from '../bracketUtils';
 import { VENUE_BY_MATCH } from '../venueData';
+import schedule from '../../../data/world-cup-2026-schedule.json';
+
+// ─── KO placeholder schedule ───────────────────────────────────────────────────
+const STAGE_TO_GROUP = {
+  'Round of 32':   'R32',
+  'Round of 16':   'R16',
+  'Quarter-finals':'QF',
+  'Semi-finals':   'SF',
+  'Third Place':   '3RD',
+  'Final':         'FINAL',
+};
+
+const KO_SCHEDULE = Object.fromEntries(
+  schedule.matches
+    .filter(m => m.match_number >= 73)
+    .map(m => [m.match_number, {
+      date:    m.date,
+      time_et: m.time_et,   // Eastern Time — convert to UTC via -04:00 (EDT, all summer matches)
+      stage:   STAGE_TO_GROUP[m.stage] ?? m.stage,
+    }])
+);
+
+function slotToLabel(slot) {
+  if (!slot) return 'TBD';
+  if (slot.type === 'group')   return slot.pos === 1 ? `1st Group ${slot.group}` : `2nd Group ${slot.group}`;
+  if (slot.type === 'best3rd') return `3rd ${slot.groups.join('/')}`;
+  if (slot.type === 'winner')  return `W-M${slot.match}`;
+  if (slot.type === 'loser')   return `L-M${slot.match}`;
+  return 'TBD';
+}
+
+function findRanking(teamName, matches) {
+  for (const m of matches) {
+    if (m.home_team === teamName && m.home_ranking != null) return m.home_ranking;
+    if (m.away_team === teamName && m.away_ranking != null) return m.away_ranking;
+  }
+  return null;
+}
+
+function resolveSlotTeam(slot, byGroup, groupMatchesByGroup, dbByNum) {
+  if (!slot) return { name: 'TBD', code: null, ranking: null };
+
+  if (slot.type === 'group') {
+    const gm = groupMatchesByGroup[slot.group] || [];
+    const groupDone = gm.length === 6 && gm.every(m => m.status === 'finished');
+    if (groupDone) {
+      const standings = byGroup[slot.group] || [];
+      const team = standings[slot.pos - 1];
+      if (team) return { name: team.name, code: team.code, ranking: findRanking(team.name, gm) };
+    }
+    return { name: slotToLabel(slot), code: null, ranking: null };
+  }
+
+  if (slot.type === 'best3rd') return { name: slotToLabel(slot), code: null, ranking: null };
+
+  if (slot.type === 'winner' || slot.type === 'loser') {
+    const m = dbByNum[slot.match];
+    if (m?.status === 'finished') {
+      const homeWon = m.outcome === 'pen'
+        ? (m.pen_home ?? 0) > (m.pen_away ?? 0)
+        : m.home_score > m.away_score;
+      const winner = homeWon
+        ? { name: m.home_team, code: m.home_code, ranking: m.home_ranking }
+        : { name: m.away_team, code: m.away_code, ranking: m.away_ranking };
+      const loser  = homeWon
+        ? { name: m.away_team, code: m.away_code, ranking: m.away_ranking }
+        : { name: m.home_team, code: m.home_code, ranking: m.home_ranking };
+      return slot.type === 'winner' ? winner : loser;
+    }
+    return { name: slotToLabel(slot), code: null, ranking: null };
+  }
+
+  return { name: 'TBD', code: null, ranking: null };
+}
+
+function buildKOPlaceholders(dbMatches) {
+  const dbNums   = new Set(dbMatches.map(m => m.match_number));
+  const dbByNum  = Object.fromEntries(dbMatches.map(m => [m.match_number, m]));
+  const groupMatches = dbMatches.filter(m => m.phase === 'group');
+  const groups   = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))];
+  const groupMatchesByGroup = Object.fromEntries(
+    groups.map(g => [g, groupMatches.filter(m => m.group_name === g)])
+  );
+  const byGroup  = Object.fromEntries(
+    groups.map(g => [g, calcStandings(groupMatchesByGroup[g], true)])
+  );
+
+  const placeholders = [];
+  const ALL_SLOTS = { ...R32_SLOTS, ...LATE_SLOTS };
+  for (const [numStr, sched] of Object.entries(KO_SCHEDULE)) {
+    const num = Number(numStr);
+    if (dbNums.has(num)) continue;
+    const slots = ALL_SLOTS[num];
+    const home = slots ? resolveSlotTeam(slots.home, byGroup, groupMatchesByGroup, dbByNum) : { name: 'TBD', code: null };
+    const away = slots ? resolveSlotTeam(slots.away, byGroup, groupMatchesByGroup, dbByNum) : { name: 'TBD', code: null };
+    placeholders.push({
+      id:            `ko-placeholder-${num}`,
+      match_number:  num,
+      group_name:    sched.stage,
+      phase:         'knockout',
+      status:        'upcoming',
+      // Store with EDT offset (-04:00) so JS parses as correct UTC; browser displays in local (BST for UK)
+      match_date:    `${sched.date}T${sched.time_et}:00-04:00`,
+      home_team:     home.name,
+      away_team:     away.name,
+      home_code:     home.code,
+      away_code:     away.code,
+      home_ranking:  home.ranking,
+      away_ranking:  away.ranking,
+      isPlaceholder: true,
+    });
+  }
+  return placeholders;
+}
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 const PHASE_LABEL = {
@@ -695,22 +809,37 @@ function MatchRow({ match }) {
 
         {/* center: teams + score + venue pill */}
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex items-end gap-2 sm:gap-3">
-            <div className="flex-1 min-w-0 flex flex-col items-end gap-1.5">
-              {match.home_ranking != null && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
-                  <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
-                  #{match.home_ranking}
-                </span>
-              )}
-              <div className="flex items-center gap-2 justify-end w-full">
-                <span className={`text-sm font-semibold min-w-0 truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                  <TeamName name={match.home_team} code={match.home_code} />
-                </span>
-                <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
+          {/* Ranking pills row — only rendered when at least one side has a ranking */}
+          {(match.home_ranking != null || match.away_ranking != null) && (
+            <div className="flex gap-2 sm:gap-3 mb-1.5">
+              <div className="flex-1 flex justify-end">
+                {match.home_ranking != null && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
+                    <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
+                    #{match.home_ranking}
+                  </span>
+                )}
+              </div>
+              <div className="w-16 sm:w-20 shrink-0" />
+              <div className="flex-1">
+                {match.away_ranking != null && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
+                    <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
+                    #{match.away_ranking}
+                  </span>
+                )}
               </div>
             </div>
-            <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-center gap-1 min-h-[24px] sm:min-h-[28px]">
+          )}
+          {/* Teams + score row — clean items-center so flags always align with the score */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex-1 min-w-0 flex items-center justify-end gap-2">
+              <span className={`text-sm font-semibold min-w-0 truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
+                {match.home_code ? <TeamName name={match.home_team} code={match.home_code} /> : match.home_team}
+              </span>
+              {match.home_code && <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />}
+            </div>
+            <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-center gap-1">
               {finished && <span className="sm:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FT</span>}
               {live && <span className="sm:hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-semibold text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />LIVE</span>}
               {finished ? (
@@ -737,19 +866,11 @@ function MatchRow({ match }) {
                 </span>
               )}
             </div>
-            <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
-              {match.away_ranking != null && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
-                  <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
-                  #{match.away_ranking}
-                </span>
-              )}
-              <div className="flex items-center gap-2 w-full">
-                <Flag code={match.away_code} name={match.away_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />
-                <span className={`text-sm font-semibold min-w-0 truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                  <TeamName name={match.away_team} code={match.away_code} />
-                </span>
-              </div>
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              {match.away_code && <Flag code={match.away_code} name={match.away_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />}
+              <span className={`text-sm font-semibold min-w-0 truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
+                {match.away_code ? <TeamName name={match.away_team} code={match.away_code} /> : match.away_team}
+              </span>
             </div>
           </div>
           {(finished || live) && (
@@ -770,17 +891,19 @@ function MatchRow({ match }) {
             </div>
           )}
           {/* Predictions button — inside center column so it aligns with the score */}
-          <div className="mt-2 flex justify-center">
-            <button
-              onClick={() => setShowPreds(true)}
-              className="text-[11px] text-brand-gold/70 hover:text-brand-gold transition-colors flex items-center gap-1"
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.356-3.789M9 20H4v-2a4 4 0 015.356-3.789M15 11a4 4 0 11-8 0 4 4 0 018 0zm6 0a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              View predictions
-            </button>
-          </div>
+          {!match.isPlaceholder && (
+            <div className="mt-2 flex justify-center">
+              <button
+                onClick={() => setShowPreds(true)}
+                className="text-[11px] text-brand-gold/70 hover:text-brand-gold transition-colors flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.356-3.789M9 20H4v-2a4 4 0 015.356-3.789M15 11a4 4 0 11-8 0 4 4 0 018 0zm6 0a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                View predictions
+              </button>
+            </div>
+          )}
         </div>
 
         {/* FT / LIVE / Today / date — desktop only; mobile FT lives inside the score column */}
@@ -821,6 +944,7 @@ function DateGroup({ matches, dateKey }) {
 }
 
 const KO_PHASES = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
+const KO_PHASE_LABEL = { R32: 'Round of 32', R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', '3RD': 'Third Place', FINAL: 'Final' };
 
 function FilterBtn({ value, active, onChange, compact, stretch, children }) {
   return (
@@ -837,9 +961,58 @@ function FilterBtn({ value, active, onChange, compact, stretch, children }) {
   );
 }
 
+// options: [{ value, label }]
+function PhaseDropdown({ options, defaultLabel, active, onChange, compact }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const activeOption = options.find(o => o.value === active);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} rounded-lg font-bold transition-all whitespace-nowrap ${
+          activeOption
+            ? 'bg-brand-gold text-brand-navy'
+            : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
+        }`}
+      >
+        {activeOption ? activeOption.label : defaultLabel}
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-30 bg-brand-card border border-brand-border rounded-lg shadow-xl overflow-hidden min-w-[140px]">
+          {options.map(o => (
+            <button
+              key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              className={`w-full text-left px-4 py-2 text-sm font-bold transition-colors ${
+                active === o.value
+                  ? 'bg-brand-gold text-brand-navy'
+                  : 'text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollToToday }) {
-  const calFiltered = filter === 'all'
-    ? matches
+  const calFiltered = filter === 'all'         ? matches
+    : filter === 'GROUP_STAGE'                 ? matches.filter(m => m.phase === 'group')
+    : filter === 'KNOCKOUTS'                   ? matches.filter(m => m.phase !== 'group')
     : matches.filter(m => m.group_name === filter);
 
   const byDate = {};
@@ -847,6 +1020,9 @@ function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollTo
     const key = m.match_date ? localDateKey(m.match_date) : 'TBD';
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(m);
+  }
+  for (const key of Object.keys(byDate)) {
+    byDate[key].sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
   }
 
   useEffect(() => {
@@ -1236,7 +1412,7 @@ export default function LiveResults() {
   function load() {
     Promise.all([api.getMatches(), api.getGroups()])
       .then(([mts, grps]) => {
-        setMatches(mts);
+        setMatches([...mts, ...buildKOPlaceholders(mts)]);
         setGroups(grps);
       })
       .catch(console.error)
@@ -1251,10 +1427,11 @@ export default function LiveResults() {
     return () => clearInterval(t);
   }, [hasLive]);
 
-  const played = matches.filter(m => m.status === 'finished').length;
-  const liveNow = matches.filter(m => m.status === 'live').length;
-  const total  = matches.length;
-  const koPhases = KO_PHASES.filter(p => matches.some(m => m.group_name === p));
+  const dbMatches = matches.filter(m => !m.isPlaceholder);
+  const played  = dbMatches.filter(m => m.status === 'finished').length;
+  const liveNow = dbMatches.filter(m => m.status === 'live').length;
+  const total   = dbMatches.length;
+  const koPhases = KO_PHASES;
   const groupMatches = matches.filter(m => m.phase === 'group');
   const allGroupsDone = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].length === 12
     && groupMatches.every(m => m.status === 'finished');
@@ -1356,33 +1533,24 @@ export default function LiveResults() {
 
         {tab === 'calendar' && (
           <div className="mt-3 space-y-2">
-            <div className="sm:hidden space-y-1.5">
-              <div className="flex gap-1.5 flex-wrap">
-                <FilterBtn value="all" active={filter} onChange={handleFilterChange} compact stretch>All</FilterBtn>
-                {groups.slice(0, 5).map(g => (
-                  <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} compact stretch>{g}</FilterBtn>
-                ))}
-              </div>
-              <div className="flex gap-1.5 flex-wrap">
-                {groups.slice(5).map(g => (
-                  <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} compact stretch>{g}</FilterBtn>
-                ))}
-                {koPhases.length > 0 && koPhases.map(p => (
-                  <FilterBtn key={p} value={p} active={filter} onChange={handleFilterChange} compact stretch>{p}</FilterBtn>
-                ))}
-              </div>
-            </div>
-            <div className="hidden sm:flex flex-wrap gap-1.5">
-              <FilterBtn value="all" active={filter} onChange={handleFilterChange} stretch>All</FilterBtn>
-              {groups.map(g => (
-                <FilterBtn key={g} value={g} active={filter} onChange={handleFilterChange} stretch>{g}</FilterBtn>
-              ))}
-              {koPhases.length > 0 && (
-                <span className="w-px bg-brand-border self-stretch mx-1" />
-              )}
-              {koPhases.map(p => (
-                <FilterBtn key={p} value={p} active={filter} onChange={handleFilterChange} stretch>{p}</FilterBtn>
-              ))}
+            <div className="flex flex-wrap gap-1.5">
+              <FilterBtn value="all"         active={filter} onChange={handleFilterChange} compact>All</FilterBtn>
+              <FilterBtn value="GROUP_STAGE" active={filter} onChange={handleFilterChange} compact>Groups</FilterBtn>
+              <PhaseDropdown
+                options={groups.map(g => ({ value: g, label: `Group ${g}` }))}
+                defaultLabel="Group ▾"
+                active={filter}
+                onChange={handleFilterChange}
+                compact
+              />
+              <FilterBtn value="KNOCKOUTS"   active={filter} onChange={handleFilterChange} compact>Knockouts</FilterBtn>
+              <PhaseDropdown
+                options={koPhases.map(p => ({ value: p, label: KO_PHASE_LABEL[p] ?? p }))}
+                defaultLabel="Round ▾"
+                active={filter}
+                onChange={handleFilterChange}
+                compact
+              />
             </div>
             <div className="flex justify-end">
               <button
@@ -1396,14 +1564,14 @@ export default function LiveResults() {
         )}
       </div>
 
-      {tab === 'groups'   && <GroupsTab   matches={matches} groups={groups} />}
+      {tab === 'groups'   && <GroupsTab   matches={dbMatches} groups={groups} />}
       {tab === 'calendar' && <CalendarTab
         matches={matches}
         filter={filter}
         pendingScrollToToday={pendingScrollToToday}
         setPendingScrollToToday={setPendingScrollToToday}
       />}
-      {tab === 'bracket'  && <BracketTab  allMatches={matches} securedMode={securedMode} />}
+      {tab === 'bracket'  && <BracketTab  allMatches={dbMatches} securedMode={securedMode} />}
     </div>
   );
 }
