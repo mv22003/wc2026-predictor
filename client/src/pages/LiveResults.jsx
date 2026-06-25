@@ -931,7 +931,7 @@ function slotLabel(slot) {
   return null;
 }
 
-function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
+function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false, securedMode = false, lockedPositions = {}, allGroupsDone = false }) {
   const dbMatch  = dbByNum[matchNum];
   const finished = dbMatch?.status === 'finished';
   const homeWon  = finished && (dbMatch.outcome === 'pen'
@@ -942,18 +942,42 @@ function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false }) {
     : dbMatch.away_score > dbMatch.home_score);
 
   const r32Slots = R32_SLOTS[matchNum];
-  const showLabels = r32Slots && !allTeamsPlayed;
+
+  function isSlotLocked(slot) {
+    if (!slot) return false;
+    if (slot.type === 'group') return !!lockedPositions[`${slot.group}_${slot.pos}`];
+    if (slot.type === 'best3rd') return allGroupsDone;
+    return false;
+  }
 
   function getTeam(side) {
+    if (securedMode) {
+      if (r32Slots) {
+        // R32: secured if admin locked it in DB, or the group stage is done
+        if (!dbMatch && !isSlotLocked(r32Slots[side])) return null;
+        if (dbMatch) return { code: dbMatch[`${side}_code`], name: dbMatch[`${side}_team`] };
+        return projMap?.[matchNum]?.[side] ?? null;
+      }
+      // R16+: only secured if admin confirmed the match
+      if (dbMatch) return { code: dbMatch[`${side}_code`], name: dbMatch[`${side}_team`] };
+      return null;
+    }
     if (dbMatch) return { code: dbMatch[`${side}_code`], name: dbMatch[`${side}_team`] };
-    if (showLabels) return null;
+    if (r32Slots && !allTeamsPlayed) return null;
     return projMap?.[matchNum]?.[side] ?? null;
   }
 
   const home = getTeam('home');
   const away = getTeam('away');
-  const homeSlot = showLabels ? slotLabel(r32Slots.home) : null;
-  const awaySlot = showLabels ? slotLabel(r32Slots.away) : null;
+
+  // Show slot labels when: R32 slot exists and team isn't shown
+  const showLabelFor = (side, team) => {
+    if (!r32Slots || team) return null;
+    if (securedMode) return !isSlotLocked(r32Slots[side]) ? slotLabel(r32Slots[side]) : null;
+    return !allTeamsPlayed ? slotLabel(r32Slots[side]) : null;
+  };
+  const homeSlot = showLabelFor('home', home);
+  const awaySlot = showLabelFor('away', away);
   const rh   = CH / 2;
 
   function Row({ team, score, penScore, won, slot }) {
@@ -1049,7 +1073,7 @@ function BracketLines() {
   );
 }
 
-function BracketTab({ allMatches }) {
+function BracketTab({ allMatches, securedMode }) {
   const groupMatches = allMatches.filter(m => m.phase === 'group');
   const koMatches    = allMatches.filter(m => m.phase !== 'group');
 
@@ -1059,6 +1083,27 @@ function BracketTab({ allMatches }) {
 
   const dbByNum = {};
   for (const m of allMatches) dbByNum[m.match_number] = m;
+
+  // lockedPositions[`${group}_${pos}`] = true when that EXACT position is secured
+  // pos=1 locked only when current leader has status 'first' (nobody can overtake)
+  // pos=2 locked only when pos=1 is also locked (so 2nd can't rise to 1st) AND 2nd is 'qualified'
+  const lockedPositions = {};
+  for (const g of groups) {
+    const gMatches  = groupMatches.filter(m => m.group_name === g);
+    const standings = byGroup[g] || [];
+    if (standings.length < 2) continue;
+    const status0 = getRowStatus(standings, 0, false, gMatches, null, false);
+    const firstLocked = status0 === 'first';
+    lockedPositions[`${g}_1`] = firstLocked;
+    if (firstLocked) {
+      const status1 = getRowStatus(standings, 1, false, gMatches, null, false);
+      lockedPositions[`${g}_2`] = status1 === 'qualified';
+    } else {
+      lockedPositions[`${g}_2`] = false;
+    }
+  }
+  const allGroupsDone = groups.length === 12 &&
+    groupMatches.every(m => m.status === 'finished');
 
   const teamsWithGame = new Set();
   for (const m of groupMatches.filter(m => m.status === 'finished')) {
@@ -1110,7 +1155,7 @@ function BracketTab({ allMatches }) {
 
   return (
     <div className="space-y-2">
-      {!allTeamsPlayed && (
+      {!securedMode && !allTeamsPlayed && (
         <div className="card border-brand-gold/20 bg-brand-gold/5 py-3 px-4 flex items-start gap-3">
           <span className="text-brand-gold text-base leading-none mt-0.5">ⓘ</span>
           <div>
@@ -1141,7 +1186,8 @@ function BracketTab({ allMatches }) {
             <BracketLines />
             {cards.map(({ num, x, y, flip }) => (
               <div key={num} style={{ position: 'absolute', left: x, top: y }}>
-                <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed} flip={flip} />
+                <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed} flip={flip}
+                  securedMode={securedMode} lockedPositions={lockedPositions} allGroupsDone={allGroupsDone} />
               </div>
             ))}
             <img
@@ -1161,7 +1207,8 @@ function BracketTab({ allMatches }) {
           <div className="flex justify-center mt-6">
             <div className="text-center">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">3rd Place</p>
-              <BCard matchNum={103} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed} />
+              <BCard matchNum={103} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed}
+                securedMode={securedMode} lockedPositions={lockedPositions} allGroupsDone={allGroupsDone} />
             </div>
           </div>
         </div>
@@ -1184,6 +1231,7 @@ export default function LiveResults() {
   const [tab,     setTab]     = useState('calendar');
   const [filter,  setFilter]  = useState('all');
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
+  const [securedMode, setSecuredMode] = useState(false);
 
   function load() {
     Promise.all([api.getMatches(), api.getGroups()])
@@ -1228,33 +1276,45 @@ export default function LiveResults() {
   return (
     <div className="space-y-6">
       <div className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-8 pt-6 sm:pt-3 pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black">Live Results</h1>
-            <p className="text-gray-400 text-sm mt-0.5">
-              {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
-            </p>
-            {tab === 'bracket' && (
-              <p className="text-gray-400 text-xs mt-0.5">
-                {matches.some(m => m.phase !== 'group')
-                  ? 'Knockout bracket confirmed'
-                  : 'Projected from live standings'}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-black">Live Results</h1>
+              <p className="text-gray-400 text-sm mt-0.5">
+                {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
               </p>
-            )}
+              {tab === 'bracket' && matches.some(m => m.phase !== 'group') && (
+                <p className="text-gray-400 text-xs mt-0.5">Knockout bracket confirmed</p>
+              )}
+              {/* Desktop: toggle below subtitle */}
+              {tab === 'bracket' && (
+                <div className="hidden sm:flex items-center gap-1 p-0.5 bg-brand-card rounded-lg border border-brand-border w-fit mt-2">
+                  <button onClick={() => setSecuredMode(false)} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${!securedMode ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Projected</button>
+                  <button onClick={() => setSecuredMode(true)}  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${securedMode  ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Secured</button>
+                </div>
+              )}
+            </div>
+            <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setTab(t.id); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-bold transition-all ${
+                    tab === t.id ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex w-full sm:w-auto rounded-lg overflow-hidden border border-brand-border">
-            {TABS.map(t => (
-              <button
-                key={t.id}
-                onClick={() => { setTab(t.id); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                className={`flex-1 sm:flex-none px-4 py-2 text-sm font-bold transition-all ${
-                  tab === t.id ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          {/* Mobile: toggle below tabs */}
+          {tab === 'bracket' && (
+            <div className="flex sm:hidden items-center gap-1 p-0.5 bg-brand-card rounded-lg border border-brand-border w-fit">
+              <button onClick={() => setSecuredMode(false)} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${!securedMode ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Projected</button>
+              <button onClick={() => setSecuredMode(true)}  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${securedMode  ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Secured</button>
+            </div>
+          )}
         </div>
 
         {tab === 'groups' && (
@@ -1340,7 +1400,7 @@ export default function LiveResults() {
         pendingScrollToToday={pendingScrollToToday}
         setPendingScrollToToday={setPendingScrollToToday}
       />}
-      {tab === 'bracket'  && <BracketTab  allMatches={matches} />}
+      {tab === 'bracket'  && <BracketTab  allMatches={matches} securedMode={securedMode} />}
     </div>
   );
 }

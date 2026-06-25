@@ -56,8 +56,43 @@ export default function KOPanel({ matches, adminKey, onRefresh }) {
 
   const groupMatches = matches.filter(m => m.phase === 'group');
   const allGroupDone = groupMatches.length > 0 && groupMatches.every(m => m.status === 'finished');
+  const koMatches    = matches.filter(m => m.phase !== 'group');
 
-  if (!allGroupDone) return null;
+  if (!allGroupDone) {
+    if (koMatches.length === 0) return null;
+    return (
+      <div className="space-y-3">
+        <div className="card border-red-800/50 bg-red-900/10 p-4 space-y-3">
+          <div>
+            <p className="text-sm font-bold text-red-400">KO matches exist but group stage is not finished</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {koMatches.length} knockout match{koMatches.length > 1 ? 'es' : ''} found from a previous test.
+              Reset them to start fresh once the group stage is complete.
+            </p>
+          </div>
+          <button
+            onClick={() => setPendingReset({
+              round: KO_ROUNDS[0],
+              force: true,
+              title: 'Reset all KO matches?',
+              message: `This will permanently delete all ${koMatches.length} knockout matches. This cannot be undone.`,
+            })}
+            className="btn-danger text-xs px-3 py-1.5"
+          >
+            Reset all KO matches
+          </button>
+        </div>
+        {pendingReset && (
+          <ConfirmModal
+            title={pendingReset.title}
+            message={pendingReset.message}
+            onConfirm={() => { resetRound(pendingReset.round, pendingReset.force); setPendingReset(null); }}
+            onCancel={() => setPendingReset(null)}
+          />
+        )}
+      </div>
+    );
+  }
 
   const groups = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
   const byGroup = {};
