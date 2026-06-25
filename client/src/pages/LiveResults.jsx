@@ -34,21 +34,55 @@ function getBest3rds(allMatches, groups) {
   return new Set(getAll3rdsRanked(allMatches, groups).slice(0, 8).map(t => t.name));
 }
 
-function getMath3rdsConfirmed(allMatches, groups) {
-  const isGroupDone = g => {
-    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    return gm.length === 6 && gm.every(m => m.status === 'finished');
-  };
-  const finishedGroups = groups.filter(isGroupDone);
-  const unfinishedCount = groups.length - finishedGroups.length;
-
-  const finished3rds = [];
-  for (const g of finishedGroups) {
-    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    const standings = calcStandings(gm, true);
-    if (standings.length >= 3) finished3rds.push({ ...standings[2], group: g });
+function finishedStatsFor(name, groupMatches) {
+  let pts = 0, played = 0;
+  for (const m of groupMatches) {
+    if (m.status !== 'finished') continue;
+    if (m.home_team === name) {
+      played++;
+      if (m.home_score > m.away_score) pts += 3;
+      else if (m.home_score === m.away_score) pts += 1;
+    } else if (m.away_team === name) {
+      played++;
+      if (m.away_score > m.home_score) pts += 3;
+      else if (m.away_score === m.home_score) pts += 1;
+    }
   }
-  finished3rds.sort((a, b) =>
+  return { pts, played, maxPts: pts + 3 * Math.max(0, 3 - played) };
+}
+
+// A 3rd-place slot is "settled" when it's certain which team finishes 3rd (or above):
+// either the group is fully done, or 4th place is mathematically locked out of 3rd.
+// Only settled 3rds count toward the confirmed-top-8 check; all other groups are
+// "unsettled" and assumed to potentially produce a better 3rd-place team.
+function getMath3rdsConfirmed(allMatches, groups) {
+  const settled3rds = [];
+  let unsettledCount = 0;
+
+  for (const g of groups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    const groupDone = gm.length === 6 && gm.every(m => m.status === 'finished');
+    const standings = calcStandings(gm, true);
+    if (standings.length < 3) { unsettledCount++; continue; }
+
+    const third  = standings[2];
+    const fourth = standings[3];
+    let thirdSettled = groupDone;
+
+    if (!groupDone && fourth) {
+      const thirdStats  = finishedStatsFor(third.name,  gm);
+      const fourthStats = finishedStatsFor(fourth.name, gm);
+      thirdSettled =
+        fourthStats.maxPts < thirdStats.pts ||
+        (fourthStats.maxPts === thirdStats.pts &&
+         h2hResult(gm, fourth.name, third.name) === 'lost');
+    }
+
+    if (thirdSettled) settled3rds.push({ ...third, group: g });
+    else unsettledCount++;
+  }
+
+  settled3rds.sort((a, b) =>
     b.pts - a.pts || b.gd - a.gd || b.gf - a.gf ||
     (b.conduct_score ?? 0) - (a.conduct_score ?? 0) ||
     (a.fifa_ranking ?? Infinity) - (b.fifa_ranking ?? Infinity) ||
@@ -56,8 +90,8 @@ function getMath3rdsConfirmed(allMatches, groups) {
   );
 
   const confirmed = new Set();
-  finished3rds.forEach((team, idx) => {
-    if (idx + 1 + unfinishedCount <= 8) confirmed.add(team.name);
+  settled3rds.forEach((team, idx) => {
+    if (idx + 1 + unsettledCount <= 8) confirmed.add(team.name);
   });
   return confirmed;
 }
@@ -155,12 +189,14 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
 
   if (groupDone) {
     if (i === 2 && confirmed3rds?.has(row.name)) return 'qualified';
-    if (i === 2 && qualifying3rd?.has(row.name)) return hasAnyLive ? 'live-qualified' : 'none';
+    if (i === 2) return 'none';
     return 'eliminated';
   }
 
-  // Mid-group: position 3 always has a shot at best 3rd, never confirmed eliminated
-  if (i === 2) return hasAnyLive && qualifying3rd?.has(row.name) ? 'live-qualified' : 'none';
+  // Mid-group position 3: only show live-qualified when mathematically confirmed in
+  // the global top-8 (getMath3rdsConfirmed already accounts for whether 4th is locked
+  // out in this group AND whether the global ranking guarantees a top-8 finish).
+  if (i === 2) return hasAnyLive && confirmed3rds?.has(row.name) ? 'live-qualified' : 'none';
 
   // Position 4: can't finish 3rd if max pts (from finished games) < 3rd's finished pts
   if (rowStats.maxPts < thirdStats.pts) return 'eliminated';
@@ -249,7 +285,6 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
                   : isLiveQual ? 'bg-emerald-900/10 hover:bg-emerald-900/15'
                   : isLiveElim ? 'bg-red-900/10 hover:bg-red-900/15'
                   : i < 2 ? 'bg-emerald-900/10 hover:bg-emerald-900/20'
-                  : i === 2 && qualifying3rd?.has(row.name) ? 'bg-amber-900/10 hover:bg-amber-900/20'
                   : 'hover:bg-white/5'}`}
             >
               <td className="px-3 py-2.5">
