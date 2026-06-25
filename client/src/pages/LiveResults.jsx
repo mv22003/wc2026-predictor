@@ -1255,6 +1255,9 @@ export default function LiveResults() {
   const liveNow = matches.filter(m => m.status === 'live').length;
   const total  = matches.length;
   const koPhases = KO_PHASES.filter(p => matches.some(m => m.group_name === p));
+  const groupMatches = matches.filter(m => m.phase === 'group');
+  const allGroupsDone = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].length === 12
+    && groupMatches.every(m => m.status === 'finished');
 
   // Reset filter when switching tabs
   useEffect(() => { setFilter('all'); }, [tab]);
@@ -1287,7 +1290,7 @@ export default function LiveResults() {
                 <p className="text-gray-400 text-xs mt-0.5">Knockout bracket confirmed</p>
               )}
               {/* Desktop: toggle below subtitle */}
-              {tab === 'bracket' && (
+              {tab === 'bracket' && !allGroupsDone && (
                 <div className="hidden sm:flex items-center gap-1 p-0.5 bg-brand-card rounded-lg border border-brand-border w-fit mt-2">
                   <button onClick={() => setSecuredMode(false)} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${!securedMode ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Projected</button>
                   <button onClick={() => setSecuredMode(true)}  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${securedMode  ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Secured</button>
@@ -1309,7 +1312,7 @@ export default function LiveResults() {
             </div>
           </div>
           {/* Mobile: toggle below tabs */}
-          {tab === 'bracket' && (
+          {tab === 'bracket' && !allGroupsDone && (
             <div className="flex sm:hidden items-center gap-1 p-0.5 bg-brand-card rounded-lg border border-brand-border w-fit">
               <button onClick={() => setSecuredMode(false)} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${!securedMode ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Projected</button>
               <button onClick={() => setSecuredMode(true)}  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${securedMode  ? 'bg-brand-gold text-brand-navy' : 'text-gray-400 hover:text-gray-200'}`}>Secured</button>
