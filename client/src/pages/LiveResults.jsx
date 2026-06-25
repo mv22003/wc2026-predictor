@@ -1545,8 +1545,8 @@ export default function LiveResults() {
         )}
 
         {tab === 'calendar' && (
-          <div className="mt-3 space-y-2">
-            <div className="flex gap-1.5">
+          <div className="mt-3">
+            <div className="flex gap-1.5 items-center">
               <FilterBtn value="all" active={filter} onChange={handleFilterChange} compact>All</FilterBtn>
               <FilterDropdown
                 baseValue="GROUP_STAGE"
@@ -1564,11 +1564,9 @@ export default function LiveResults() {
                 onChange={handleFilterChange}
                 compact stretch
               />
-            </div>
-            <div className="flex justify-end">
               <button
                 onClick={handleScrollToToday}
-                className="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10"
+                className="sm:ml-auto px-3 py-1 rounded-lg text-xs font-bold transition-all bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10 whitespace-nowrap"
               >
                 ↓ Latest
               </button>
