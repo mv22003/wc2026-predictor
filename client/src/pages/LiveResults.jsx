@@ -984,10 +984,10 @@ function FilterDropdown({ baseValue, baseLabel, options, active, onChange, compa
   }, [open]);
 
   return (
-    <div className={`relative${stretch ? ' flex-1 flex flex-col' : ''}`} ref={ref}>
+    <div className={`relative${stretch ? ' flex-1 sm:flex-none flex flex-col' : ''}`} ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} ${stretch ? 'flex-1 w-full' : ''} rounded-lg font-bold transition-all whitespace-nowrap ${
+        className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} ${stretch ? 'flex-1 w-full sm:flex-none sm:w-auto' : ''} rounded-lg font-bold transition-all whitespace-nowrap ${
           isActive
             ? 'bg-brand-gold text-brand-navy'
             : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
