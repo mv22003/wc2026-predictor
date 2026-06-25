@@ -50,8 +50,16 @@ function resolveSlotTeam(slot, byGroup, groupMatchesByGroup, dbByNum) {
     const gm = groupMatchesByGroup[slot.group] || [];
     const standings = byGroup[slot.group] || [];
     const team = standings[slot.pos - 1];
-    // Show team whenever they appear in standings (mirrors bracket projected mode)
-    if (team && team.played > 0) return { name: team.name, code: team.code, ranking: findRanking(team.name, gm) };
+    if (team) {
+      // Mirror bracket "Secured" logic: pos 1 needs status 'first', pos 2 needs pos 1 locked + status 'qualified'
+      const status0 = getRowStatus(standings, 0, false, gm, null, false);
+      const firstLocked = status0 === 'first';
+      if (slot.pos === 1 && firstLocked) return { name: team.name, code: team.code, ranking: findRanking(team.name, gm) };
+      if (slot.pos === 2 && firstLocked) {
+        const status1 = getRowStatus(standings, 1, false, gm, null, false);
+        if (status1 === 'qualified') return { name: team.name, code: team.code, ranking: findRanking(team.name, gm) };
+      }
+    }
     return { name: slotToLabel(slot), code: null, ranking: null };
   }
 
