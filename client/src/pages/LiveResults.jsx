@@ -233,13 +233,11 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
               LIVE
             </span>
           )}
-          {groupDone && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/10 border border-brand-border text-[9px] font-black text-gray-400 leading-none">
-              FINAL
-            </span>
-          )}
         </div>
-        <span className="text-xs text-gray-400">{played}/6 played</span>
+        {groupDone
+          ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/10 border border-brand-border text-[9px] font-black text-gray-400 leading-none">FINAL</span>
+          : <span className="text-xs text-gray-400">{played}/6 played</span>
+        }
       </div>
       <table className="w-full text-sm">
         <thead>
