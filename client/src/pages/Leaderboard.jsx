@@ -441,6 +441,7 @@ export default function Leaderboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [lastMatch, setLastMatch] = useState(null);
   const [lastMatchIsLive, setLastMatchIsLive] = useState(false);
+  const [lastMatch2, setLastMatch2] = useState(null);
   const [nextMatch, setNextMatch] = useState(null);
   const prevBoardRef = useRef(null);
   const flashTimerRef = useRef(null);
@@ -476,6 +477,12 @@ export default function Leaderboard() {
         away: newBoard[0].last_match_away,
       });
       setLastMatchIsLive(!!newBoard[0].last_match_is_live);
+      setLastMatch2(newBoard[0].last_match2_home_code ? {
+        homeCode: newBoard[0].last_match2_home_code,
+        home: newBoard[0].last_match2_home,
+        awayCode: newBoard[0].last_match2_away_code,
+        away: newBoard[0].last_match2_away,
+      } : null);
     }
 
     if (newBoard.length > 0 && newBoard[0].next_match_home_code) {
@@ -517,8 +524,12 @@ export default function Leaderboard() {
 
   const sorted = sort.key
     ? [...filtered].sort((a, b) => {
-        const av = Number(a[sort.key] ?? 0);
-        const bv = Number(b[sort.key] ?? 0);
+        let av = Number(a[sort.key] ?? 0);
+        let bv = Number(b[sort.key] ?? 0);
+        if (sort.key === 'last_result' && lastMatch2) {
+          av += Number(a.last_result2 ?? 0);
+          bv += Number(b.last_result2 ?? 0);
+        }
         return sort.dir === 'desc' ? bv - av : av - bv;
       })
     : filtered;
@@ -642,7 +653,7 @@ export default function Leaderboard() {
                   {lastMatchIsLive ? (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/50 text-xs font-black text-red-400 leading-none">
                       <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse shrink-0" />
-                      LIVE MATCH
+                      {lastMatch2 ? 'LIVE MATCHES' : 'LIVE MATCH'}
                     </span>
                   ) : 'Last Result'}
                   <span className="w-3 shrink-0 inline-flex justify-center text-gray-400 text-xs leading-none">
@@ -650,10 +661,22 @@ export default function Leaderboard() {
                   </span>
                 </div>
                 {lastMatch && (
-                  <div className="flex items-center justify-center gap-1 mt-1">
-                    <Flag code={lastMatch.homeCode} name={lastMatch.home} className="w-4 h-4 rounded-sm object-cover" />
-                    <span className="text-gray-600 text-xs">v</span>
-                    <Flag code={lastMatch.awayCode} name={lastMatch.away} className="w-4 h-4 rounded-sm object-cover" />
+                  <div className="flex items-center justify-center gap-2 mt-1">
+                    <div className="flex items-center gap-1">
+                      <Flag code={lastMatch.homeCode} name={lastMatch.home} className="w-4 h-4 rounded-sm object-cover" />
+                      <span className="text-gray-600 text-xs">v</span>
+                      <Flag code={lastMatch.awayCode} name={lastMatch.away} className="w-4 h-4 rounded-sm object-cover" />
+                    </div>
+                    {lastMatch2 && (
+                      <>
+                        <span className="text-gray-600 text-xs">·</span>
+                        <div className="flex items-center gap-1">
+                          <Flag code={lastMatch2.homeCode} name={lastMatch2.home} className="w-4 h-4 rounded-sm object-cover" />
+                          <span className="text-gray-600 text-xs">v</span>
+                          <Flag code={lastMatch2.awayCode} name={lastMatch2.away} className="w-4 h-4 rounded-sm object-cover" />
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </th>
@@ -673,7 +696,7 @@ export default function Leaderboard() {
               >
                 <div className="flex items-center justify-center">
                   <span className="w-3 shrink-0" />
-                  Points
+                  <span className="sm:hidden">Pts</span><span className="hidden sm:inline">Points</span>
                   <span className="w-3 shrink-0 inline-flex justify-center text-gray-400 text-xs leading-none ml-1">
                     {colSort('total_points') === 'desc' ? '▾' : colSort('total_points') === 'asc' ? '▴' : '·'}
                   </span>
@@ -740,7 +763,14 @@ export default function Leaderboard() {
                       <span className="tag pts-zero">{row.pts_0 ?? 0}</span>
                     </td>
                     <td className="px-2 sm:px-4 py-3 text-center">
-                      <PtsBadge pts={row.last_result} pending={row.last_result === null} />
+                      {lastMatch2 ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <PtsBadge pts={row.last_result} pending={row.last_result === null} />
+                          <PtsBadge pts={row.last_result2} pending={row.last_result2 === null} />
+                        </div>
+                      ) : (
+                        <PtsBadge pts={row.last_result} pending={row.last_result === null} />
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
                       {row.next_pred_home !== null

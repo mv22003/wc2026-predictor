@@ -147,31 +147,54 @@ router.get('/', async (req, res) => {
 
     const ranked = assignRanks(rows);
 
-    // Find the last finished or currently live match for the "Last Result" column
-    // Live matches are prioritised so they appear immediately in the header
-    const lastMatchRes = await db.query(`
+    // Fetch all currently live matches first
+    const liveMatchesRes = await db.query(`
       SELECT m.id, m.status, t1.name AS home_team, t1.code AS home_code,
              t2.name AS away_team, t2.code AS away_code
       FROM matches m
       JOIN teams t1 ON t1.id = m.home_team_id
       JOIN teams t2 ON t2.id = m.away_team_id
-      WHERE m.status IN ('finished', 'live')
-      ORDER BY CASE WHEN m.status = 'live' THEN 0 ELSE 1 END ASC,
-               m.match_date DESC, m.id DESC
-      LIMIT 1
+      WHERE m.status = 'live'
+      ORDER BY m.match_date ASC, m.id ASC
     `);
 
-    if (lastMatchRes.rows.length === 0) {
+    let matchesToShow = liveMatchesRes.rows;
+
+    // If no live matches, fall back to the last finished match
+    if (matchesToShow.length === 0) {
+      const lastFinishedRes = await db.query(`
+        SELECT m.id, m.status, t1.name AS home_team, t1.code AS home_code,
+               t2.name AS away_team, t2.code AS away_code
+        FROM matches m
+        JOIN teams t1 ON t1.id = m.home_team_id
+        JOIN teams t2 ON t2.id = m.away_team_id
+        WHERE m.status = 'finished'
+        ORDER BY m.match_date DESC, m.id DESC
+        LIMIT 1
+      `);
+      matchesToShow = lastFinishedRes.rows;
+    }
+
+    if (matchesToShow.length === 0) {
       return res.json(ranked.map(r => ({ ...r, last_result: null, last_match_home: null, last_match_home_code: null, last_match_away: null, last_match_away_code: null })));
     }
 
-    const lastMatch = lastMatchRes.rows[0];
+    const lastMatch = matchesToShow[0];
+    const lastMatch2 = matchesToShow[1] ?? null;
 
     const { rows: lastResultRows } = await db.query(`
       SELECT user_id, points FROM predictions WHERE match_id = $1
     `, [lastMatch.id]);
 
     const lastResultByUserId = Object.fromEntries(lastResultRows.map(r => [r.user_id, r.points]));
+
+    let lastResult2ByUserId = {};
+    if (lastMatch2) {
+      const { rows: lastResult2Rows } = await db.query(`
+        SELECT user_id, points FROM predictions WHERE match_id = $1
+      `, [lastMatch2.id]);
+      lastResult2ByUserId = Object.fromEntries(lastResult2Rows.map(r => [r.user_id, r.points]));
+    }
 
     // Find the next upcoming match and each user's prediction for it
     const nextMatchRes = await db.query(`
@@ -204,6 +227,11 @@ router.get('/', async (req, res) => {
       last_match_away: lastMatch.away_team,
       last_match_away_code: lastMatch.away_code,
       last_match_is_live: lastMatch.status === 'live',
+      last_result2: lastMatch2 ? (lastResult2ByUserId[r.id] ?? null) : undefined,
+      last_match2_home: lastMatch2?.home_team ?? null,
+      last_match2_home_code: lastMatch2?.home_code ?? null,
+      last_match2_away: lastMatch2?.away_team ?? null,
+      last_match2_away_code: lastMatch2?.away_code ?? null,
       next_match_home: nextMatch?.home_team ?? null,
       next_match_home_code: nextMatch?.home_code ?? null,
       next_match_away: nextMatch?.away_team ?? null,
