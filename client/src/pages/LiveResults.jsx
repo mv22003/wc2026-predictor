@@ -184,6 +184,8 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
     // Position in the sorted array is definitive; no need to re-check couldFinishAbove.
     if (groupDone) return i === 0 ? 'first' : 'qualified';
     if (couldFinishAbove === 0) return 'first';
+    // i=0 with exactly 1 team able to overtake: still confirmed qualified but fighting for 1st
+    if (i === 0 && couldFinishAbove === 1 && hasLiveInGroup) return 'live-first';
     if (couldFinishAbove === 1) return 'qualified';
     if (hasLiveInGroup) return i === 0 ? 'live-first' : 'live-qualified';
     return 'top2';
@@ -198,7 +200,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
   // Mid-group position 3: only show live-qualified when mathematically confirmed in
   // the global top-8 (getMath3rdsConfirmed already accounts for whether 4th is locked
   // out in this group AND whether the global ranking guarantees a top-8 finish).
-  if (i === 2) return hasAnyLive && confirmed3rds?.has(row.name) ? 'live-qualified' : 'none';
+  if (i === 2) return 'none';
 
   // Position 4: can't finish 3rd if max pts (from finished games) < 3rd's finished pts
   if (rowStats.maxPts < thirdStats.pts) return 'eliminated';
@@ -207,7 +209,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
   if (rowStats.maxPts === thirdStats.pts && h2hResult(groupMatches, row.name, third.name) === 'lost')
     return 'eliminated';
 
-  if (hasLiveInGroup) return 'live-eliminated';
+  if (hasLiveInGroup) return 'eliminated';
 
   return 'none';
 }
