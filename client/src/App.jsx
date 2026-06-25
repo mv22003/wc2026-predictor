@@ -11,7 +11,6 @@ import Admin           from './pages/Admin';
 const NAV_ITEMS = [
   { to: '/',            label: 'Home',        exact: true },
   { to: '/live',        label: 'Live Results' },
-  { to: '/predict',     label: 'Predict' },
   { to: '/leaderboard', label: 'Leaderboard' },
   { to: '/history',     label: 'History' },
   { to: '/admin',       label: 'Admin' },
