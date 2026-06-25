@@ -1463,13 +1463,13 @@ export default function LiveResults() {
     <div className="space-y-6">
       <div className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-8 pt-6 sm:pt-3 pb-3">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-black">Live Results</h1>
               <p className="text-gray-400 text-sm mt-0.5">
                 {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
               </p>
-              {tab === 'bracket' && matches.some(m => m.phase !== 'group') && (
+              {tab === 'bracket' && allGroupsDone && (
                 <p className="text-gray-400 text-xs mt-0.5">Knockout bracket confirmed</p>
               )}
               {/* Desktop: toggle below subtitle */}
