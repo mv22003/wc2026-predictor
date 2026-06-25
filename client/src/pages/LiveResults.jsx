@@ -48,12 +48,10 @@ function resolveSlotTeam(slot, byGroup, groupMatchesByGroup, dbByNum) {
 
   if (slot.type === 'group') {
     const gm = groupMatchesByGroup[slot.group] || [];
-    const groupDone = gm.length === 6 && gm.every(m => m.status === 'finished');
-    if (groupDone) {
-      const standings = byGroup[slot.group] || [];
-      const team = standings[slot.pos - 1];
-      if (team) return { name: team.name, code: team.code, ranking: findRanking(team.name, gm) };
-    }
+    const standings = byGroup[slot.group] || [];
+    const team = standings[slot.pos - 1];
+    // Show team whenever they appear in standings (mirrors bracket projected mode)
+    if (team && team.played > 0) return { name: team.name, code: team.code, ranking: findRanking(team.name, gm) };
     return { name: slotToLabel(slot), code: null, ranking: null };
   }
 
