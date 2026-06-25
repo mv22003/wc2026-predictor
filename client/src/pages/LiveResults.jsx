@@ -845,9 +845,9 @@ function MatchRow({ match }) {
               </span>
               {match.home_code && <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />}
             </div>
-            <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-center gap-1">
-              {finished && <span className="sm:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FT</span>}
-              {live && <span className="sm:hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-semibold text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />LIVE</span>}
+            <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-center relative">
+              {finished && <span className="sm:hidden absolute -top-6 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FT</span>}
+              {live && <span className="sm:hidden absolute -top-6 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-semibold text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />LIVE</span>}
               {finished ? (
                 <div className="relative">
                   <span className="font-black text-brand-gold text-xl tabular-nums block">
@@ -967,11 +967,12 @@ function FilterBtn({ value, active, onChange, compact, stretch, children }) {
   );
 }
 
-// options: [{ value, label }]
-function PhaseDropdown({ options, defaultLabel, active, onChange, compact }) {
+// Dropdown filter button: shows baseLabel by default; clicking opens a menu with baseLabel + sub-options
+function FilterDropdown({ baseValue, baseLabel, options, active, onChange, compact, stretch }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const activeOption = options.find(o => o.value === active);
+  const isActive = active === baseValue || !!activeOption;
 
   useEffect(() => {
     if (!open) return;
@@ -983,27 +984,33 @@ function PhaseDropdown({ options, defaultLabel, active, onChange, compact }) {
   }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className={`relative${stretch ? ' flex-1 flex flex-col' : ''}`} ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} rounded-lg font-bold transition-all whitespace-nowrap ${
-          activeOption
+        className={`${compact ? 'px-4 py-1 text-xs' : 'px-5 py-1.5 text-sm'} ${stretch ? 'flex-1 w-full' : ''} rounded-lg font-bold transition-all whitespace-nowrap ${
+          isActive
             ? 'bg-brand-gold text-brand-navy'
             : 'bg-brand-card border border-brand-border text-gray-300 hover:border-brand-gold/50'
         }`}
       >
-        {activeOption ? activeOption.label : defaultLabel}
+        {activeOption ? activeOption.label + ' ▾' : baseLabel}
       </button>
       {open && (
         <div className="absolute top-full left-0 mt-1 z-30 bg-brand-card border border-brand-border rounded-lg shadow-xl overflow-hidden min-w-[140px]">
+          <button
+            onClick={() => { onChange(baseValue); setOpen(false); }}
+            className={`w-full text-left px-4 py-2 text-sm font-bold transition-colors ${
+              active === baseValue ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:bg-white/10'
+            }`}
+          >
+            {'All ' + baseLabel.replace(' ▾', '')}
+          </button>
           {options.map(o => (
             <button
               key={o.value}
               onClick={() => { onChange(o.value); setOpen(false); }}
               className={`w-full text-left px-4 py-2 text-sm font-bold transition-colors ${
-                active === o.value
-                  ? 'bg-brand-gold text-brand-navy'
-                  : 'text-gray-300 hover:bg-white/10'
+                active === o.value ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:bg-white/10'
               }`}
             >
               {o.label}
@@ -1539,23 +1546,23 @@ export default function LiveResults() {
 
         {tab === 'calendar' && (
           <div className="mt-3 space-y-2">
-            <div className="flex flex-wrap gap-1.5">
-              <FilterBtn value="all"         active={filter} onChange={handleFilterChange} compact>All</FilterBtn>
-              <FilterBtn value="GROUP_STAGE" active={filter} onChange={handleFilterChange} compact>Groups</FilterBtn>
-              <PhaseDropdown
+            <div className="flex gap-1.5">
+              <FilterBtn value="all" active={filter} onChange={handleFilterChange} compact>All</FilterBtn>
+              <FilterDropdown
+                baseValue="GROUP_STAGE"
+                baseLabel="Groups ▾"
                 options={groups.map(g => ({ value: g, label: `Group ${g}` }))}
-                defaultLabel="Group ▾"
                 active={filter}
                 onChange={handleFilterChange}
-                compact
+                compact stretch
               />
-              <FilterBtn value="KNOCKOUTS"   active={filter} onChange={handleFilterChange} compact>Knockouts</FilterBtn>
-              <PhaseDropdown
+              <FilterDropdown
+                baseValue="KNOCKOUTS"
+                baseLabel="Knockouts ▾"
                 options={koPhases.map(p => ({ value: p, label: KO_PHASE_LABEL[p] ?? p }))}
-                defaultLabel="Round ▾"
                 active={filter}
                 onChange={handleFilterChange}
-                compact
+                compact stretch
               />
             </div>
             <div className="flex justify-end">
