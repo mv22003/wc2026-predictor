@@ -965,7 +965,7 @@ function MatchRow({ match, securedTeam }) {
   const awayRanking = match.away_ranking        ?? securedTeam?.away.ranking ?? null;
 
   return (
-    <div data-live={live ? 'true' : undefined} className={`relative pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
+    <div data-live={live ? 'true' : undefined} data-match-status={match.status} className={`relative pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors
       ${live ? 'bg-emerald-900/20' : ''}`}>
       {live && <span className="absolute inset-y-0 left-0 w-1 bg-emerald-400 rounded-none" />}
@@ -1212,24 +1212,27 @@ function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollTo
     if (!pendingScrollToToday) return;
     function scrollToEl(el) {
       if (!el) return;
-      const stickyHeight = Array.from(document.querySelectorAll('.sticky'))
-        .reduce((sum, s) => sum + s.offsetHeight, 0);
-      const top = el.getBoundingClientRect().top + window.scrollY - stickyHeight - 12;
-      window.scrollTo({ top, behavior: 'smooth' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    const liveEl = document.querySelector('[data-has-live="true"]');
+    const liveEl = document.querySelector('[data-live="true"]');
     if (liveEl) {
       scrollToEl(liveEl);
     } else {
-      const todayISO = localDateISO(new Date());
-      const nearestUpcoming = matches
-        .filter(m => m.status === 'upcoming' && m.match_date)
-        .filter(m => localDateISO(m.match_date) >= todayISO)
-        .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))[0];
-      const target = nearestUpcoming
-        ? localDateKey(nearestUpcoming.match_date)
-        : new Date().toLocaleDateString('en-GB', DATE_FMT);
-      scrollToEl(document.querySelector(`[data-date="${target}"]`));
+      const finishedEls = document.querySelectorAll('[data-match-status="finished"]');
+      const lastFinished = finishedEls[finishedEls.length - 1];
+      if (lastFinished) {
+        scrollToEl(lastFinished);
+      } else {
+        const todayISO = localDateISO(new Date());
+        const nearestUpcoming = matches
+          .filter(m => m.status === 'upcoming' && m.match_date)
+          .filter(m => localDateISO(m.match_date) >= todayISO)
+          .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))[0];
+        const target = nearestUpcoming
+          ? localDateKey(nearestUpcoming.match_date)
+          : new Date().toLocaleDateString('en-GB', DATE_FMT);
+        scrollToEl(document.querySelector(`[data-date="${target}"]`));
+      }
     }
     setPendingScrollToToday(false);
   }, [pendingScrollToToday, filter]);
@@ -1750,9 +1753,15 @@ export default function LiveResults() {
               />
               <button
                 onClick={handleScrollToToday}
-                className="sm:ml-auto px-3 py-1 rounded-lg text-xs font-bold transition-all bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10 whitespace-nowrap"
+                className={`sm:ml-auto px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap inline-flex items-center gap-1.5 ${
+                  liveNow > 0
+                    ? 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 hover:border-red-500/60'
+                    : 'bg-brand-card border border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:bg-brand-gold/10'
+                }`}
               >
-                ↓ Latest
+                {liveNow > 0
+                  ? <><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />↓ LIVE</>
+                  : '↓ Latest'}
               </button>
             </div>
           </div>
