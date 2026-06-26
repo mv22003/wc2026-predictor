@@ -227,6 +227,70 @@ function getMath3rdsConfirmed(allMatches, groups) {
   return confirmed;
 }
 
+// Returns the number of the 495 Annexe C combinations still mathematically possible.
+// Filters BEST3RD_TABLE to entries that include every confirmed group and exclude
+// every eliminated group (one whose 3rd can never reach the top 8).
+function getPossibleCombinations(allMatches, groups) {
+  const complete   = [];
+  const incomplete = [];
+  for (const g of groups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    if (gm.filter(m => m.status === 'finished').length >= 6)
+      complete.push({ g, gm });
+    else
+      incomplete.push({ g, gm });
+  }
+
+  const thirds = complete.map(({ g, gm }) => {
+    const s = calcStandings(gm, false);
+    return s.length >= 3 ? { ...s[2], group: g } : null;
+  }).filter(Boolean);
+
+  const confirmedGroups = new Set();
+  const eliminatedGroups = new Set();
+
+  for (const t of thirds) {
+    // Confirmed: at most 7 other thirds can be above it in any scenario
+    let possiblyAbove = 0;
+    for (const o of thirds) {
+      if (o.group === t.group) continue;
+      if (thirdsCompare(o, t) > 0) possiblyAbove++;
+    }
+    for (const { gm } of incomplete) {
+      if (canProduceBetterThird(gm, t)) possiblyAbove++;
+    }
+    if (possiblyAbove <= 7) confirmedGroups.add(t.group);
+
+    // Eliminated: at least 8 other thirds are definitely better (no scenario puts this team in top 8)
+    // A group's 3rd is eliminated if the number of thirds that are *certainly* above it >= 8.
+    // "Certainly above": complete groups whose 3rd currently beats it AND incomplete groups whose
+    // best possible 3rd also cannot be worse (i.e. even the worst outcome for the incomplete group
+    // still beats this team — but that's hard to check). Simpler: count complete groups whose
+    // current 3rd beats it, plus incomplete groups where canProduceBetterThird is always true.
+    // We use the pessimistic bound: count complete thirds that are definitely above this one.
+    let definitelyAbove = thirds.filter(o => o.group !== t.group && thirdsCompare(o, t) > 0).length;
+    // incomplete groups can always produce at least a 0pts/0gd/0gf worst-case 3rd — only add
+    // if incomplete group's minimum best-3rd is already above `t`. Check by trying the worst
+    // outcome (all group matches finish 0-0, giving the current 3rd their current stats or less).
+    // For simplicity, count incomplete groups that currently have a 3rd above `t` in all matches played.
+    for (const { gm } of incomplete) {
+      const s = calcStandings(gm, false);
+      if (s.length >= 3 && thirdsCompare(s[2], t) > 0) {
+        // Even with remaining matches they could drop — only count if no remaining match can save `t`
+        // i.e. canProduceBetterThird(gm, t) is always true regardless of outcomes.
+        // Since we can't easily check "always true", we skip — this keeps the count conservative.
+      }
+    }
+    if (definitelyAbove >= 8) eliminatedGroups.add(t.group);
+  }
+
+  return Object.keys(BEST3RD_TABLE).filter(key => {
+    if ([...confirmedGroups].some(g => !key.includes(g))) return false;
+    if ([...eliminatedGroups].some(g => key.includes(g))) return false;
+    return true;
+  }).length;
+}
+
 // Returns a Set of match numbers where the 1st-vs-3rd pairing is fully secured.
 // A matchup is secured when:
 //   1. The 3rd-place team from that group is confirmed in the top-8 best-3rds
@@ -660,6 +724,7 @@ function AnnexeCPanel({ allMatches, groups }) {
 
   const byGroup = Object.fromEntries(top8.map(t => [t.group, t]));
   const securedMatchups = getSecuredMatchups(allMatches, groups);
+  const possibleCombos = getPossibleCombinations(allMatches, groups);
 
   // Build group → 1st place team for all groups
   const groupFirstPlace = Object.fromEntries(
@@ -673,7 +738,14 @@ function AnnexeCPanel({ allMatches, groups }) {
   return (
     <div className="card p-0 overflow-hidden">
       <div className="px-4 py-3 border-b border-brand-border bg-brand-navy/60">
-        <h3 className="font-black text-base">Annexe C Assignment</h3>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-black text-base">Annexe C Assignment</h3>
+          <span className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border border-brand-border bg-brand-navy text-gray-300">
+            <span className={possibleCombos === 1 ? 'text-emerald-400' : 'text-white'}>{possibleCombos}</span>
+            <span className="text-gray-500"> / 495</span>
+            <span className="text-gray-400"> possible</span>
+          </span>
+        </div>
         <p className="text-xs text-gray-400 mt-0.5">
           Active combination: <span className="font-mono text-amber-400 font-bold">{key}</span>
           {' '}— the 8 best 3rd-place groups determine which R32 slot each team fills.
