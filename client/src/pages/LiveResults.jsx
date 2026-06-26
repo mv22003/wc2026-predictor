@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
@@ -1101,14 +1101,20 @@ function DateGroup({ matches, dateKey, securedMatchups }) {
   const isToday  = dateKey === todayKey;
   const label    = dateKey ? dateKey.replace(/\s\d{4}$/, '') : '';
   return (
-    <div className={`card p-0 overflow-hidden ${isToday ? 'border border-brand-gold/50' : ''}`}>
-      <div className={`px-4 py-2.5 flex items-center gap-2 border-b border-brand-border ${isToday ? 'bg-brand-gold/20' : 'bg-brand-navy/60'}`}>
+    // overflow:visible so the sticky header can escape the card bounds when stuck.
+    // Match rows live inside an overflow:hidden inner div so they never leak out.
+    <div className={`card p-0 ${isToday ? 'border border-brand-gold/50' : ''}`} style={{ overflow: 'visible' }}>
+      <div
+        className="sticky z-10 flex items-center gap-2 px-4 py-3 border-b border-brand-border/50 rounded-t-xl"
+        style={{ top: 'calc(var(--cal-sticky-top, 64px) - 4px)', background: '#09122C' }}
+      >
         <h3 className={`font-bold text-sm ${isToday ? 'text-brand-gold' : 'text-gray-300'}`}>{label}</h3>
-        {isToday && <span className="hidden sm:inline text-brand-gold/50 text-sm">·</span>}
         {isToday && <span className="hidden sm:inline-flex tag bg-brand-gold text-brand-navy text-sm font-bold">Today</span>}
         <span className="ml-auto text-xs text-gray-400">{matches.length} match{matches.length !== 1 ? 'es' : ''}</span>
       </div>
-      {matches.map(m => <MatchRow key={m.id} match={m} securedTeam={securedMatchups?.get(m.match_number)} />)}
+      <div className="overflow-hidden rounded-b-xl">
+        {matches.map(m => <MatchRow key={m.id} match={m} securedTeam={securedMatchups?.get(m.match_number)} />)}
+      </div>
     </div>
   );
 }
@@ -1604,6 +1610,20 @@ export default function LiveResults() {
   const [filter,  setFilter]  = useState('all');
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
   const [securedMode, setSecuredMode] = useState(false);
+  const controlsRef = useRef(null);
+
+  // Keep --cal-sticky-top CSS variable in sync with the controls bar bottom edge.
+  // useLayoutEffect sets it before the first paint; ResizeObserver keeps it updated
+  // whenever the bar changes height (e.g. live game subtitle appearing/disappearing).
+  // Using a CSS variable instead of React state avoids re-render cascades entirely.
+  useLayoutEffect(() => {
+    const el = controlsRef.current;
+    if (!el) return;
+    document.documentElement.style.setProperty('--cal-sticky-top', el.getBoundingClientRect().bottom + 'px');
+  }, [matches]);
+  useEffect(() => {
+    return () => document.documentElement.style.removeProperty('--cal-sticky-top');
+  }, []);
 
   // Derive active tab from URL sub-path; default to calendar
   const pathSub = location.pathname.split('/').filter(Boolean).pop();
@@ -1655,7 +1675,7 @@ export default function LiveResults() {
 
   return (
     <div className="space-y-6">
-      <div className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-8 pt-6 sm:pt-3 pb-3">
+      <div ref={controlsRef} className="sticky top-14 sm:top-16 z-20 bg-brand-navy -mx-3 px-3 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-8 pt-6 sm:pt-3 pb-3">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
