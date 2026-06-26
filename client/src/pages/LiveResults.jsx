@@ -154,65 +154,75 @@ function getBest3rds(allMatches, groups) {
   return new Set(getAll3rdsRanked(allMatches, groups).slice(0, 8).map(t => t.name));
 }
 
-function finishedStatsFor(name, groupMatches) {
-  let pts = 0, played = 0;
-  for (const m of groupMatches) {
-    if (m.status !== 'finished') continue;
-    if (m.home_team === name) {
-      played++;
-      if (m.home_score > m.away_score) pts += 3;
-      else if (m.home_score === m.away_score) pts += 1;
-    } else if (m.away_team === name) {
-      played++;
-      if (m.away_score > m.home_score) pts += 3;
-      else if (m.away_score === m.home_score) pts += 1;
-    }
-  }
-  return { pts, played, maxPts: pts + 3 * Math.max(0, 3 - played) };
+// Compare two best-3rd teams: returns positive if `a` ranks above `b`.
+function thirdsCompare(a, b) {
+  return (a.pts - b.pts) ||
+    (a.gd  - b.gd)  ||
+    (a.gf  - b.gf)  ||
+    ((a.conduct_score ?? 0) - (b.conduct_score ?? 0)) ||
+    ((b.fifa_ranking ?? Infinity) - (a.fifa_ranking ?? Infinity));
 }
 
-// A 3rd-place slot is "settled" when it's certain which team finishes 3rd (or above):
-// either the group is fully done, or 4th place is mathematically locked out of 3rd.
-// Only settled 3rds count toward the confirmed-top-8 check; all other groups are
-// "unsettled" and assumed to potentially produce a better 3rd-place team.
+// Returns true if any possible result of remaining matches in `gm` could produce
+// a 3rd-place finisher ranked above `candidate`. Tries representative score
+// margins (big win / small win / draw / small loss / big loss) to cover GD/GF
+// tiebreaker scenarios, not just win/draw/loss outcomes.
+function canProduceBetterThird(gm, candidate) {
+  const finished = gm.filter(m => m.status === 'finished');
+  const remaining = gm.filter(m => m.status !== 'finished');
+  const OUTCOMES = [[3, 0], [1, 0], [0, 0], [0, 1], [0, 3]];
+
+  function tryAll(idx, sim) {
+    if (idx === remaining.length) {
+      const standings = calcStandings([...finished, ...sim], false);
+      return standings.length >= 3 && thirdsCompare(standings[2], candidate) > 0;
+    }
+    const m = remaining[idx];
+    return OUTCOMES.some(([hs, as_]) =>
+      tryAll(idx + 1, [...sim, { ...m, home_score: hs, away_score: as_, status: 'finished' }])
+    );
+  }
+  return tryAll(0, []);
+}
+
+// A team is confirmed in the top-8 best-3rds when, even in the absolute worst case
+// (every incomplete group produces the strongest possible 3rd-place team), they
+// still cannot be pushed out of the top 8.
+// Only teams from fully-complete groups (all 6 matches played) are eligible —
+// incomplete groups are handled pessimistically via canProduceBetterThird.
 function getMath3rdsConfirmed(allMatches, groups) {
-  const settled3rds = [];
-  let unsettledCount = 0;
+  const complete   = [];
+  const incomplete = [];
 
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    const groupDone = gm.length === 6 && gm.every(m => m.status === 'finished');
-    const standings = calcStandings(gm, true);
-    if (standings.length < 3) { unsettledCount++; continue; }
-
-    const third  = standings[2];
-    const fourth = standings[3];
-    let thirdSettled = groupDone;
-
-    if (!groupDone && fourth) {
-      const thirdStats  = finishedStatsFor(third.name,  gm);
-      const fourthStats = finishedStatsFor(fourth.name, gm);
-      thirdSettled =
-        fourthStats.maxPts < thirdStats.pts ||
-        (fourthStats.maxPts === thirdStats.pts &&
-         h2hResult(gm, fourth.name, third.name) === 'lost');
-    }
-
-    if (thirdSettled) settled3rds.push({ ...third, group: g });
-    else unsettledCount++;
+    if (gm.filter(m => m.status === 'finished').length >= 6)
+      complete.push({ g, gm });
+    else
+      incomplete.push({ g, gm });
   }
 
-  settled3rds.sort((a, b) =>
-    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf ||
-    (b.conduct_score ?? 0) - (a.conduct_score ?? 0) ||
-    (a.fifa_ranking ?? Infinity) - (b.fifa_ranking ?? Infinity) ||
-    a.name.localeCompare(b.name)
-  );
+  const candidates = complete
+    .map(({ g, gm }) => {
+      const s = calcStandings(gm, false);
+      return s.length >= 3 ? { ...s[2], group: g } : null;
+    })
+    .filter(Boolean);
 
   const confirmed = new Set();
-  settled3rds.forEach((team, idx) => {
-    if (idx + 1 + unsettledCount <= 8) confirmed.add(team.name);
-  });
+  for (const candidate of candidates) {
+    let possiblyAbove = 0;
+
+    for (const other of candidates) {
+      if (other.group === candidate.group) continue;
+      if (thirdsCompare(other, candidate) > 0) possiblyAbove++;
+    }
+    for (const { gm } of incomplete) {
+      if (canProduceBetterThird(gm, candidate)) possiblyAbove++;
+    }
+
+    if (possiblyAbove <= 7) confirmed.add(candidate.name);
+  }
   return confirmed;
 }
 
