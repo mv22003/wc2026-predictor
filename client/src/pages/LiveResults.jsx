@@ -965,9 +965,10 @@ function MatchRow({ match, securedTeam }) {
   const awayRanking = match.away_ranking        ?? securedTeam?.away.ranking ?? null;
 
   return (
-    <div className={`pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
+    <div data-live={live ? 'true' : undefined} className={`relative pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors
-      ${live ? 'bg-emerald-900/20 border-l-4 border-l-emerald-400' : ''}`}>
+      ${live ? 'bg-emerald-900/20' : ''}`}>
+      {live && <span className="absolute inset-y-0 left-0 w-1 bg-emerald-400 rounded-none" />}
       <div className="flex items-stretch gap-3">
         {/* group · match# pill — desktop only */}
         <div className="hidden sm:flex sm:w-20 shrink-0 items-center justify-center">
@@ -1657,7 +1658,7 @@ export default function LiveResults() {
             <div>
               <h1 className="text-2xl font-black">Matches</h1>
               <p className="text-gray-400 text-sm mt-0.5">
-                {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
+                {played} results · {liveNow > 0 && <><button onClick={() => document.querySelector('[data-live="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="text-emerald-400 font-bold hover:underline cursor-pointer">{liveNow} live</button> · </>}{total - played - liveNow} upcoming · updates every 30s
               </p>
               {tab === 'bracket' && allGroupsDone && (
                 <p className="text-gray-400 text-xs mt-0.5">Knockout bracket confirmed</p>
