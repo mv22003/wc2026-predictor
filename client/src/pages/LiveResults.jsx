@@ -504,6 +504,7 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
 
 function Best3rdsTable({ allMatches, groups }) {
   const thirds = getAll3rdsRanked(allMatches, groups);
+  const confirmed3rds = getMath3rdsConfirmed(allMatches, groups);
   if (thirds.length === 0) return null;
 
   return (
@@ -530,13 +531,22 @@ function Best3rdsTable({ allMatches, groups }) {
           </tr>
         </thead>
         <tbody>
-          {thirds.map((row, i) => (
+          {thirds.map((row, i) => {
+            const isConfirmed = confirmed3rds.has(row.name);
+            return (
             <tr key={row.name}
+              style={{
+                borderLeft: isConfirmed
+                  ? '3px solid rgba(16,185,129,0.7)'
+                  : '3px solid transparent',
+              }}
               className={`border-b border-brand-border/30 last:border-0 transition-colors
-                ${i < 8 ? 'bg-amber-900/10 hover:bg-amber-900/20' : 'hover:bg-white/5'}`}
+                ${isConfirmed ? 'bg-emerald-900/15 hover:bg-emerald-900/25'
+                  : i < 8 ? 'bg-amber-900/10 hover:bg-amber-900/20'
+                  : 'hover:bg-white/5'}`}
             >
               <td className="px-3 py-2.5">
-                <span className={`text-xs font-bold ${i < 8 ? 'text-amber-400' : 'text-gray-400'}`}>{i + 1}</span>
+                <span className={`text-xs font-bold ${isConfirmed ? 'text-emerald-400' : i < 8 ? 'text-amber-400' : 'text-gray-400'}`}>{i + 1}</span>
               </td>
               <td className="px-3 py-2.5 text-center hidden sm:table-cell">
                 <span className="text-xs font-bold text-gray-400">{row.group}</span>
@@ -559,7 +569,8 @@ function Best3rdsTable({ allMatches, groups }) {
               <td className="px-2 py-2.5 text-center text-gray-400">{row.conduct_score ?? 0}</td>
               <td className="px-3 py-2.5 text-center font-black text-brand-gold">{row.pts}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
