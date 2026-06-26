@@ -137,7 +137,7 @@ function getAll3rdsRanked(allMatches, groups) {
   const thirds = [];
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    const standings = calcStandings(gm, true);
+    const standings = calcStandings(gm, false);
     if (standings.length >= 3 && standings[2].played > 0) thirds.push({ ...standings[2], group: g });
   }
   thirds.sort((a, b) =>
@@ -153,6 +153,37 @@ function getAll3rdsRanked(allMatches, groups) {
 
 function getBest3rds(allMatches, groups) {
   return new Set(getAll3rdsRanked(allMatches, groups).slice(0, 8).map(t => t.name));
+}
+
+// Returns a Set of 3rd-place team names that are mathematically eliminated from
+// the global top-8. A team is eliminated when at least 8 others are definitively
+// above it. "Definitively above" means either:
+//   (a) the other team already has more pts than this team's maximum possible pts, OR
+//   (b) both teams have played all 3 games (stats final) and the other wins on tiebreakers.
+function getEliminated3rds(allMatches, groups) {
+  const thirds = getAll3rdsRanked(allMatches, groups);
+  // Groups with a live match have unsettled stats — treat as not yet finalized
+  const liveGroups = new Set(
+    groups.filter(g => allMatches.some(m => m.group_name === g && m.phase === 'group' && m.status === 'live'))
+  );
+  const eliminated = new Set();
+  for (const row of thirds) {
+    if (liveGroups.has(row.group)) continue; // row's own stats may still change
+    const maxPts = row.pts + 3 * Math.max(0, 3 - row.played);
+    let definitelyAbove = 0;
+    for (const other of thirds) {
+      if (other.name === row.name) continue;
+      if (liveGroups.has(other.group)) continue; // other's stats may still change
+      if (other.pts > maxPts) {
+        definitelyAbove++;
+      } else if (other.pts === maxPts && other.played === 3 && row.played === 3) {
+        // Both finalized — tiebreaker result is permanent
+        if (thirdsCompare(other, row) > 0) definitelyAbove++;
+      }
+    }
+    if (definitelyAbove >= 8) eliminated.add(row.name);
+  }
+  return eliminated;
 }
 
 // Compare two best-3rd teams: returns positive if `a` ranks above `b`.
@@ -186,18 +217,54 @@ function canProduceBetterThird(gm, candidate) {
   return tryAll(0, []);
 }
 
+// Returns true if the 3rd-place position in a group is definitively settled even
+// when the group isn't fully complete (e.g. the last match is between 1st and 4th).
+// Both 2nd and 3rd must have played all 3 games (so they can't swap via a remaining
+// match between them), AND 4th can no longer accumulate enough points to overtake 3rd.
+function isGroupThirdLocked(gm) {
+  // Never treat a group as settled while any match is in progress
+  if (gm.some(m => m.status === 'live')) return false;
+  const standings = calcStandings(gm, false);
+  if (standings.length < 4) return false;
+  const second = standings[1];
+  const third  = standings[2];
+  const fourth = standings[3];
+
+  // 2nd and 3rd must both have finished all their games — otherwise they could
+  // still swap via a pending match against each other or a shared opponent.
+  const countPlayed = (name) => gm.filter(m => m.status === 'finished' &&
+    (m.home_team === name || m.away_team === name)).length;
+  if (countPlayed(second.name) < 3 || countPlayed(third.name) < 3) return false;
+
+  // Check 4th can't overtake 3rd
+  const fourthMaxPts = fourth.pts + 3 * Math.max(0, 3 - countPlayed(fourth.name));
+  if (fourthMaxPts < third.pts) return true;
+  // Points could tie — locked if H2H already settled in 3rd's favour
+  // (H2H is the first tiebreaker, so a points-equal 4th with lost H2H can never overtake)
+  if (fourthMaxPts === third.pts) {
+    const h2hForThird = gm.find(m =>
+      m.status === 'finished' && (
+        (m.home_team === third.name && m.away_team === fourth.name && m.home_score > m.away_score) ||
+        (m.home_team === fourth.name && m.away_team === third.name && m.away_score > m.home_score)
+      )
+    );
+    if (h2hForThird) return true;
+  }
+  return false;
+}
+
 // A team is confirmed in the top-8 best-3rds when, even in the absolute worst case
 // (every incomplete group produces the strongest possible 3rd-place team), they
 // still cannot be pushed out of the top 8.
-// Only teams from fully-complete groups (all 6 matches played) are eligible —
-// incomplete groups are handled pessimistically via canProduceBetterThird.
+// Groups are treated as "complete" either when all 6 matches are finished, or when
+// the 3rd-place position is already locked (4th can't catch them on points).
 function getMath3rdsConfirmed(allMatches, groups) {
   const complete   = [];
   const incomplete = [];
 
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    if (gm.filter(m => m.status === 'finished').length >= 6)
+    if (gm.filter(m => m.status === 'finished').length >= 6 || isGroupThirdLocked(gm))
       complete.push({ g, gm });
     else
       incomplete.push({ g, gm });
@@ -235,7 +302,7 @@ function getPossibleCombinations(allMatches, groups) {
   const incomplete = [];
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    if (gm.filter(m => m.status === 'finished').length >= 6)
+    if (gm.filter(m => m.status === 'finished').length >= 6 || isGroupThirdLocked(gm))
       complete.push({ g, gm });
     else
       incomplete.push({ g, gm });
@@ -306,7 +373,8 @@ function getSecuredMatchups(allMatches, groups) {
   const confirmedGroups = new Set();
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    if (gm.filter(m => m.status === 'finished').length < 6) continue;
+    const allDone = gm.filter(m => m.status === 'finished').length >= 6;
+    if (!allDone && !isGroupThirdLocked(gm)) continue;
     const standings = calcStandings(gm, false);
     if (standings.length >= 3 && confirmed3rds.has(standings[2].name)) confirmedGroups.add(g);
   }
@@ -380,7 +448,7 @@ function h2hResult(groupMatches, teamName, opponentName) {
   return teamScore > oppScore ? 'won' : teamScore < oppScore ? 'lost' : 'draw';
 }
 
-function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive) {
+function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive, eliminated3rds) {
   const row = standings[i];
   const third = standings[2];
 
@@ -421,8 +489,15 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
       if (cStats.maxPts > rowStats.pts) {
         couldFinishAbove++;
       } else if (cStats.maxPts === rowStats.pts) {
-        // Can tie — only a threat if H2H not already settled in our favour
-        if (h2hResult(groupMatches, row.name, c.name) !== 'won') couldFinishAbove++;
+        // If both teams have played all their games, all tiebreakers are already
+        // settled — their relative position in the sorted standings array is final.
+        // A challenger ranked below (j > i) cannot overtake; above (j < i) stays above.
+        if (cStats.played === 3 && rowStats.played === 3) {
+          if (j < i) couldFinishAbove++;
+        } else {
+          // Still have games left — threat if H2H not already settled in our favour
+          if (h2hResult(groupMatches, row.name, c.name) !== 'won') couldFinishAbove++;
+        }
       }
     }
 
@@ -439,13 +514,14 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
 
   if (groupDone) {
     if (i === 2 && confirmed3rds?.has(row.name)) return 'qualified';
+    if (i === 2 && eliminated3rds?.has(row.name)) return 'eliminated';
     if (i === 2) return 'none';
     return 'eliminated';
   }
 
-  // Mid-group position 3: only show live-qualified when mathematically confirmed in
-  // the global top-8 (getMath3rdsConfirmed already accounts for whether 4th is locked
-  // out in this group AND whether the global ranking guarantees a top-8 finish).
+  // Mid-group position 3: eliminated from best-3rd if at least 8 other thirds are
+  // already guaranteed to finish above this team's maximum achievable points.
+  if (i === 2 && eliminated3rds?.has(row.name)) return 'eliminated';
   if (i === 2) return 'none';
 
   // Position 4: can't finish 3rd if max pts (from finished games) < 3rd's finished pts
@@ -460,7 +536,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
   return 'none';
 }
 
-function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasAnyLive }) {
+function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasAnyLive, eliminated3rds }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
   const standings    = calcStandings(groupMatches, true);
@@ -503,7 +579,7 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
         </thead>
         <tbody>
           {standings.map((row, i) => {
-            const status = getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive);
+            const status = getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive, eliminated3rds);
             const isElim      = status === 'eliminated';
             const isLiveFirst = status === 'live-first';
             const isLiveQual  = status === 'live-qualified';
@@ -633,6 +709,31 @@ function Best3rdsTable({ allMatches, groups }) {
   const confirmed3rds = getMath3rdsConfirmed(allMatches, groups);
   if (thirds.length === 0) return null;
 
+  // Groups with a live match have unsettled stats — don't treat as finalized
+  const liveGroups = new Set(
+    groups.filter(g => allMatches.some(m => m.group_name === g && m.phase === 'group' && m.status === 'live'))
+  );
+
+  // A team is eliminated from top-8 if at least 8 others are definitively above it:
+  // either they already have more pts than this team's maximum possible pts, or both
+  // teams have played all 3 games (stats final) and the other wins on tiebreakers.
+  // Teams from groups with live matches are never treated as finalized.
+  function isEliminatedFromTop8(row) {
+    if (liveGroups.has(row.group)) return false;
+    const maxPts = row.pts + 3 * Math.max(0, 3 - row.played);
+    let definitelyAbove = 0;
+    for (const other of thirds) {
+      if (other.name === row.name) continue;
+      if (liveGroups.has(other.group)) continue;
+      if (other.pts > maxPts) {
+        definitelyAbove++;
+      } else if (other.pts === maxPts && other.played === 3 && row.played === 3) {
+        if (thirdsCompare(other, row) > 0) definitelyAbove++;
+      }
+    }
+    return definitelyAbove >= 8;
+  }
+
   return (
     <div className="card p-0 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-brand-navy/60">
@@ -659,20 +760,24 @@ function Best3rdsTable({ allMatches, groups }) {
         <tbody>
           {thirds.map((row, i) => {
             const isConfirmed = confirmed3rds.has(row.name);
+            const isElim = !isConfirmed && isEliminatedFromTop8(row);
             return (
             <tr key={row.name}
               style={{
                 borderLeft: isConfirmed
                   ? '3px solid rgba(16,185,129,0.7)'
+                  : isElim
+                  ? '3px solid rgba(239,68,68,0.6)'
                   : '3px solid transparent',
               }}
               className={`border-b border-brand-border/30 last:border-0 transition-colors
                 ${isConfirmed ? 'bg-emerald-900/15 hover:bg-emerald-900/25'
+                  : isElim ? 'bg-red-900/10 hover:bg-red-900/15'
                   : i < 8 ? 'bg-amber-900/10 hover:bg-amber-900/20'
                   : 'hover:bg-white/5'}`}
             >
               <td className="px-3 py-2.5">
-                <span className={`text-xs font-bold ${isConfirmed ? 'text-emerald-400' : i < 8 ? 'text-amber-400' : 'text-gray-400'}`}>{i + 1}</span>
+                <span className={`text-xs font-bold ${isConfirmed ? 'text-emerald-400' : isElim ? 'text-red-500/70' : i < 8 ? 'text-amber-400' : 'text-gray-400'}`}>{i + 1}</span>
               </td>
               <td className="px-3 py-2.5 text-center hidden sm:table-cell">
                 <span className="text-xs font-bold text-gray-400">{row.group}</span>
@@ -832,15 +937,16 @@ const DASH_GRADIENT = (r, g, b, a) =>
   `repeating-linear-gradient(to bottom, rgba(${r},${g},${b},${a}) 0px, rgba(${r},${g},${b},${a}) 4px, transparent 4px, transparent 7px)`;
 
 function GroupsTab({ matches, groups }) {
-  const qualifying3rd = getBest3rds(matches, groups);
-  const confirmed3rds = getMath3rdsConfirmed(matches, groups);
-  const hasAnyLive    = matches.some(m => m.status === 'live' && m.phase === 'group');
+  const qualifying3rd  = getBest3rds(matches, groups);
+  const confirmed3rds  = getMath3rdsConfirmed(matches, groups);
+  const eliminated3rds = getEliminated3rds(matches, groups);
+  const hasAnyLive     = matches.some(m => m.status === 'live' && m.phase === 'group');
 
   return (
     <div className="space-y-6">
       <div className="grid sm:grid-cols-2 gap-6">
         {groups.map(g => (
-          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} confirmed3rds={confirmed3rds} hasAnyLive={hasAnyLive} />
+          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} confirmed3rds={confirmed3rds} hasAnyLive={hasAnyLive} eliminated3rds={eliminated3rds} />
         ))}
       </div>
       <div className="grid sm:grid-cols-2 gap-6 items-start">
