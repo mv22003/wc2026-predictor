@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api';
 import Flag from '../components/Flag';
 import PredictionsModal from '../components/PredictionsModal';
@@ -1503,19 +1504,25 @@ function BracketTab({ allMatches, securedMode }) {
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'groups',   label: 'Groups' },
-  { id: 'bracket',  label: 'Bracket' },
+  { id: 'calendar',  label: 'Calendar' },
+  { id: 'standings', label: 'Standings' },
+  { id: 'bracket',   label: 'Bracket' },
 ];
 
 export default function LiveResults() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [matches, setMatches] = useState([]);
   const [groups,  setGroups]  = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState('calendar');
   const [filter,  setFilter]  = useState('all');
   const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
   const [securedMode, setSecuredMode] = useState(false);
+
+  // Derive active tab from URL sub-path; default to calendar
+  const pathSub = location.pathname.split('/').filter(Boolean).pop();
+  const tab = ['calendar', 'standings', 'bracket'].includes(pathSub) ? pathSub : 'calendar';
 
   function load() {
     Promise.all([api.getMatches(), api.getGroups()])
@@ -1545,7 +1552,7 @@ export default function LiveResults() {
     && groupMatches.every(m => m.status === 'finished');
 
   // Reset filter when switching tabs
-  useEffect(() => { setFilter('all'); }, [tab]);
+  useEffect(() => { setFilter('all'); }, [location.pathname]);
 
   const handleFilterChange = (value) => {
     setFilter(value);
@@ -1567,7 +1574,7 @@ export default function LiveResults() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-black">Live Results</h1>
+              <h1 className="text-2xl font-black">Matches</h1>
               <p className="text-gray-400 text-sm mt-0.5">
                 {played} results · {liveNow > 0 && <><span className="text-emerald-400 font-bold">{liveNow} live</span> · </>}{total - played - liveNow} upcoming · updates every 30s
               </p>
@@ -1586,7 +1593,7 @@ export default function LiveResults() {
               {TABS.map(t => (
                 <button
                   key={t.id}
-                  onClick={() => { setTab(t.id); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                  onClick={() => { navigate(`/matches/${t.id}`); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className={`flex-1 sm:flex-none px-4 py-2 text-sm font-bold transition-all ${
                     tab === t.id ? 'bg-brand-gold text-brand-navy' : 'text-gray-300 hover:text-white hover:bg-white/5'
                   }`}
@@ -1605,7 +1612,7 @@ export default function LiveResults() {
           )}
         </div>
 
-        {tab === 'groups' && (
+        {tab === 'standings' && (
           <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1.5 gap-x-4">
             <div className="flex items-center gap-x-4">
               <div className="flex items-center gap-1.5">
@@ -1670,7 +1677,7 @@ export default function LiveResults() {
         )}
       </div>
 
-      {tab === 'groups'   && <GroupsTab   matches={dbMatches} groups={groups} />}
+      {tab === 'standings' && <GroupsTab matches={dbMatches} groups={groups} />}
       {tab === 'calendar' && <CalendarTab
         matches={matches}
         filter={filter}

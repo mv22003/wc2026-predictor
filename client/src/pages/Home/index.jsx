@@ -204,10 +204,10 @@ export default function Home() {
           )}
         </div>
 
-        <div className="card sm:col-span-3 cursor-pointer" onClick={() => navigate('/live')}>
+        <div className="card sm:col-span-3 cursor-pointer" onClick={() => navigate('/matches/calendar')}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-lg">Matches</h2>
-            <Link to="/live" className="text-brand-gold text-xs font-semibold hover:underline">
+            <Link to="/matches/calendar" className="text-brand-gold text-xs font-semibold hover:underline">
               Full Calendar →
             </Link>
           </div>

@@ -10,7 +10,7 @@ import Admin           from './pages/Admin';
 
 const NAV_ITEMS = [
   { to: '/',            label: 'Home',        exact: true },
-  { to: '/live',        label: 'Live Results' },
+  { to: '/matches/calendar', label: 'Matches', activePrefix: '/matches' },
   { to: '/leaderboard', label: 'Leaderboard' },
   { to: '/history',     label: 'History' },
   { to: '/admin',       label: 'Admin' },
@@ -73,7 +73,7 @@ function Sidebar({ open, onClose }) {
         {/* Nav links */}
         <nav className="flex flex-col p-3 gap-1 flex-1">
           {NAV_ITEMS.map(item => {
-            const isActive = item.exact ? loc.pathname === item.to : loc.pathname.startsWith(item.to);
+            const isActive = item.exact ? loc.pathname === item.to : loc.pathname.startsWith(item.activePrefix ?? item.to);
             return (
               <NavLink
                 key={item.to}
@@ -132,7 +132,7 @@ function Navbar({ onMenuOpen }) {
         {/* Nav links — desktop only */}
         <nav className="hidden sm:flex items-center gap-1">
           {NAV_ITEMS.map(item => {
-            const isActive = item.exact ? loc.pathname === item.to : loc.pathname.startsWith(item.to);
+            const isActive = item.exact ? loc.pathname === item.to : loc.pathname.startsWith(item.activePrefix ?? item.to);
             return (
               <NavLink
                 key={item.to}
@@ -171,9 +171,9 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8">
         <Routes>
           <Route path="/"            element={<Home />} />
-          <Route path="/live"        element={<LiveResults />} />
-          <Route path="/matches"     element={<Navigate to="/live" replace />} />
-          <Route path="/bracket"     element={<Navigate to="/live" replace />} />
+          <Route path="/matches/*"   element={<LiveResults />} />
+          <Route path="/live"        element={<Navigate to="/matches/calendar" replace />} />
+          <Route path="/bracket"     element={<Navigate to="/matches/bracket"  replace />} />
           <Route path="/predict"     element={<Predict />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/leaderboard/compare" element={<Compare />} />
