@@ -115,7 +115,7 @@ function Navbar({ onMenuOpen }) {
   const loc = useLocation();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-brand-border bg-brand-navy/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-brand-border bg-brand-navy">
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center gap-4 ${loc.pathname === '/' ? 'justify-end' : 'justify-between'}`}>
 
         {/* Logo / Brand */}
