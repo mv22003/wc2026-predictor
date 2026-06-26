@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Flag from '../components/Flag';
 import PredictionsModal from '../components/PredictionsModal';
@@ -224,6 +224,57 @@ function getMath3rdsConfirmed(allMatches, groups) {
     if (possiblyAbove <= 7) confirmed.add(candidate.name);
   }
   return confirmed;
+}
+
+// Returns a Set of match numbers where the 1st-vs-3rd pairing is fully secured.
+// A matchup is secured when:
+//   1. The 3rd-place team from that group is confirmed in the top-8 best-3rds
+//   2. That group's slot in BEST3RD_TABLE is invariant (same index in every entry containing that group)
+//   3. The corresponding 1st-place opponent comes from a fully-complete group
+// Returns a Map<matchNum, { home: {name,code}, away: {name,code} }> for R32 matchups
+// that are fully secured: confirmed best-3rd team with an invariant Annexe C slot,
+// facing a confirmed 1st-place team from a complete group.
+function getSecuredMatchups(allMatches, groups) {
+  const confirmed3rds = getMath3rdsConfirmed(allMatches, groups);
+  const secured = new Map();
+
+  const confirmedGroups = new Set();
+  for (const g of groups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    if (gm.filter(m => m.status === 'finished').length < 6) continue;
+    const standings = calcStandings(gm, false);
+    if (standings.length >= 3 && confirmed3rds.has(standings[2].name)) confirmedGroups.add(g);
+  }
+
+  for (const g of confirmedGroups) {
+    let fixedIdx = null;
+    let isFixed = true;
+    for (const [key, val] of Object.entries(BEST3RD_TABLE)) {
+      if (!key.includes(g)) continue;
+      if ([...confirmedGroups].some(cg => !key.includes(cg))) continue;
+      const idx = val.indexOf(g);
+      if (fixedIdx === null) fixedIdx = idx;
+      else if (idx !== fixedIdx) { isFixed = false; break; }
+    }
+    if (!isFixed || fixedIdx === null) continue;
+
+    const slotInfo = SLOT_CONTEXT[fixedIdx];
+    if (!slotInfo) continue;
+    const opponentGroup = slotInfo.homeLabel.replace('1', '');
+    const oppGm = allMatches.filter(m => m.group_name === opponentGroup && m.phase === 'group');
+    if (oppGm.filter(m => m.status === 'finished').length < 6) continue;
+
+    const thirdStandings = calcStandings(allMatches.filter(m => m.group_name === g && m.phase === 'group'), false);
+    const oppStandings   = calcStandings(oppGm, false);
+    if (thirdStandings.length < 3 || oppStandings.length < 1) continue;
+
+    // In all R32 best-3rd slots: home = 1st-place group, away = best-3rd
+    secured.set(slotInfo.matchNum, {
+      home: { name: oppStandings[0].name,   code: oppStandings[0].code,   ranking: oppStandings[0].fifa_ranking   ?? null },
+      away: { name: thirdStandings[2].name, code: thirdStandings[2].code, ranking: thirdStandings[2].fifa_ranking ?? null },
+    });
+  }
+  return secured;
 }
 
 function TeamName({ name, code }) {
@@ -607,6 +658,7 @@ function AnnexeCPanel({ allMatches, groups }) {
   if (!assignment) return null;
 
   const byGroup = Object.fromEntries(top8.map(t => [t.group, t]));
+  const securedMatchups = getSecuredMatchups(allMatches, groups);
 
   // Build group → 1st place team for all groups
   const groupFirstPlace = Object.fromEntries(
@@ -639,10 +691,11 @@ function AnnexeCPanel({ allMatches, groups }) {
           {SLOT_CONTEXT.map(({ matchNum, homeLabel, poolLabel }, i) => {
             const groupLetter = assignment[i];
             const team = byGroup[groupLetter];
+            const isSecured = securedMatchups.has(matchNum);
             return (
-              <tr key={matchNum} className="border-b border-brand-border/30 last:border-0 hover:bg-white/5 transition-colors">
+              <tr key={matchNum} className={`border-b border-brand-border/30 last:border-0 hover:bg-white/5 transition-colors${isSecured ? ' bg-emerald-950/20' : ''}`}>
                 <td className="px-2 py-2.5 text-center">
-                  <span className="text-xs font-mono font-bold text-gray-300">M{matchNum}</span>
+                  <span className="text-xs font-mono font-bold text-gray-300">M{matchNum}{isSecured && '🔒'}</span>
                 </td>
                 <td className="px-3 py-2.5">
                   {team ? (
@@ -808,7 +861,7 @@ function ScorerLine({ homeScorers, awayScorers, homeScore, awayScore }) {
   );
 }
 
-function MatchRow({ match }) {
+function MatchRow({ match, securedTeam }) {
   const finished  = match.status === 'finished';
   const live      = match.status === 'live';
   const today     = new Date().toDateString();
@@ -821,12 +874,19 @@ function MatchRow({ match }) {
   const venue = VENUE_BY_MATCH[match.match_number];
   const [showPreds, setShowPreds] = useState(false);
 
+  // Resolve home/away using secured team data when the slot isn't yet set
+  const homeName    = securedTeam?.home.name    ?? match.home_team;
+  const homeCode    = securedTeam?.home.code    ?? match.home_code;
+  const homeRanking = match.home_ranking        ?? securedTeam?.home.ranking ?? null;
+  const awayName    = securedTeam?.away.name    ?? match.away_team;
+  const awayCode    = securedTeam?.away.code    ?? match.away_code;
+  const awayRanking = match.away_ranking        ?? securedTeam?.away.ranking ?? null;
+
   return (
     <div className={`pt-5 pb-4 px-4 border-b border-brand-border/50 last:border-0
       hover:bg-white/5 transition-colors
       ${live ? 'bg-emerald-900/20 border-l-4 border-l-emerald-400' : ''}`}>
       <div className="flex items-stretch gap-3">
-        {/* no mobile spacer needed — FT lives inside the score column, keeping both sides balanced */}
         {/* group · match# pill — desktop only */}
         <div className="hidden sm:flex sm:w-20 shrink-0 items-center justify-center">
           <span className="tag bg-brand-border text-gray-400 text-xs text-center whitespace-nowrap w-full">
@@ -836,35 +896,35 @@ function MatchRow({ match }) {
 
         {/* center: teams + score + venue pill */}
         <div className="flex-1 min-w-0 flex flex-col">
-          {/* Ranking pills row — only rendered when at least one side has a ranking */}
-          {(match.home_ranking != null || match.away_ranking != null) && (
+          {/* Ranking pills row */}
+          {(homeRanking != null || awayRanking != null) && (
             <div className="flex gap-2 sm:gap-3 mb-1.5">
               <div className="flex-1 flex justify-end">
-                {match.home_ranking != null && (
+                {homeRanking != null && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
                     <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
-                    #{match.home_ranking}
+                    #{homeRanking}
                   </span>
                 )}
               </div>
               <div className="w-16 sm:w-20 shrink-0" />
               <div className="flex-1">
-                {match.away_ranking != null && (
+                {awayRanking != null && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-brand-border/60 text-[10px] text-gray-400 whitespace-nowrap">
                     <img src="/wc-logos/FIFA_Logo_White_Generic.webp" alt="FIFA" className="h-2.5 w-auto opacity-70" />
-                    #{match.away_ranking}
+                    #{awayRanking}
                   </span>
                 )}
               </div>
             </div>
           )}
-          {/* Teams + score row — clean items-center so flags always align with the score */}
+          {/* Teams + score row */}
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex-1 min-w-0 flex items-center justify-end gap-2">
               <span className={`text-sm font-semibold min-w-0 truncate text-right ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                {match.home_code ? <TeamName name={match.home_team} code={match.home_code} /> : match.home_team}
+                {homeCode ? <TeamName name={homeName} code={homeCode} /> : homeName}
               </span>
-              {match.home_code && <Flag code={match.home_code} name={match.home_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />}
+              {homeCode && <Flag code={homeCode} name={homeName} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />}
             </div>
             <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center justify-center relative">
               {finished && <span className="sm:hidden absolute -top-6 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FT</span>}
@@ -894,9 +954,9 @@ function MatchRow({ match }) {
               )}
             </div>
             <div className="flex-1 min-w-0 flex items-center gap-2">
-              {match.away_code && <Flag code={match.away_code} name={match.away_team} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />}
+              {awayCode && <Flag code={awayCode} name={awayName} className="w-6 sm:w-7 h-6 sm:h-7 shrink-0" />}
               <span className={`text-sm font-semibold min-w-0 truncate ${finished || live ? 'text-white' : 'text-gray-300'}`}>
-                {match.away_code ? <TeamName name={match.away_team} code={match.away_code} /> : match.away_team}
+                {awayCode ? <TeamName name={awayName} code={awayCode} /> : awayName}
               </span>
             </div>
           </div>
@@ -953,7 +1013,7 @@ function MatchRow({ match }) {
   );
 }
 
-function DateGroup({ matches, dateKey }) {
+function DateGroup({ matches, dateKey, securedMatchups }) {
   const todayKey = new Date().toLocaleDateString('en-GB', DATE_FMT);
   const isToday  = dateKey === todayKey;
   const label    = dateKey ? dateKey.replace(/\s\d{4}$/, '') : '';
@@ -965,7 +1025,7 @@ function DateGroup({ matches, dateKey }) {
         {isToday && <span className="hidden sm:inline-flex tag bg-brand-gold text-brand-navy text-sm font-bold">Today</span>}
         <span className="ml-auto text-xs text-gray-400">{matches.length} match{matches.length !== 1 ? 'es' : ''}</span>
       </div>
-      {matches.map(m => <MatchRow key={m.id} match={m} />)}
+      {matches.map(m => <MatchRow key={m.id} match={m} securedTeam={securedMatchups?.get(m.match_number)} />)}
     </div>
   );
 }
@@ -1044,6 +1104,12 @@ function FilterDropdown({ baseValue, baseLabel, options, active, onChange, compa
 }
 
 function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollToToday }) {
+  const calGroups = useMemo(
+    () => [...new Set(matches.filter(m => m.phase === 'group').map(m => m.group_name).filter(Boolean))].sort(),
+    [matches]
+  );
+  const securedMatchups = useMemo(() => getSecuredMatchups(matches, calGroups), [matches, calGroups]);
+
   const calFiltered = filter === 'all'         ? matches
     : filter === 'GROUP_STAGE'                 ? matches.filter(m => m.phase === 'group')
     : filter === 'KNOCKOUTS'                   ? matches.filter(m => m.phase !== 'group')
@@ -1089,7 +1155,7 @@ function CalendarTab({ matches, filter, pendingScrollToToday, setPendingScrollTo
     <div className="space-y-4">
       {Object.entries(byDate).map(([dateStr, dayMatches]) => (
         <div key={dateStr} data-date={dateStr} data-has-live={dayMatches.some(m => m.status === 'live') ? 'true' : undefined}>
-          <DateGroup matches={dayMatches} dateKey={dateStr} />
+          <DateGroup matches={dayMatches} dateKey={dateStr} securedMatchups={securedMatchups} />
         </div>
       ))}
     </div>
@@ -1141,7 +1207,7 @@ function slotLabel(slot) {
   return null;
 }
 
-function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false, securedMode = false, lockedPositions = {}, allGroupsDone = false }) {
+function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false, securedMode = false, lockedPositions = {}, allGroupsDone = false, securedMatchups = null }) {
   const dbMatch  = dbByNum[matchNum];
   const finished = dbMatch?.status === 'finished';
   const homeWon  = finished && (dbMatch.outcome === 'pen'
@@ -1163,8 +1229,11 @@ function BCard({ matchNum, dbByNum, projMap, allTeamsPlayed, flip = false, secur
   function getTeam(side) {
     if (securedMode) {
       if (r32Slots) {
-        // R32: secured if admin locked it in DB, or the group stage is done
-        if (!dbMatch && !isSlotLocked(r32Slots[side])) return null;
+        // R32: secured if admin locked it in DB, the group stage is done, or it's a secured best-3rd matchup
+        if (!dbMatch && !isSlotLocked(r32Slots[side])) {
+          const securedTeam = securedMatchups?.get(matchNum)?.[side];
+          return securedTeam ?? null;
+        }
         if (dbMatch) return { code: dbMatch[`${side}_code`], name: dbMatch[`${side}_team`] };
         return projMap?.[matchNum]?.[side] ?? null;
       }
@@ -1324,6 +1393,11 @@ function BracketTab({ allMatches, securedMode }) {
   const allTeamsPlayed = allTeams.size > 0 && teamsWithGame.size >= allTeams.size;
   const koFinished     = koMatches.filter(m => m.status === 'finished').length;
 
+  const securedMatchups = useMemo(() => {
+    const gps = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
+    return getSecuredMatchups(allMatches, gps);
+  }, [allMatches]);
+
   const best3rdMap = resolveBest3rdSlots(byGroup) || {};
   const projMap    = {};
 
@@ -1397,7 +1471,7 @@ function BracketTab({ allMatches, securedMode }) {
             {cards.map(({ num, x, y, flip }) => (
               <div key={num} style={{ position: 'absolute', left: x, top: y }}>
                 <BCard matchNum={num} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed} flip={flip}
-                  securedMode={securedMode} lockedPositions={lockedPositions} allGroupsDone={allGroupsDone} />
+                  securedMode={securedMode} lockedPositions={lockedPositions} allGroupsDone={allGroupsDone} securedMatchups={securedMatchups} />
               </div>
             ))}
             <img
@@ -1418,7 +1492,7 @@ function BracketTab({ allMatches, securedMode }) {
             <div className="text-center">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">3rd Place</p>
               <BCard matchNum={103} dbByNum={dbByNum} projMap={projMap} allTeamsPlayed={allTeamsPlayed}
-                securedMode={securedMode} lockedPositions={lockedPositions} allGroupsDone={allGroupsDone} />
+                securedMode={securedMode} lockedPositions={lockedPositions} allGroupsDone={allGroupsDone} securedMatchups={securedMatchups} />
             </div>
           </div>
         </div>
