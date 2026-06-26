@@ -694,9 +694,12 @@ function AnnexeCPanel({ allMatches, groups }) {
             const team = byGroup[groupLetter];
             const isSecured = securedMatchups.has(matchNum);
             return (
-              <tr key={matchNum} className={`border-b border-brand-border/30 last:border-0 hover:bg-white/5 transition-colors${isSecured ? ' bg-emerald-950/20' : ''}`}>
+              <tr key={matchNum}
+                className={`border-b border-brand-border/30 last:border-0 hover:bg-white/5 transition-colors${isSecured ? ' bg-emerald-950/20' : ''}`}
+                style={isSecured ? { borderLeft: '3px solid rgba(16,185,129,0.7)' } : { borderLeft: '3px solid transparent' }}
+              >
                 <td className="px-2 py-2.5 text-center">
-                  <span className="text-xs font-mono font-bold text-gray-300">M{matchNum}{isSecured && '🔒'}</span>
+                  <span className="text-xs font-mono font-bold text-gray-300">M{matchNum}</span>
                 </td>
                 <td className="px-3 py-2.5">
                   {team ? (
@@ -738,6 +741,12 @@ function AnnexeCPanel({ allMatches, groups }) {
           })}
         </tbody>
       </table>
+      {securedMatchups.size > 0 && (
+        <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+          <span className="w-1 h-4 rounded-sm shrink-0" style={{ background: 'rgba(16,185,129,0.7)' }} />
+          <span className="text-xs text-gray-400">Matchup mathematically secured</span>
+        </div>
+      )}
     </div>
   );
 }
