@@ -424,13 +424,25 @@ function getSecuredMatchups(allMatches, groups) {
   const confirmed3rds = getMath3rdsConfirmed(allMatches, groups);
   const secured = new Map();
 
-  const confirmedGroups = new Set();
+  const completeThirds = [];
+  const incompleteGms  = [];
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
-    const allDone = gm.filter(m => m.status === 'finished').length >= 6;
-    if (!allDone && !isGroupThirdLocked(gm)) continue;
-    const standings = calcStandings(gm, false);
-    if (standings.length >= 3 && confirmed3rds.has(standings[2].name)) confirmedGroups.add(g);
+    if (gm.filter(m => m.status === 'finished').length >= 6 || isGroupThirdLocked(gm)) {
+      const s = calcStandings(gm, false);
+      if (s.length >= 3) completeThirds.push({ t: { ...s[2], group: g }, gm });
+    } else {
+      incompleteGms.push({ g, gm });
+    }
+  }
+
+  const confirmedGroups = new Set();
+  const eliminatedGroups = new Set();
+  for (const { t } of completeThirds) {
+    if (confirmed3rds.has(t.name)) confirmedGroups.add(t.group);
+
+    let definitelyAbove = completeThirds.filter(({ t: o }) => o.group !== t.group && thirdsCompare(o, t) > 0).length;
+    if (definitelyAbove >= 8) eliminatedGroups.add(t.group);
   }
 
   for (const g of confirmedGroups) {
@@ -439,6 +451,7 @@ function getSecuredMatchups(allMatches, groups) {
     for (const [key, val] of Object.entries(BEST3RD_TABLE)) {
       if (!key.includes(g)) continue;
       if ([...confirmedGroups].some(cg => !key.includes(cg))) continue;
+      if ([...eliminatedGroups].some(eg => key.includes(eg))) continue;
       const idx = val.indexOf(g);
       if (fixedIdx === null) fixedIdx = idx;
       else if (idx !== fixedIdx) { isFixed = false; break; }
