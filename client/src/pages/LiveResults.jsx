@@ -564,7 +564,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
     if (couldFinishAbove === 1) return 'qualified';
     if (hasLiveInGroup) return i === 0 ? 'live-first' : 'live-qualified';
     // Even if position isn't secured, team may be guaranteed to qualify as best-3rd
-    if (mathQualified?.has(row.name)) return 'live-qualified';
+    if (mathQualified?.has(row.name)) return 'qualified';
     return 'top2';
   }
 
