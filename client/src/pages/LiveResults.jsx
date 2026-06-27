@@ -253,6 +253,60 @@ function isGroupThirdLocked(gm) {
   return false;
 }
 
+// Returns a Set of team names in non-final groups that are mathematically
+// guaranteed to qualify for R32 — regardless of their final position in the group.
+// A team qualifies here if their current points (minimum they can finish with) are
+// high enough that, even if they finish 3rd, they'd still rank in the top-8 best
+// third places in any possible scenario for the remaining matches.
+function getMathQualifiedOverall(allMatches, groups) {
+  const complete   = [];
+  const incomplete = [];
+
+  for (const g of groups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    if (gm.filter(m => m.status === 'finished').length >= 6 || isGroupThirdLocked(gm))
+      complete.push({ g, gm });
+    else
+      incomplete.push({ g, gm });
+  }
+
+  const completeCandidates = complete
+    .map(({ g, gm }) => {
+      const s = calcStandings(gm, false);
+      return s.length >= 3 ? { ...s[2], group: g } : null;
+    })
+    .filter(Boolean);
+
+  const qualified = new Set();
+
+  for (const { g, gm } of incomplete) {
+    const standings = calcStandings(gm, false);
+
+    for (const team of standings) {
+      if (team.pts === 0) continue;
+
+      // Treat this team as though they finish 3rd in group g with their current
+      // (minimum possible) points and stats — worst case for their qualification.
+      const candidate = { ...team, group: g };
+
+      let possiblyAbove = 0;
+
+      for (const other of completeCandidates) {
+        if (thirdsCompare(other, candidate) > 0) possiblyAbove++;
+      }
+      for (const { g: og, gm: ogm } of incomplete) {
+        if (og === g) continue;
+        if (canProduceBetterThird(ogm, candidate)) possiblyAbove++;
+      }
+
+      // At most 7 teams can ever rank above this team → guaranteed top-8
+      if (possiblyAbove <= 7) qualified.add(team.name);
+    }
+  }
+
+  return qualified;
+}
+
 // A team is confirmed in the top-8 best-3rds when, even in the absolute worst case
 // (every incomplete group produces the strongest possible 3rd-place team), they
 // still cannot be pushed out of the top 8.
@@ -448,7 +502,7 @@ function h2hResult(groupMatches, teamName, opponentName) {
   return teamScore > oppScore ? 'won' : teamScore < oppScore ? 'lost' : 'draw';
 }
 
-function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive, eliminated3rds) {
+function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive, eliminated3rds, mathQualified) {
   const row = standings[i];
   const third = standings[2];
 
@@ -509,6 +563,8 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
     if (i === 0 && couldFinishAbove === 1 && hasLiveInGroup) return 'live-first';
     if (couldFinishAbove === 1) return 'qualified';
     if (hasLiveInGroup) return i === 0 ? 'live-first' : 'live-qualified';
+    // Even if position isn't secured, team may be guaranteed to qualify as best-3rd
+    if (mathQualified?.has(row.name)) return 'live-qualified';
     return 'top2';
   }
 
@@ -536,7 +592,7 @@ function getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, 
   return 'none';
 }
 
-function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasAnyLive, eliminated3rds }) {
+function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasAnyLive, eliminated3rds, mathQualified }) {
   const [open, setOpen] = useState(false);
   const groupMatches = matches.filter(m => m.group_name === groupName && m.phase === 'group');
   const standings    = calcStandings(groupMatches, true);
@@ -579,7 +635,7 @@ function StandingsTable({ groupName, matches, qualifying3rd, confirmed3rds, hasA
         </thead>
         <tbody>
           {standings.map((row, i) => {
-            const status = getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive, eliminated3rds);
+            const status = getRowStatus(standings, i, qualifying3rd, groupMatches, confirmed3rds, hasAnyLive, eliminated3rds, mathQualified);
             const isElim      = status === 'eliminated';
             const isLiveFirst = status === 'live-first';
             const isLiveQual  = status === 'live-qualified';
@@ -940,13 +996,14 @@ function GroupsTab({ matches, groups }) {
   const qualifying3rd  = getBest3rds(matches, groups);
   const confirmed3rds  = getMath3rdsConfirmed(matches, groups);
   const eliminated3rds = getEliminated3rds(matches, groups);
+  const mathQualified  = getMathQualifiedOverall(matches, groups);
   const hasAnyLive     = matches.some(m => m.status === 'live' && m.phase === 'group');
 
   return (
     <div className="space-y-6">
       <div className="grid sm:grid-cols-2 gap-6">
         {groups.map(g => (
-          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} confirmed3rds={confirmed3rds} hasAnyLive={hasAnyLive} eliminated3rds={eliminated3rds} />
+          <StandingsTable key={g} groupName={g} matches={matches} qualifying3rd={qualifying3rd} confirmed3rds={confirmed3rds} hasAnyLive={hasAnyLive} eliminated3rds={eliminated3rds} mathQualified={mathQualified} />
         ))}
       </div>
       <div className="grid sm:grid-cols-2 gap-6 items-start">
