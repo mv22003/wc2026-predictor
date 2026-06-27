@@ -424,24 +424,28 @@ function getSecuredMatchups(allMatches, groups) {
   const confirmed3rds = getMath3rdsConfirmed(allMatches, groups);
   const secured = new Map();
 
-  const completeThirds = [];
-  const incompleteGms  = [];
+  const confirmedGroups = new Set();
+  for (const g of groups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    const allDone = gm.filter(m => m.status === 'finished').length >= 6;
+    if (!allDone && !isGroupThirdLocked(gm)) continue;
+    const standings = calcStandings(gm, false);
+    if (standings.length >= 3 && confirmed3rds.has(standings[2].name)) confirmedGroups.add(g);
+  }
+
+  // Groups whose 3rd-place team can never reach the top 8 (≥8 complete thirds definitively above).
+  // Entries containing these groups are impossible and must be excluded from slot resolution.
+  const eliminatedGroups = new Set();
+  const allCompleteThirds = [];
   for (const g of groups) {
     const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
     if (gm.filter(m => m.status === 'finished').length >= 6 || isGroupThirdLocked(gm)) {
       const s = calcStandings(gm, false);
-      if (s.length >= 3) completeThirds.push({ t: { ...s[2], group: g }, gm });
-    } else {
-      incompleteGms.push({ g, gm });
+      if (s.length >= 3) allCompleteThirds.push({ ...s[2], group: g });
     }
   }
-
-  const confirmedGroups = new Set();
-  const eliminatedGroups = new Set();
-  for (const { t } of completeThirds) {
-    if (confirmed3rds.has(t.name)) confirmedGroups.add(t.group);
-
-    let definitelyAbove = completeThirds.filter(({ t: o }) => o.group !== t.group && thirdsCompare(o, t) > 0).length;
+  for (const t of allCompleteThirds) {
+    const definitelyAbove = allCompleteThirds.filter(o => o.group !== t.group && thirdsCompare(o, t) > 0).length;
     if (definitelyAbove >= 8) eliminatedGroups.add(t.group);
   }
 
