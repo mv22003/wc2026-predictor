@@ -433,12 +433,29 @@ function getSecuredMatchups(allMatches, groups) {
     if (standings.length >= 3 && confirmed3rds.has(standings[2].name)) confirmedGroups.add(g);
   }
 
+  // Groups whose 3rd-place team can never reach the top 8 (≥8 complete thirds definitively above).
+  // Entries containing these groups are impossible and must be excluded from slot resolution.
+  const eliminatedGroups = new Set();
+  const allCompleteThirds = [];
+  for (const g of groups) {
+    const gm = allMatches.filter(m => m.group_name === g && m.phase === 'group');
+    if (gm.filter(m => m.status === 'finished').length >= 6 || isGroupThirdLocked(gm)) {
+      const s = calcStandings(gm, false);
+      if (s.length >= 3) allCompleteThirds.push({ ...s[2], group: g });
+    }
+  }
+  for (const t of allCompleteThirds) {
+    const definitelyAbove = allCompleteThirds.filter(o => o.group !== t.group && thirdsCompare(o, t) > 0).length;
+    if (definitelyAbove >= 8) eliminatedGroups.add(t.group);
+  }
+
   for (const g of confirmedGroups) {
     let fixedIdx = null;
     let isFixed = true;
     for (const [key, val] of Object.entries(BEST3RD_TABLE)) {
       if (!key.includes(g)) continue;
       if ([...confirmedGroups].some(cg => !key.includes(cg))) continue;
+      if ([...eliminatedGroups].some(eg => key.includes(eg))) continue;
       const idx = val.indexOf(g);
       if (fixedIdx === null) fixedIdx = idx;
       else if (idx !== fixedIdx) { isFixed = false; break; }
