@@ -331,7 +331,7 @@ function PredBracketView({ predictions }) {
 
 function PredictionExpanded({ name, cache, setCache }) {
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('score');
 
   useEffect(() => {
     if (cache[name]) return;
@@ -360,9 +360,14 @@ function PredictionExpanded({ name, cache, setCache }) {
     return 'bg-red-900/10 border-l-2 border-l-red-600 border-b border-b-brand-border/30 last:border-b-0';
   };
 
-  const finished = predictions.filter(p => p.status === 'finished').sort((a, b) => b.points - a.points);
-  const pending  = predictions.filter(p => p.status !== 'finished').sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
-  const sorted   = [...finished, ...pending];
+  const byScore = [
+    ...predictions.filter(p => p.status === 'finished').sort((a, b) => b.points - a.points),
+    ...predictions.filter(p => p.status !== 'finished').sort((a, b) => new Date(a.match_date) - new Date(b.match_date)),
+  ];
+
+  const byTime = [...predictions].sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+
+  const displayList = view === 'time' ? byTime : byScore;
 
   return (
     <tr className="bg-brand-surface/50">
@@ -370,34 +375,32 @@ function PredictionExpanded({ name, cache, setCache }) {
         {/* View toggle */}
         <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 border-b border-brand-border/30">
           <button
-            onClick={() => setView('list')}
+            onClick={() => setView('score')}
             className={`text-xs font-semibold px-3 py-1 rounded transition-colors ${
-              view === 'list'
+              view === 'score'
                 ? 'bg-brand-gold/20 text-brand-gold border border-brand-gold/40'
                 : 'text-gray-400 hover:text-gray-200 border border-transparent'
             }`}
           >
-            Predictions
+            By score
           </button>
           <button
-            onClick={() => setView('bracket')}
+            onClick={() => setView('time')}
             className={`text-xs font-semibold px-3 py-1 rounded transition-colors ${
-              view === 'bracket'
+              view === 'time'
                 ? 'bg-brand-gold/20 text-brand-gold border border-brand-gold/40'
                 : 'text-gray-400 hover:text-gray-200 border border-transparent'
             }`}
           >
-            Bracket
+            By time
           </button>
         </div>
 
-        {view === 'bracket' ? (
-          <PredBracketView predictions={predictions} />
-        ) : sorted.length === 0 ? (
+        {displayList.length === 0 ? (
           <div className="px-6 py-3 text-xs text-gray-400">No predictions yet.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 overflow-y-auto max-h-[28rem] sm:max-h-96 scrollbar-thin divide-y divide-brand-border/30 sm:divide-y-0">
-            {sorted.map(p => (
+            {displayList.map(p => (
               <div key={p.id} className={`flex items-center gap-2 px-4 py-2 text-xs ${rowTint(p.points, p.status)}`}>
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <Flag code={p.home_code} name={p.home_team} className="w-4 h-4 shrink-0" />
