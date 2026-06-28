@@ -331,7 +331,7 @@ function PredBracketView({ predictions }) {
 
 function PredictionExpanded({ name, cache, setCache }) {
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('score');
 
   useEffect(() => {
     if (cache[name]) return;
@@ -373,14 +373,14 @@ function PredictionExpanded({ name, cache, setCache }) {
         {/* View toggle */}
         <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 border-b border-brand-border/30">
           <button
-            onClick={() => setView('list')}
+            onClick={() => setView('score')}
             className={`text-xs font-semibold px-3 py-1 rounded transition-colors ${
-              view === 'list'
+              view === 'score'
                 ? 'bg-brand-gold/20 text-brand-gold border border-brand-gold/40'
                 : 'text-gray-400 hover:text-gray-200 border border-transparent'
             }`}
           >
-            Predictions
+            By score
           </button>
           <button
             onClick={() => setView('time')}
