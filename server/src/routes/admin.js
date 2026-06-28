@@ -391,10 +391,12 @@ router.post('/matches/:id/result', adminAuth, async (req, res) => {
         "UPDATE matches SET home_score = $1, away_score = $2, status = 'finished', live_minute = NULL, manual_lock = TRUE, outcome = $3, pen_home = $4, pen_away = $5 WHERE id = $6",
         [hs, as_, outcome ?? null, pen_home ?? null, pen_away ?? null, matchId]
       );
-      for (const p of preds) {
-        await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
-          calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
-        ]);
+      if (saved?.phase === 'group') {
+        for (const p of preds) {
+          await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+            calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+          ]);
+        }
       }
       await client.query('COMMIT');
     } catch (err) {
@@ -444,10 +446,12 @@ router.put('/matches/:id/result', adminAuth, async (req, res) => {
         'UPDATE matches SET home_score = $1, away_score = $2, status = $3, home_scorers = COALESCE($4, home_scorers), away_scorers = COALESCE($5, away_scorers), live_minute = NULL, manual_lock = TRUE, outcome = $6, pen_home = $7, pen_away = $8 WHERE id = $9',
         [hs, as_, status || 'finished', home_scorers ?? null, away_scorers ?? null, outcome ?? null, pen_home ?? null, pen_away ?? null, matchId]
       );
-      for (const p of preds) {
-        await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
-          calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
-        ]);
+      if (savedPut?.phase === 'group') {
+        for (const p of preds) {
+          await client.query('UPDATE predictions SET points = $1 WHERE id = $2', [
+            calculatePoints(p.pred_home, p.pred_away, hs, as_), p.id,
+          ]);
+        }
       }
       await client.query('COMMIT');
     } catch (err) {
