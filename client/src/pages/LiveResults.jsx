@@ -1241,7 +1241,7 @@ function MatchRow({ match, securedTeam }) {
             </div>
           )}
           {/* Predictions button — inside center column so it aligns with the score */}
-          {!match.isPlaceholder && (
+          {!match.isPlaceholder && match.phase === 'group' && (
             <div className="mt-2 flex justify-center">
               <button
                 onClick={() => setShowPreds(true)}
