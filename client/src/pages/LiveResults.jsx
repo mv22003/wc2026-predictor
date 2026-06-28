@@ -1720,11 +1720,9 @@ function BracketTab({ allMatches, securedMode }) {
           </div>
         </div>
       )}
-      {koMatches.length > 0 && (
+      {koMatches.length > 0 && koFinished > 0 && (
         <p className="text-gray-400 text-xs">
-          {koFinished > 0
-            ? `${koFinished} of ${koMatches.length} knockout matches played`
-            : `${koMatches.length} knockout match${koMatches.length > 1 ? 'es' : ''} confirmed, awaiting results`}
+          {koFinished} of {koMatches.length} knockout matches played
         </p>
       )}
       <div className="overflow-x-auto pb-4">
