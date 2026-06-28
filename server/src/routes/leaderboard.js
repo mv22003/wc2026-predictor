@@ -154,7 +154,7 @@ router.get('/', async (req, res) => {
       FROM matches m
       JOIN teams t1 ON t1.id = m.home_team_id
       JOIN teams t2 ON t2.id = m.away_team_id
-      WHERE m.status = 'live'
+      WHERE m.status = 'live' AND m.phase = 'group'
       ORDER BY m.match_date ASC, m.id ASC
     `);
 
@@ -168,7 +168,7 @@ router.get('/', async (req, res) => {
         FROM matches m
         JOIN teams t1 ON t1.id = m.home_team_id
         JOIN teams t2 ON t2.id = m.away_team_id
-        WHERE m.status = 'finished'
+        WHERE m.status = 'finished' AND m.phase = 'group'
         ORDER BY m.match_date DESC, m.id DESC
         LIMIT 1
       `);
@@ -203,7 +203,7 @@ router.get('/', async (req, res) => {
       FROM matches m
       JOIN teams t1 ON t1.id = m.home_team_id
       JOIN teams t2 ON t2.id = m.away_team_id
-      WHERE m.status = 'upcoming'
+      WHERE m.status = 'upcoming' AND m.phase = 'group'
       ORDER BY m.match_date ASC, m.id ASC
       LIMIT 1
     `);
