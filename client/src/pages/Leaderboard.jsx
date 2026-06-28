@@ -331,7 +331,7 @@ function PredBracketView({ predictions }) {
 
 function PredictionExpanded({ name, cache, setCache }) {
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState('score');
+  const [view, setView] = useState('list');
 
   useEffect(() => {
     if (cache[name]) return;
@@ -360,12 +360,10 @@ function PredictionExpanded({ name, cache, setCache }) {
     return 'bg-red-900/10 border-l-2 border-l-red-600 border-b border-b-brand-border/30 last:border-b-0';
   };
 
-  const byScore = [
-    ...predictions.filter(p => p.status === 'finished').sort((a, b) => b.points - a.points),
-    ...predictions.filter(p => p.status !== 'finished').sort((a, b) => new Date(a.match_date) - new Date(b.match_date)),
-  ];
-
-  const byTime = [...predictions].sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+  const finished = predictions.filter(p => p.status === 'finished').sort((a, b) => b.points - a.points);
+  const pending  = predictions.filter(p => p.status !== 'finished').sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+  const byScore  = [...finished, ...pending];
+  const byTime   = [...predictions].sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
 
   const displayList = view === 'time' ? byTime : byScore;
 
@@ -375,14 +373,14 @@ function PredictionExpanded({ name, cache, setCache }) {
         {/* View toggle */}
         <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 border-b border-brand-border/30">
           <button
-            onClick={() => setView('score')}
+            onClick={() => setView('list')}
             className={`text-xs font-semibold px-3 py-1 rounded transition-colors ${
-              view === 'score'
+              view === 'list'
                 ? 'bg-brand-gold/20 text-brand-gold border border-brand-gold/40'
                 : 'text-gray-400 hover:text-gray-200 border border-transparent'
             }`}
           >
-            By score
+            Predictions
           </button>
           <button
             onClick={() => setView('time')}
