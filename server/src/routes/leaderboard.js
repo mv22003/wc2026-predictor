@@ -22,7 +22,7 @@ router.get('/history', async (req, res) => {
       WITH finished AS (
         SELECT id, match_number, phase,
                ROW_NUMBER() OVER (ORDER BY match_date, id) AS seq
-        FROM matches WHERE status = 'finished'
+        FROM matches WHERE status = 'finished' AND phase = 'group'
       ),
       all_users AS (
         SELECT id, name FROM users WHERE submitted_at IS NOT NULL
@@ -116,12 +116,12 @@ router.get('/', async (req, res) => {
         u.name,
         u.paid,
         u.submitted_at,
-        COALESCE(SUM(p.points), 0)                                                      AS total_points,
-        SUM(CASE WHEN p.points = 5 THEN 1 ELSE 0 END)                                  AS pts_5,
-        SUM(CASE WHEN p.points = 3 THEN 1 ELSE 0 END)                                  AS pts_3,
-        SUM(CASE WHEN p.points = 1 THEN 1 ELSE 0 END)                                  AS pts_1,
-        SUM(CASE WHEN m.status = 'finished' AND p.points = 0 THEN 1 ELSE 0 END)        AS pts_0,
-        SUM(CASE WHEN m.status = 'finished' THEN 1 ELSE 0 END)                         AS matches_played
+        COALESCE(SUM(CASE WHEN m.phase = 'group' THEN p.points ELSE 0 END), 0)          AS total_points,
+        SUM(CASE WHEN m.phase = 'group' AND p.points = 5 THEN 1 ELSE 0 END)            AS pts_5,
+        SUM(CASE WHEN m.phase = 'group' AND p.points = 3 THEN 1 ELSE 0 END)            AS pts_3,
+        SUM(CASE WHEN m.phase = 'group' AND p.points = 1 THEN 1 ELSE 0 END)            AS pts_1,
+        SUM(CASE WHEN m.phase = 'group' AND m.status = 'finished' AND p.points = 0 THEN 1 ELSE 0 END) AS pts_0,
+        SUM(CASE WHEN m.phase = 'group' AND m.status = 'finished' THEN 1 ELSE 0 END)   AS matches_played
       FROM users u
       LEFT JOIN predictions p ON u.id = p.user_id
       LEFT JOIN matches m     ON p.match_id = m.id
